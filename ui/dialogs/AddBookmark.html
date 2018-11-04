@@ -1,0 +1,125 @@
+<!doctype html>
+<html>
+
+  <head>
+    <script defer>
+      loadStyles()
+      loadScripts([
+        'node_modules/form-serialize/index.js',
+        'src/ui/scripts/fields.js',
+        'src/ui/scripts/bookmark-settings.js',
+      ])
+
+      /**
+       * Add available providers as options to select HTML element
+       * @param {*} selectElement
+       */
+      window.renderAvailableProvidersSelectOptions = function (selectElement) {
+        let optionsContainer = document.createDocumentFragment()
+        let providers = window.$main.rclone.getProviders()
+        let emptyOption = document.createElement('option')
+        emptyOption.value = ''
+        emptyOption.innerHTML = '&mdash; Select Provider &mdash;'
+        optionsContainer.appendChild(emptyOption)
+
+        for (let providerName in providers) {
+          let option = document.createElement('option')
+          option.value = providers[providerName].Name
+          option.innerText = providerName + ' ' + providers[providerName].Description
+          option.providerObject = providers[providerName]
+          optionsContainer.appendChild(option)
+        }
+
+        let range = document.createRange()
+        range.selectNodeContents(selectElement)
+        range.deleteContents()
+        selectElement.appendChild(optionsContainer)
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+
+        const theForm = document.getElementById('the-form')
+        const providerSettingsWrapper = document.getElementById('provider-settings-wrapper')
+        const currentProviderSettings = document.getElementById('current-provider-settings')
+        document.title = 'Create new Bookmark'
+        providerSettingsWrapper.style.display = 'none'
+
+        const providersListSelect = document.getElementById('providers-list');
+        providersListSelect.addEventListener('change', function() {
+          if (this.selectedOptions[0].hasOwnProperty('providerObject')) {
+            let provider = this.selectedOptions[0].providerObject
+            document.title = `Create new ${provider.Name} Bookmark (${provider.Description})`
+            renderBookmarkSettings(currentProviderSettings, provider)
+            window.location.hash = 'connection'
+            providerSettingsWrapper.style.display = null
+            resizeToContent()
+          } else {
+            document.title = 'Create new Bookmark'
+            providerSettingsWrapper.style.display = 'none'
+            currentProviderSettings.innerHTML = '<p>Select connection type</p>'
+            renderBookmarkSettings(currentProviderSettings)
+            window.location.hash = null
+            resizeToContent()
+          }
+        })
+        renderAvailableProvidersSelectOptions(providersListSelect)
+
+        theForm.addEventListener('submit', function(event) {
+          event.preventDefault();
+
+          let data = serialize(this, {
+            hash: true,
+            empty: true
+          })
+
+          $main.rclone.addBookmark(data.type, data.name, data.options)
+            .then(function() {
+              window.close()
+            })
+            .catch(window.errorBox)
+        })
+      });
+    </script>
+  </head>
+
+  <body>
+
+    <main>
+
+      <form id="the-form">
+
+        <div class="row">
+          <div class="cell-left">
+            Connection Type
+          </div>
+          <div class="cell-right">
+            <select name="type" id="providers-list" style="width:20em;"></select>
+          </div>
+        </div>
+
+        <div id="provider-settings-wrapper">
+
+          <div class="row">
+            <div class="cell-left">
+              <label>Name</label>
+              <div class="label-required">required</div>
+            </div>
+            <div class="cell-right">
+              <input type="text" name="name" value="" maxlength="20" size="20" style="width:12em" />
+            </div>
+          </div>
+
+          <div id="current-provider-settings"></div>
+
+          <div class="padded-v right">
+            <button type="submit">
+              Save
+            </button>
+          </div>
+
+        </div>
+
+      </form>
+    </main>
+  </body>
+</html>

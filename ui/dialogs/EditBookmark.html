@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+  <head>
+    <script defer>
+      loadStyles()
+      loadScripts([
+        'node_modules/form-serialize/index.js',
+        'src/ui/scripts/fields.js',
+        'src/ui/scripts/bookmark-settings.js',
+      ])
+
+      document.addEventListener('DOMContentLoaded', function() {
+        const theForm = document.getElementById('the-form')
+        const currentProviderSettings = document.getElementById('current-provider-settings')
+
+        let provider = $main.rclone.getProvider($main.getProps().type)
+
+        document.getElementById('$providerName').innerText = provider.Name
+        document.getElementById('$bookmarkName').innerText = $main.getProps().$name
+        document.title = `Edit ${$main.getProps().$name}`
+        window.location.hash = 'connection'
+        renderBookmarkSettings(currentProviderSettings, provider, $main.getProps())
+
+        theForm.addEventListener('submit', function(event) {
+          event.preventDefault();
+
+          let data = serialize(this, {
+            hash: true,
+            empty: true
+          })
+
+          $main.rclone.updateBookmark($main.getProps().$name, data.options)
+            .then(window.close)
+            .catch(errorBox)
+        })
+
+        document.getElementById('delete-bookmark-button')
+          .addEventListener('click', function(event) {
+            event.preventDefault()
+            if (confirm('Are you sure you want to delete the bookmark?')) {
+              $main.rclone.deleteBookmark($main.getProps().$name)
+                .then(window.close)
+                .catch(window.errorBox)
+            }
+          })
+      })
+    </script>
+
+  </head>
+
+  <body>
+    <main>
+
+        <form id="the-form">
+
+        <div class="row">
+          <div class="cell-left">
+            Type
+          </div>
+          <div class="cell-right">
+            <var id="$providerName"></var>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="cell-left">
+            <label>Name</label>
+          </div>
+          <div class="cell-right">
+            <var id="$bookmarkName"></var>
+          </div>
+        </div>
+
+        <div id="current-provider-settings"></div>
+
+        <div class="padded-v right">
+
+          <button id="delete-bookmark-button">
+            Delete
+          </button>
+
+          <button type="submit">
+            Save
+          </button>
+        </div>
+
+      </form>
+    </main>
+
+  </body>
+</html>

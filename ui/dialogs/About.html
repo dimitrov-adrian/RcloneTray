@@ -1,0 +1,45 @@
+<!doctype html>
+<html class="transparent">
+
+  <head>
+    <script defer>
+      loadStyles()
+    </script>
+  </head>
+
+  <body>
+
+    <main class="center">
+
+      <p>
+        <img src="../icons/source-icon-color.png" width="78" height="78" />
+      </p>
+
+      <div>
+        <h1>
+          <script> document.write( $main.app.getName() ) </script>
+        </h1>
+        <div class="label-help">
+          <script>document.write('v' + $main.app.getVersion() )</script>
+        </div>
+        <div>
+          by Adrian Dimitrov
+        </div>
+      </div>
+
+      <p>
+        <a href="https://rclone.org/" target="_blank">
+          Rclone (<script>document.write( $main.rclone.getVersion() )</script>)</a>
+        <br /> by Nick Craig-Wood
+      </p>
+
+      <p class="center">
+        <button onclick="window.open('https://github.com/dimitrov-adrian/RcloneTray/issues')">
+          Report Issue
+        </button>
+      </p>
+
+    </main>
+
+  </body>
+</html>
