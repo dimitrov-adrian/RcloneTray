@@ -1,0 +1,221 @@
+* {
+  box-sizing: border-box
+}
+
+html, body, h1, h2, h3, h4, h5, h6, p {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  -webkit-user-drag: none;
+  -webkit-app-region: drag;
+  user-select: none;
+  background: rgba(0,0,0,0);
+}
+:dir(rtl) html {
+  direction: ltr;
+}
+html:not(.transparent) {
+  background: Window;
+}
+html, body, input, select, textarea {
+  font: caption;
+  font: small-caption;
+}
+body {
+  background: inherit;
+  color: WindowText;
+}
+
+img {
+  user-select: none;
+  pointer-events: none;
+}
+
+input,
+textarea {
+  user-select: unset
+}
+
+fieldset,
+section {
+  background: #00000010;
+  padding: 1rem;
+  border: 1px inset #00000010;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font: caption;
+}
+h2 {
+  font-size: .9em;
+}
+h3 {
+  font-size: .8em;
+}
+h4 {
+  font-size: .7em;
+}
+h5 {
+  font-size: .6em;
+  text-transform: uppercase;
+}
+h6 {
+  font-size: .4em;
+  text-transform: uppercase;
+}
+
+input[type=checkbox],
+input[type=radio] {
+  font-size: 1.6em;
+  margin: 0;
+}
+input:not([type="checkbox"]):not([type="radio"]) {
+  width: 100%;
+}
+textarea {
+  width: 100%;
+  resize: none;
+  height: 8rem;
+  border: 1px solid #00000035;
+}
+main {
+  padding: 1rem;
+}
+p {
+  margin-top: 1rem;
+  margin-bottom: 1rem;
+}
+p:last-child {
+  margin-bottom: 0;
+}
+
+/* Summary */
+summary {
+  outline: none;
+  padding: .4rem 0;
+  border-bottom: 1px solid #0000001a;
+  cursor: pointer;
+}
+details:first-child summary {
+  border-top: 1px solid #0000001a;
+}
+details summary::-webkit-details-marker {
+  opacity: .6;
+}
+details[open] summary {
+  border-bottom: none;
+}
+
+[readonly],
+[disabled],
+.disabled {
+  opacity: .6;
+  background: #00000010;
+}
+
+/* Highlight colors (background + text) */
+.highlight {
+  background: Highlight;
+  color: HighlightText;
+}
+
+/* Info colors (background + text) */
+.info {
+  background: InfoBackground;
+  color: InfoText;
+}
+
+/* Alignment: Center */
+.center {
+  text-align: center;
+}
+
+/* Alignment: Left */
+.left {
+  text-align: start;
+}
+
+/* Alignment: Right*/
+.right {
+  text-align: end;
+}
+
+/* Label: Required */
+.label-required {
+  font-size: .8rem;
+  text-transform: lowercase;
+  opacity: .7;
+}
+
+/* Label: Required */
+.label-help {
+  margin-top: .2em;
+  margin-bottom: .6em;
+  font-style: italic;
+  user-select: text;
+  opacity: .7;
+}
+
+/* Label: tag */
+.label-tag {
+  font-size: .8rem;
+  background: WindowText;
+  color: Window;
+  border-radius: 3px;
+  padding: 0 .2rem;
+  line-height: 1.2rem;
+  display: inline-block;
+}
+
+/* Padded element: Vertical */
+.padded-v {
+  padding-top: .4rem;
+  padding-bottom: .4rem;
+}
+
+/* Padded element: Horizontal */
+.padded-h {
+  padding-left: .4rem;
+  padding-right: .4rem;
+}
+
+/* Padded element: Vertical */
+.margin-v {
+  margin-top: .4rem;
+  margin-bottom: .4rem;
+}
+
+/* Padded element: Horizontal */
+.margin-h {
+  margin-left: .4rem;
+  margin-right: .4rem;
+}
+
+/* Row */
+.row {
+  display: flex;
+  margin-bottom: .4em;
+}
+
+/* Cells: Left (start) */
+.cell-left {
+  width: 30%;
+  text-align: end;
+  vertical-align: top;
+  padding: .6em .4em 0 .4em;
+  margin-right: 2%;
+  /* overflow: hidden; */
+  overflow-wrap: break-word;
+}
+
+/* Cells: Right (end) */
+.cell-right {
+  width: 68%;
+  text-align: start;
+  vertical-align: top;
+  padding: .4rem 0;
+  /* overflow: hidden; */
+  overflow-wrap: break-word;
+}

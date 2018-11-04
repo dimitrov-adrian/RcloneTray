@@ -1,0 +1,90 @@
+{
+    "name": "rclonetray",
+    "productName": "RcloneTray",
+    "title": "RcloneTray",
+    "version": "0.0.0",
+    "description": "Simple Rclone bookmark manager GUI.",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/dimitrov-adrian/RcloneTray"
+    },
+    "keywords": [
+        "Tray",
+        "Mount",
+        "Rclone",
+        "Connect",
+        "Remote Filesystem",
+        "Network",
+        "Utilities"
+    ],
+    "author": "Adrian Dimitrov <dimitrov.adrian@gmail.com>",
+    "bugs": {
+        "url": "https://github.com/dimitrov-adrian/RcloneTray/issues"
+    },
+    "license": "MIT",
+    "main": "src/main.js",
+    "scripts": {
+        "postinstall": "electron-builder install-app-deps",
+        "start": "node_modules/.bin/electron .",
+        "pack": "electron-builder --dir",
+        "dist": "electron-builder"
+    },
+    "eslintConfig": {
+        "env": {
+            "es6": true,
+            "browser": false,
+            "node": true
+        }
+    },
+    "build": {
+        "appId": "com.github.dimitrov-adrian.rclonetray",
+        "files": [
+            "src"
+        ],
+        "asar": true,
+        "asarUnpack": [
+            "src/ui/icons/*"
+        ],
+        "extraResources": [
+            "bin/${platform}/*"
+        ],
+        "compression": "store",
+        "mac": {
+            "category": "public.app-category.utilities",
+            "type": "distribution",
+            "publish": [
+                "github"
+            ]
+        },
+        "linux": {
+            "target": [
+                "AppImage",
+                "deb",
+                "rpm"
+            ],
+            "publish": [
+                "github"
+            ]
+        },
+        "win": {
+            "target": "nsis",
+            "publish": [
+                "github"
+            ]
+        },
+        "nsis": {
+            "oneClick": false,
+            "allowToChangeInstallationDirectory": true
+        }
+    },
+    "dependencies": {
+        "chokidar": "^2.0.4",
+        "form-serialize": "0.7.2"
+    },
+    "devDependencies": {
+        "devtron": "^1.4.0",
+        "electron": "4.0.0-beta.5",
+        "electron-builder": "latest",
+        "standard": "*"
+    }
+}
