@@ -40,9 +40,6 @@ const appMenu = require('./app-menu')
 // Starts remote debugging on port, BUT IF the app is not packaged (devel mode)
 if (process.argv.indexOf('--debug') !== -1 || !app.isPackaged) {
   app.commandLine.appendSwitch('remote-debugging-port', '9229')
-  try {
-    require('electron-reloader')(module)
-  } catch (err) {}
 }
 
 // This method will be called when Electron has finished

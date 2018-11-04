@@ -33,7 +33,7 @@ const readFile = function () {
       cache = JSON.parse(fs.readFileSync(settingsFile))
     } catch (err) {
       cache = {}
-      console.error(err)
+      console.log(err)
     }
   } else {
     cache = {}

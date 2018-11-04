@@ -3,13 +3,6 @@
 const { shell, app, BrowserWindow } = require('electron')
 const path = require('path')
 
-// Enable context menus.
-require('electron-context-menu')({
-  showCopyImageAddress: false,
-  showSaveImageAs: false,
-  showInspectElement: false
-})
-
 /**
  * Dialog names that should be opened with single instances
  * @type {{}}
@@ -61,6 +54,34 @@ const createNewDialog = function (dialogName, options, props) {
 
   // Instantinate the window.
   let theDialog = new BrowserWindow(options)
+
+  // theDialog.webContents.on('dom-ready', function () {
+  //   // os vars:
+  //   const vars = {}
+  //   if (process.platform === 'darwin') {
+  //     console.log(require('electron').systemPreferences.getUserDefault('AppleHighlightColor', 'string'))
+
+  //     vars.highlight = 'rgb(' + require('electron').systemPreferences.getUserDefault('AppleHighlightColor', 'string').split(' ', 3).map(function (item) {
+  //       return Math.round(item * 255)
+  //     }).join(',') + ')'
+
+  //     vars.highlightDark = 'rgb(' + require('electron').systemPreferences.getUserDefault('AppleHighlightColor', 'string').split(' ', 3).map(function (item) {
+  //       return Math.round(item * 255 * 0.8)
+  //     }).join(',') + ')'
+
+  //     console.log(vars.highlight)
+  //     console.log(require('electron').systemPreferences.getUserDefault('AppleAquaColorVariant', 'string'))
+  //   } else if (process.platform === 'win32') {
+  //     vars.highlight = require('electron').systemPreferences.getColor('highlight')
+  //     vars.highlightDark = require('electron').systemPreferences.getColor('highlight')
+  //   }
+  //   this.webContents.insertCSS(`
+  //     html {
+  //       --highlight: ${vars.highlight};
+  //       --highlightDark: ${vars.highlightDark};
+  //     }
+  //   `)
+  // })
 
   // Disable the menu on windows and linux.
   if (process.platform !== 'darwin') {

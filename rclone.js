@@ -2,7 +2,6 @@
 
 const { app, Notification, shell, dialog } = require('electron')
 const { exec, execSync, spawn } = require('child_process')
-const ini = require('ini')
 const chokidar = require('chokidar')
 const fs = require('fs')
 const path = require('path')
@@ -389,8 +388,6 @@ const updateProvidersCache = function () {
  * @param {*} values
  */
 const updateBookmarkFields = function (bookmarkName, providerObject, values) {
-  let valuesPlain = []
-  let valuesPassword = []
   const reserved = [
     {
       'Name': '_local_path_map',
@@ -399,14 +396,13 @@ const updateBookmarkFields = function (bookmarkName, providerObject, values) {
   ]
 
   reserved.concat(providerObject.Options).forEach(function (optionDefinition) {
+    console.log(['config', 'password', bookmarkName, optionDefinition.Name, values[optionDefinition.Name]])
     if (optionDefinition.$type === 'password') {
       if (optionDefinition.Name in values) {
-        valuesPassword.push({
-          name: optionDefinition.Name,
-          value: values[optionDefinition.Name] || ''
-        })
+        doSyncCommand(['config', 'password', bookmarkName, optionDefinition.Name, values[optionDefinition.Name]])
       }
     } else {
+      // Sanitize booleans.
       if (optionDefinition.$type === 'bool') {
         if (optionDefinition.Name in values && [ 'true', 'yes', true, 1 ].indexOf(values[optionDefinition.Name]) > -1) {
           values[optionDefinition.Name] = 'true'
@@ -414,29 +410,11 @@ const updateBookmarkFields = function (bookmarkName, providerObject, values) {
           values[optionDefinition.Name] = 'false'
         }
       }
-      valuesPlain.push({
-        name: optionDefinition.Name,
-        value: values[optionDefinition.Name] || ''
-      })
+
+      doSyncCommand(['config', 'update', bookmarkName, optionDefinition.Name, values[optionDefinition.Name]])
     }
   })
-
-  if (valuesPlain.length) {
-    let config = ini.parse(fs.readFileSync(getConfigFile(), 'utf-8'))
-    if (!config.hasOwnProperty(bookmarkName)) {
-      config[bookmarkName] = {}
-    }
-    valuesPlain.forEach(function (item) {
-      config[bookmarkName][item.name] = item.value
-    })
-    fs.writeFileSync(getConfigFile(), ini.encode(config), 'utf-8')
-  }
-
-  if (valuesPassword.length) {
-    valuesPlain.forEach(function (item) {
-      doSyncCommand(['config', 'password', bookmarkName, item.name, item.value])
-    })
-  }
+  console.log('Rclone', 'Updated bookmark ' + bookmarkName)
 }
 
 /**
@@ -492,26 +470,18 @@ let _sync = function (method, bookmark) {
       }
     }
 
-    let choice = dialog.showMessageBox(null, {
-      buttons: ['Cancel', 'Confirm'],
-      title: 'RcloneTray',
-      message: `You are going to ${methodLabel}, this procedure will ovewrite files in destination directory.`
-    })
+    let proc = new BookmarkProcessManager(method === 'download' ? 'upload' : 'download', bookmark.$name)
 
-    if (choice === 1) {
-      let proc = new BookmarkProcessManager(method === 'download' ? 'upload' : 'download', bookmark.$name)
-
-      if (proc.exists()) {
-        throw Error(`Bookmark ${bookmark.$name} is in ${methodLabel} process.`)
-      }
-
-      if ((new BookmarkProcessManager('upload', bookmark.$name)).exists()) {
-        throw Error(`Cannot perform downloading and uploading in same time.`)
-      }
-
-      proc.create(spawn(cmd[0], cmd[1]), bookmark)
-      require('./tray').refresh()
+    if (proc.exists()) {
+      throw Error(`Bookmark ${bookmark.$name} is in ${methodLabel} process.`)
     }
+
+    if ((new BookmarkProcessManager('upload', bookmark.$name)).exists()) {
+      throw Error(`Cannot perform downloading and uploading in same time.`)
+    }
+
+    proc.create(spawn(cmd[0], cmd[1]), bookmark)
+    require('./tray').refresh()
   } else {
     console.error('SYNC', 'Local Path Map is not set for this bookmark', bookmark)
     throw Error('Local Path Map is not set for this bookmark')
@@ -1003,7 +973,7 @@ chokidar.watch(getConfigFile(), {
   useFsEvents: true,
   persistent: true,
   alwaysStat: true,
-  atomic: 500
+  atomic: true
 })
   .on('change', resetRcloneCache)
 

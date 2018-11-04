@@ -1,5 +1,4 @@
 * {
-  /*  all: unset !important; */
   box-sizing: border-box
 }
 
@@ -219,44 +218,4 @@ details[open] summary {
   padding: .4rem 0;
   /* overflow: hidden; */
   overflow-wrap: break-word;
-}
-
-/* some styling */
-fieldset,
-section {
-    border-radius: 5px;
-}
-select {
-    -webkit-appearance: menulist;
-}
-button,
-input[type="button"] {
-    -webkit-appearance: button;
-    background: ButtonFace;
-    color: ButtonText;
-    border: 1px solid ThreeDFace;
-    border-radius: 5px;
-    padding: .4em .6em;
-    line-height: 1.4em;
-    outline: none;
-}
-button:focus,
-input[type="button"]:focus,
-button:active
-input[type="button"]:active {
-    border-color: ActiveBorder;
-    background: ActiveBorder !important;
-    color: InactiveBorder !important;
-}
-textarea,
-input:not([type="checkbox"]):not([type="radio"]):not([type="button"]) {
-    -webkit-appearance: textfield;
-    border-radius: 3px;
-    padding: .4em;
-    border: 1px solid ThreeDFace;
-    outline: none;
-}
-textarea:focus,
-input:not([type="checkbox"]):not([type="radio"]):not([type="button"]):focus {
-    border-color: ActiveBorder;
 }

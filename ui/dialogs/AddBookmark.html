@@ -25,7 +25,7 @@
         for (let providerName in providers) {
           let option = document.createElement('option')
           option.value = providers[providerName].Name
-          option.innerText = providerName + ' ' + providers[providerName].Description
+          option.innerText = providers[providerName].Description
           option.providerObject = providers[providerName]
           optionsContainer.appendChild(option)
         }

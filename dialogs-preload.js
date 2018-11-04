@@ -4,7 +4,6 @@ window.module = {}
 
 const remote = require('electron').remote
 const remoteElectron = remote.require('electron')
-const systemPreferences = remoteElectron.systemPreferences
 const appPath = remote.app.getAppPath()
 
 window.$main = {
