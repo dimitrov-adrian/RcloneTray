@@ -5,6 +5,7 @@ window.module = {}
 const remote = require('electron').remote
 const remoteElectron = remote.require('electron')
 const appPath = remote.app.getAppPath()
+const fs = remote.require('fs')
 
 window.$main = {
   app: remote.app,
@@ -90,6 +91,9 @@ window.resizeToContent = function () {
     let h = document.body.offsetHeight + (window.outerHeight - window.innerHeight)
     if (h > window.screen.height * 0.8) {
       h = Math.ceil(window.screen.height * 0.8)
+      document.body.style.overflow = 'auto'
+    } else {
+      document.body.style.overflow = 'hidden'
     }
     remote.getCurrentWindow()
       .setSize(window.outerWidth, h, false)
@@ -126,18 +130,14 @@ window.selectFile = function (defaultFile, callback) {
 }
 
 /**
- * Styles loader
- */
-window.loadStyles = function () {
-  document.write('<link rel="stylesheet" href="' + appPath + '/src/ui/styles/ui.css" />')
-  document.write('<link rel="stylesheet" href="' + appPath + '/src/ui/styles/ui-' + process.platform + '.css" />')
-}
-
-/**
  * Scripts loader
  */
-window.loadScripts = function (scripts) {
-  scripts.forEach(function (item) {
-    document.write('<script src="' + appPath + '/' + item + '"></script>')
-  })
+window.$main.require = function (script) {
+  if (script === 'ui') {
+    document.write('<link rel="stylesheet" href="' + appPath + '/src/ui/styles/ui.css" />')
+    document.write('<link rel="stylesheet" href="' + appPath + '/src/ui/styles/ui-' + process.platform + '.css" />')
+  } else {
+    // remote.getCurrentWebContents().executeJavaScript(fs.readFileSync(appPath + '/' + item, 'utf-8'))
+    document.write('<script src="' + appPath + '/' + script + '"></script>')
+  }
 }

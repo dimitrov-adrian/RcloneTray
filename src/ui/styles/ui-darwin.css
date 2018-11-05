@@ -1,13 +1,12 @@
 /* darwin styles */
+
 fieldset,
 section {
     border-radius: 5px;
 }
+
+/* Buttons */
 button,
 input[type="button"] {
     -webkit-appearance: button
-}
-textarea,
-input:not([type="checkbox"]):not([type="radio"]):not([type="button"]) {
-    -webkit-appearance: button;
 }

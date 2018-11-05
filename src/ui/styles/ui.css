@@ -1,17 +1,14 @@
 * {
-  box-sizing: border-box
-}
-
-html, body, h1, h2, h3, h4, h5, h6, p {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
 }
-
 html {
   -webkit-user-drag: none;
   -webkit-app-region: drag;
   user-select: none;
   background: rgba(0,0,0,0);
+  user-select: none;
 }
 :dir(rtl) html {
   direction: ltr;
@@ -26,60 +23,13 @@ html, body, input, select, textarea {
 body {
   background: inherit;
   color: WindowText;
+  overflow: hidden;
 }
 
 img {
-  user-select: none;
   pointer-events: none;
 }
 
-input,
-textarea {
-  user-select: unset
-}
-
-fieldset,
-section {
-  background: #00000010;
-  padding: 1rem;
-  border: 1px inset #00000010;
-}
-
-h1, h2, h3, h4, h5, h6 {
-  font: caption;
-}
-h2 {
-  font-size: .9em;
-}
-h3 {
-  font-size: .8em;
-}
-h4 {
-  font-size: .7em;
-}
-h5 {
-  font-size: .6em;
-  text-transform: uppercase;
-}
-h6 {
-  font-size: .4em;
-  text-transform: uppercase;
-}
-
-input[type=checkbox],
-input[type=radio] {
-  font-size: 1.6em;
-  margin: 0;
-}
-input:not([type="checkbox"]):not([type="radio"]) {
-  width: 100%;
-}
-textarea {
-  width: 100%;
-  resize: none;
-  height: 8rem;
-  border: 1px solid #00000035;
-}
 main {
   padding: 1rem;
 }
@@ -155,7 +105,6 @@ details[open] summary {
   margin-bottom: .6em;
   font-style: italic;
   user-select: text;
-  opacity: .7;
 }
 
 /* Label: tag */
@@ -196,7 +145,7 @@ details[open] summary {
 /* Row */
 .row {
   display: flex;
-  margin-bottom: .4em;
+  margin-bottom: 1rem;
 }
 
 /* Cells: Left (start) */
@@ -204,18 +153,57 @@ details[open] summary {
   width: 30%;
   text-align: end;
   vertical-align: top;
-  padding: .6em .4em 0 .4em;
   margin-right: 2%;
-  /* overflow: hidden; */
+  padding-top: 5px;
   overflow-wrap: break-word;
 }
 
 /* Cells: Right (end) */
 .cell-right {
-  width: 68%;
+  width: 70%;
   text-align: start;
   vertical-align: top;
-  padding: .4rem 0;
-  /* overflow: hidden; */
   overflow-wrap: break-word;
+}
+
+/* Form elements */
+var {
+  padding: 5px 6px;
+  display: inline-block;
+}
+input,
+textarea {
+  user-select: unset
+}
+fieldset,
+section {
+  background: #00000010;
+  padding: 1rem;
+  border: 1px inset #00000010;
+}
+
+input[type=checkbox],
+input[type=radio] {
+  font-size: 1.6em;
+  margin: 0;
+  margin: 5px 0;
+}
+input:not([type="checkbox"]):not([type="radio"]) {
+  width: 100%;
+}
+textarea {
+  width: 100%;
+  resize: none;
+  height: 8rem;
+  border: 1px solid #00000035;
+}
+button,
+input:not([type="checkbox"]):not([type="radio"]),
+textarea {
+    padding: 3px 6px;
+}
+input:not([type="checkbox"]):not([type="radio"]):focus,
+textarea:focus {
+  outline: -webkit-focus-ring-color auto 3px;
+  outline-offset: -2px;
 }

@@ -2,12 +2,10 @@
 <html>
   <head>
     <script defer>
-      loadStyles()
-      loadScripts([
-        'node_modules/form-serialize/index.js',
-        'src/ui/scripts/fields.js',
-        'src/ui/scripts/bookmark-settings.js',
-      ])
+      $main.require('ui')
+      $main.require('node_modules/form-serialize/index.js')
+      $main.require('src/ui/scripts/fields.js');
+      $main.require('src/ui/scripts/bookmark-settings.js');
 
       document.addEventListener('DOMContentLoaded', function() {
         const theForm = document.getElementById('the-form')
@@ -43,6 +41,7 @@
                 .catch(window.errorBox)
             }
           })
+
       })
     </script>
 

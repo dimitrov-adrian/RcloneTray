@@ -1,7 +1,7 @@
 'use strict'
 
 // Modules to control application life and create native browser window
-const { systemPreferences, Tray, Menu, shell } = require('electron')
+const { Tray, Menu, shell } = require('electron')
 const path = require('path')
 const settings = require('./settings')
 const rclone = require('./rclone')
@@ -13,10 +13,16 @@ let trayIndicator = null
 // Store timer to avoid multiple neartime menu refreshes.
 let refreshTrayMenuAtomicTimer = null
 
+const fileExplorerLabel = process.platform === 'darwin'
+  ? 'Finder'
+  : process.platform === 'win32'
+    ? 'Explorer'
+    : 'File Browser'
+
 /**
  * Do action with bookmark
- * @param item
- * @param o
+ * @param action
+ * @param ...args
  */
 const bookmarkActionRouter = function (action, ...args) {
   if (action === 'mount') {
@@ -55,8 +61,7 @@ const bookmarkActionRouter = function (action, ...args) {
 /**
  * Bookmark submenu
  *
- * @param bookmarkName
- * @param bookmarkObject
+ * @param {{bookmark}}
  * @returns {*}
  */
 const generateBookmarkActionsSubmenu = function (bookmark) {
@@ -102,7 +107,7 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
         click: bookmarkActionRouter.bind(bookmark, 'unmount')
       },
       {
-        label: 'Show In Finder',
+        label: `Open In ${fileExplorerLabel}`,
         enabled: !!isMounted,
         click: bookmarkActionRouter.bind(bookmark, 'open-mounted')
       }
@@ -316,12 +321,6 @@ const refreshTrayMenu = function () {
     })
 
   trayIndicator.setContextMenu(Menu.buildFromTemplate(menuItems))
-
-  if (isConnected) {
-    trayIndicator.setTitle(' connected')
-  } else {
-    trayIndicator.setTitle('')
-  }
 }
 
 // Exports.
@@ -331,7 +330,7 @@ module.exports = {
     if (refreshTrayMenuAtomicTimer) {
       clearTimeout(refreshTrayMenuAtomicTimer)
     }
-    refreshTrayMenuAtomicTimer = setTimeout(refreshTrayMenu, 100)
+    refreshTrayMenuAtomicTimer = setTimeout(refreshTrayMenu, 250)
   },
 
   /**
@@ -351,7 +350,7 @@ module.exports = {
       rclone.onUpdate(this.refresh)
       rclone.init()
     } else {
-      throw Error('Cannot start 2 tray indicators')
+      throw Error('Cannot start more than one tray indicators.')
     }
   }
 

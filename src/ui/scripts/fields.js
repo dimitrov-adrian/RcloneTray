@@ -122,7 +122,7 @@ window.createFieldRow = function (fieldDefinition, value, fieldName) {
   }
 
   // Set examples
-  if (fieldDefinition.Examples) {
+  if (fieldDefinition.Examples && fieldDefinition.$type !== 'bool') {
     // let inputFieldOptions = document.createElement('datalist')
     // inputFieldOptions.id = inputField.id + '_datalist'
     // inputField.setAttribute('list', inputFieldOptions.id)

@@ -79,11 +79,12 @@
     },
     "dependencies": {
         "chokidar": "^2.0.4",
-        "form-serialize": "0.7.2"
+        "electron-context-menu": "^0.10.1",
+        "form-serialize": "^0.7.2"
     },
     "devDependencies": {
         "devtron": "^1.4.0",
-        "electron": "4.0.0-beta.5",
+        "electron": "4.0.0-beta.6",
         "electron-builder": "latest",
         "standard": "*"
     }

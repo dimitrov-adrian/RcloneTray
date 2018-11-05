@@ -4,58 +4,55 @@
   <head>
     <title>RcloneTray Preferences</title>
     <script defer>
-      loadStyles()
-      loadScripts([
-        'node_modules/form-serialize/index.js',
-        'src/ui/scripts/fields.js',
-      ])
+      $main.require('ui')
+      $main.require('node_modules/form-serialize/index.js')
+      $main.require('src/ui/scripts/fields.js');
+
       document.addEventListener('DOMContentLoaded', function() {
 
         let settingDefinition = [
           {
-            $Label: 'Show bookmark type',
+            $Label: 'Show bookmarks type',
             $type: 'bool',
-            Name: "tray_menu_show_type",
-            "Help": "",
-            "Provider": '',
-            "Default": true,
-            "Value": '',
-            "ShortOpt": '',
-            "Hide": 0,
-            "Required": false,
-            "IsPassword": false,
-            "NoPrefix": false,
-            "Advanced": false
+            Name: 'tray_menu_show_type',
+            Help: '',
+            Provider: '',
+            Default: true,
+            Value: '',
+            ShortOpt: '',
+            Hide: 0,
+            Required: false,
+            IsPassword: false,
+            NoPrefix: false,
+            Advanced: false
           },
           {
             Name: "rclone_config",
             $title: 'Config',
             $type: 'file',
-            "Help": "",
-            "Provider": '',
-            "Default": $main.rclone.getConfigFile(),
-            "Value": '',
-            "ShortOpt": '',
-            "Hide": 0,
-            "Required": false,
-            "IsPassword": false,
-            "NoPrefix": false,
-            "Advanced": false
+            Help: '',
+            Provider: '',
+            Default: $main.rclone.getConfigFile(),
+            Value: '',
+            ShortOpt: '',
+            Hide: 0,
+            Required: false,
+            IsPassword: false,
+            NoPrefix: false,
+            Advanced: false
           },
           {
             Name: "custom_args",
             $title: 'Custom Rclone setting args.',
             $type: 'text',
-            "Help": "Auto open system upon start.",
-            "Provider": '',
-            "Default": '',
-            "Value": '',
-            "ShortOpt": '',
-            "Hide": 0,
-            "Required": false,
-            "IsPassword": false,
-            "NoPrefix": false,
-            "Advanced": false
+            Help: "Space or new-line separated rclone command arguments to be appended to all commands.\nCheck more at https://rclone.org/docs/",
+            Value: '',
+            ShortOpt: '',
+            Hide: 0,
+            Required: false,
+            IsPassword: false,
+            NoPrefix: false,
+            Advanced: false
           },
         ]
 
@@ -76,6 +73,8 @@
           $main.tray.refresh()
           window.close()
         })
+
+        window.resizeToContent()
       });
     </script>
   </head>
