@@ -8,54 +8,53 @@
       $main.require('node_modules/form-serialize/index.js')
       $main.require('src/ui/scripts/fields.js');
 
+      const settingDefinition = [
+        {
+          $Label: 'Show bookmarks type',
+          $type: 'bool',
+          Name: 'tray_menu_show_type',
+          Help: '',
+          Provider: '',
+          Default: true,
+          Value: '',
+          ShortOpt: '',
+          Hide: 0,
+          Required: false,
+          IsPassword: false,
+          NoPrefix: false,
+          Advanced: false
+        },
+        {
+          Name: "rclone_config",
+          $title: 'Config',
+          $type: 'file',
+          Help: 'Changing this option require restart.',
+          Provider: '',
+          Default: $main.rclone.getConfigFile(),
+          Value: '',
+          ShortOpt: '',
+          Hide: 0,
+          Required: false,
+          IsPassword: false,
+          NoPrefix: false,
+          Advanced: false
+        },
+        {
+          Name: "custom_args",
+          $title: 'Custom Rclone setting args.',
+          $type: 'text',
+          Help: "Space or new-line separated rclone command arguments to be appended to all commands.\nCheck more at https://rclone.org/docs/",
+          Value: '',
+          ShortOpt: '',
+          Hide: 0,
+          Required: false,
+          IsPassword: false,
+          NoPrefix: false,
+          Advanced: false
+        }
+      ]
+
       document.addEventListener('DOMContentLoaded', function() {
-
-        let settingDefinition = [
-          {
-            $Label: 'Show bookmarks type',
-            $type: 'bool',
-            Name: 'tray_menu_show_type',
-            Help: '',
-            Provider: '',
-            Default: true,
-            Value: '',
-            ShortOpt: '',
-            Hide: 0,
-            Required: false,
-            IsPassword: false,
-            NoPrefix: false,
-            Advanced: false
-          },
-          {
-            Name: "rclone_config",
-            $title: 'Config',
-            $type: 'file',
-            Help: '',
-            Provider: '',
-            Default: $main.rclone.getConfigFile(),
-            Value: '',
-            ShortOpt: '',
-            Hide: 0,
-            Required: false,
-            IsPassword: false,
-            NoPrefix: false,
-            Advanced: false
-          },
-          {
-            Name: "custom_args",
-            $title: 'Custom Rclone setting args.',
-            $type: 'text',
-            Help: "Space or new-line separated rclone command arguments to be appended to all commands.\nCheck more at https://rclone.org/docs/",
-            Value: '',
-            ShortOpt: '',
-            Hide: 0,
-            Required: false,
-            IsPassword: false,
-            NoPrefix: false,
-            Advanced: false
-          },
-        ]
-
         let container = document.createDocumentFragment()
         settingDefinition.forEach(function (field) {
           container.appendChild(createFieldRow(field, $main.settings.get(field.Name)))

@@ -5,9 +5,9 @@ window.module = {}
 const remote = require('electron').remote
 const remoteElectron = remote.require('electron')
 const appPath = remote.app.getAppPath()
-const fs = remote.require('fs')
 
 window.$main = {
+  platform: process.platform,
   app: remote.app,
   tray: remote.require('./tray'),
   rclone: remote.require('./rclone'),

@@ -33,19 +33,20 @@ if (!app.requestSingleInstanceLock()) {
   app.exit()
 }
 
-// Load app modules
-const tray = require('./tray')
-const appMenu = require('./app-menu')
-
 // Starts remote debugging on port, BUT IF the app is not packaged (devel mode)
-if (process.argv.indexOf('--debug') !== -1 || !app.isPackaged) {
+if (process.argv.indexOf('--debug') !== -1) {
   app.commandLine.appendSwitch('remote-debugging-port', '9229')
+  require('electron-reload')(__dirname)
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', function () {
+  // Load app modules
+  const tray = require('./tray')
+  const appMenu = require('./app-menu')
+
   // Initialize the tray indicator.
   tray.init()
 

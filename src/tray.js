@@ -276,13 +276,13 @@ const refreshTrayMenu = function () {
   console.log('Refresh tray indicator menu')
   let isConnected = false
 
-  let menuItems = [
-    {
-      label: 'New Bookmark',
-      click: dialogs.addBookmark,
-      accelerator: 'CommandOrControl+N'
-    }
-  ]
+  let menuItems = []
+
+  menuItems.push({
+    label: 'New Bookmark',
+    click: dialogs.addBookmark,
+    accelerator: 'CommandOrControl+N'
+  })
 
   let bookmarks = rclone.getBookmarks()
 
@@ -321,6 +321,9 @@ const refreshTrayMenu = function () {
     })
 
   trayIndicator.setContextMenu(Menu.buildFromTemplate(menuItems))
+  if (isConnected) {
+    // @TODO Add indicator symbol to the icon
+  }
 }
 
 // Exports.

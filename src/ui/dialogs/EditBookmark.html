@@ -17,7 +17,7 @@
         document.getElementById('$bookmarkName').innerText = $main.getProps().$name
         document.title = `Edit ${$main.getProps().$name}`
         window.location.hash = 'connection'
-        renderBookmarkSettings(currentProviderSettings, provider, $main.getProps())
+        renderBookmarkSettings(currentProviderSettings, provider, $main.getProps(), $main.getProps().$externals)
 
         theForm.addEventListener('submit', function(event) {
           event.preventDefault();
@@ -27,7 +27,7 @@
             empty: true
           })
 
-          $main.rclone.updateBookmark($main.getProps().$name, data.options)
+          $main.rclone.updateBookmark($main.getProps().$name, data.options, data.custom_args)
             .then(window.close)
             .catch(errorBox)
         })

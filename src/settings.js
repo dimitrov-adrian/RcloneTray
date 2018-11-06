@@ -56,6 +56,11 @@ module.exports = {
     updateFile()
   },
 
+  delete: function (item) {
+    delete cache[item]
+    updateFile()
+  },
+
   setFromObject: function (settingsObject) {
     Object.keys(settingsObject).forEach(function (key) {
       cache[key] = settingsObject[key]

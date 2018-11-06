@@ -45,7 +45,6 @@ const createNewDialog = function (dialogName, options, props) {
     fullscreenable: false,
     useContentSize: true,
     show: false,
-    darkTheme: true,
     backgroundColor: process.platform === 'win32' ? '#ffffff' : '#ececec',
     zoomToPageWidth: true,
     webPreferences: {
@@ -53,7 +52,6 @@ const createNewDialog = function (dialogName, options, props) {
       preload: path.join(__dirname, 'dialogs-preload.js'),
       devTools: false,
       defaultEncoding: 'UTF-8',
-      nativeWindowOpen: true,
       nodeIntegration: false,
       sandbox: true
     }

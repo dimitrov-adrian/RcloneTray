@@ -6,7 +6,7 @@
  * @param {*} providerObject
  * @param {*} values
  */
-window.renderBookmarkSettings = function (placeholder, providerObject, values) {
+window.renderBookmarkSettings = function (placeholder, providerObject, values, external) {
   // Seems no provider object is passed, so clear the placeholder
   if (!providerObject) {
     let range = document.createRange()
@@ -89,7 +89,7 @@ window.renderBookmarkSettings = function (placeholder, providerObject, values) {
         Custom arguments separated by space or new-line. Check the list
         on https://rclone.org/${providerObject.Name}/#standard-options #rclone.org documentation
       `
-  }, values['custom_args'] || null, ''))
+  }, external['custom_args'] || null, 'custom_args'))
 
   // Override
   let range = document.createRange()

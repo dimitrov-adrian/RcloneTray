@@ -70,7 +70,7 @@
             empty: true
           })
 
-          $main.rclone.addBookmark(data.type, data.name, data.options)
+          $main.rclone.addBookmark(data.type, data.name, data.options, data.custom_args)
             .then(function() {
               window.close()
             })

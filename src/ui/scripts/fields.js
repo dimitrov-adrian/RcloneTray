@@ -37,19 +37,6 @@ window.fieldRowProviderDepenencies = {
 * @param {*} value
 * @param {*} fieldName
 */
-// $Label: '',
-// $type: '',
-// "Name": "client_id",
-// "Help": "Yandex Client Id\nLeave blank normally.",
-// "Provider": "",
-// "Default": "",
-// "Value": null,
-// "ShortOpt": "",
-// "Hide": 0,
-// "Required": false,
-// "IsPassword": false,
-// "NoPrefix": false,
-// "Advanced": false
 window.createFieldRow = function (fieldDefinition, value, fieldName) {
   let row = document.createElement('div')
   let th = document.createElement('div')
@@ -58,6 +45,8 @@ window.createFieldRow = function (fieldDefinition, value, fieldName) {
   let inputField = document.createElement('input')
   if ('$type' in fieldDefinition && fieldDefinition.$type === 'text') {
     inputField = document.createElement('textarea')
+  } else if ('$type' in fieldDefinition && fieldDefinition.$type === 'select') {
+    inputField = document.createElement('select')
   }
 
   let fieldHelpText = document.createElement('div')
@@ -81,6 +70,15 @@ window.createFieldRow = function (fieldDefinition, value, fieldName) {
   inputField.id = 'field_' + fieldDefinition.Name
   inputField.placeholder = fieldDefinition.Default || ''
   inputField.value = ''
+
+  // Assign values.
+  if (fieldDefinition.$type === 'bool') {
+    if ([true, 1, 'true'].indexOf(value) > -1) {
+      inputField.checked = 'checked'
+    }
+  } else if (fieldDefinition.$type !== 'password') {
+    inputField.value = (value || '').toString()
+  }
 
   td.appendChild(inputField)
 
@@ -118,60 +116,66 @@ window.createFieldRow = function (fieldDefinition, value, fieldName) {
         })
       })
       inputField.parentNode.insertBefore(browseButton, inputField.nextSibling)
+    } else if (fieldDefinition.$type === 'select') {
+      fieldDefinition.Examples.forEach(function (item) {
+        if (item.Value) {
+          let selectOption = document.createElement('option')
+          selectOption.value = item.Value
+          selectOption.innerText = item.Value
+          if (value === item.Value) {
+            selectOption.selected = 'selected'
+          }
+          inputField.appendChild(selectOption)
+        }
+      })
     }
   }
 
   // Set examples
-  if (fieldDefinition.Examples && fieldDefinition.$type !== 'bool') {
-    // let inputFieldOptions = document.createElement('datalist')
-    // inputFieldOptions.id = inputField.id + '_datalist'
-    // inputField.setAttribute('list', inputFieldOptions.id)
-    // td.appendChild(inputFieldOptions)
-    // fieldDefinition.Examples.forEach(function (item) {
-    //   if (item.Value) {
-    //     let datalistOption = document.createElement('option')
-    //     datalistOption.value = item.Value
-    //     datalistOption.innerText = item.Value
-    //     inputFieldOptions.appendChild(datalistOption)
-    //   }
-    // })
-
-    inputField.addEventListener('click', function (event) {
-      // const { left, bottom, width, height } = event.target.getBoundingClientRect()
-      const { width, height } = event.target.getBoundingClientRect()
-      if (event.offsetX < width - height) {
-        return
+  if (fieldDefinition.Examples && fieldDefinition.$type !== 'bool' && fieldDefinition.$type !== 'select') {
+    let inputFieldOptions = document.createElement('datalist')
+    inputFieldOptions.id = inputField.id + '_datalist'
+    inputField.setAttribute('list', inputFieldOptions.id)
+    td.appendChild(inputFieldOptions)
+    fieldDefinition.Examples.forEach(function (item) {
+      if (item.Value) {
+        let datalistOption = document.createElement('option')
+        datalistOption.value = item.Value
+        datalistOption.innerText = item.Value
+        inputFieldOptions.appendChild(datalistOption)
       }
-      let menuTemplate = []
-      let self = this
-      // let nodes = document.getElementById(this.getAttribute('list')).childNodes
-      // for (let i = 0; i < nodes.length; i++) {
-      //   menuTemplate.push({
-      //     label: nodes[i].value,
-      //     click: function () {
-      //       self.value = nodes[i].value
-      //       self.dispatchEvent(new window.Event('change'))
-      //     }
-      //   })
-      // }
-      fieldDefinition.Examples.forEach(function (item) {
-        if (item.Value) {
-          menuTemplate.push({
-            label: item.Value,
-            click: function () {
-              self.value = item.Value
-              self.dispatchEvent(new window.Event('change'))
-            }
-          })
-        }
-      })
-      window.popupContextMenu(menuTemplate)
     })
 
-    inputField.addEventListener('change', function () {
-      window.fieldRowProviderDepenencies.select(this.value)
-    })
+    // datalist macOS workaround
+    // seems the native way doesn't works.
+    if (window.$main.platform === 'darwin') {
+      inputField.addEventListener('click', function (event) {
+        // const { left, bottom, width, height } = event.target.getBoundingClientRect()
+        const { width, height } = event.target.getBoundingClientRect()
+        if (event.offsetX < width - height) {
+          return
+        }
+        let menuTemplate = []
+        inputFieldOptions.childNodes.forEach(function (childNode) {
+          if (childNode.value) {
+            menuTemplate.push({
+              label: childNode.value,
+              click: function () {
+                inputField.value = childNode.value
+                inputField.dispatchEvent(new window.Event('change'))
+              }
+            })
+          }
+        })
+        window.popupContextMenu(menuTemplate)
+      })
+    }
   }
+
+  // Trigger provider's show/hide
+  inputField.addEventListener('change', function () {
+    window.fieldRowProviderDepenencies.select(this.value)
+  })
 
   // Setup field label.
   th.innerText = (fieldDefinition.$Label || fieldDefinition.Name)
@@ -199,15 +203,6 @@ window.createFieldRow = function (fieldDefinition, value, fieldName) {
     requiredHelpText.innerText = 'required'
     requiredHelpText.className += ' label-required'
     th.appendChild(requiredHelpText)
-  }
-
-  // Assign values.
-  if (fieldDefinition.$type === 'bool') {
-    if ([true, 1, 'true'].indexOf(value) > -1) {
-      inputField.checked = 'checked'
-    }
-  } else if (fieldDefinition.$type !== 'password' && value) {
-    inputField.value = (value || '').toString()
   }
 
   return row
