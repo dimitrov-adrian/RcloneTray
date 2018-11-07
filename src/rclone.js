@@ -6,17 +6,7 @@ const chokidar = require('chokidar')
 const fs = require('fs')
 const ini = require('ini')
 const path = require('path')
-const crypto = require('crypto')
 const settings = require('./settings')
-
-// Adds Resources/bin/<platform> PATH variable to system PATH
-let localBinPath = path.join(process.resourcesPath, 'bin', process.platform)
-if (process.platform === 'linux' || process.platform === 'darwin') {
-  process.env.PATH = process.env.PATH + ':' + path.join('/', 'usr', 'local', 'bin')
-  process.env.PATH = process.env.PATH + ':' + localBinPath
-} else if (process.platform === 'win32') {
-  process.env.Path = process.env.Path + ';' + localBinPath
-}
 
 /**
  * Rclone settings cache
@@ -33,6 +23,7 @@ const Cache = {
 
 /**
  * List of available serving protocols key => Title
+ * @private
  */
 const ServingProtocols = {
   http: 'HTTP',
@@ -43,53 +34,121 @@ const ServingProtocols = {
 
 /**
  * BookmarkProcessManager registry
+ * @private
  */
-const processRegistry = {}
+const BookmarkProcessRegistry = {}
+
+/**
+ * THIS NOT THE WAY SHOULD GO, BUT RIGHT NOW MESSAGES ARE NOT USED ANYWHERE ELSE
+ */
+const refreshTray = function () {
+  require('./tray').refresh()
+}
+
+/**
+ * Execute synchronious Rclone command and return the output
+ * @param command
+ * @returns {string}
+ * @private
+ * @throws {err}
+ */
+const doSyncCommand = function (command) {
+  command = prepareRcloneCommand(command)
+  // Quoting all parameters
+  for (let i in command) {
+    if (command[i].substr(0, 2) !== '--') {
+      command[i] = JSON.stringify(command[i])
+    }
+  }
+  console.info('Rclone[S]', command)
+  return execSync(command.join(' ')).toString()
+}
+
+/**
+ * Execute async Rclone command
+ * @param command
+ * @returns {Promise}
+ * @private
+ */
+const doCommand = function (command) {
+  return new Promise(function (resolve, reject) {
+    command = prepareRcloneCommand(command)
+    // Quoting all parameters
+    for (let i in command) {
+      if (command[i].substr(0, 2) !== '--') {
+        command[i] = JSON.stringify(command[i])
+      }
+    }
+    console.info('Rclone[A]', command)
+    exec(command.join(' '), function (err, stdout, stderr) {
+      if (err) {
+        console.error('Rclone', err)
+        reject(Error('Rclone command error.'))
+      } else {
+        resolve(stdout)
+      }
+    })
+  })
+}
 
 /**
  * Simple process tracker. Used to track the rclone command processes status and output.
  */
 class BookmarkProcessManager {
   constructor (processName, bookmarkName) {
-    this.id = crypto.createHash('md5').update(bookmarkName + '/' + processName).digest('hex')
+    this.id = bookmarkName + ':' + processName
     this.bookmarkName = bookmarkName
     this.processName = processName
   }
 
-  create (process, bookmark) {
+  create (command) {
+    if (!command || command.length < 0) {
+      throw Error('Broken Rclone command')
+    }
+    if (this.exists()) {
+      console.error(`Trying to create new ${this.processName} over existing for ${this.bookmarkName}.`)
+      throw Error('There is already such process.')
+    }
     let id = this.id
-    processRegistry[id] = {
+    let bookmark = getBookmark(this.bookmarkName)
+
+    command = prepareRcloneCommand(command)
+    command = appendCustomRcloneCommandArgs(command, this.bookmarkName)
+
+    BookmarkProcessRegistry[id] = {
       bookmarkName: this.bookmarkName,
       processName: this.processName,
-      process: process,
+      process: spawn(command[0], command.slice(1)),
       data: {
         OK: false
       }
     }
 
-    process.stderr.on('data', rcloneProcessWatchdog.bind(this, bookmark))
+    console.log('Rclone[BP]', command)
 
-    process.on('close', function () {
-      if (processRegistry[id].data.OK) {
-        if (processRegistry[id].processName === 'download') {
-          (new Notification({ body: `Download on ${processRegistry[id].bookmarkName} process finished` })).show()
-        } else if (processRegistry[id].processName === 'upload') {
-          (new Notification({ body: `Upload process on ${processRegistry[id].bookmarkName} finished` })).show()
-        } else if (processRegistry[id].processName === 'mount') {
-          (new Notification({ body: `Unmounted ${processRegistry[id].bookmarkName}` })).show()
-        } else if (processRegistry[id].processName.match(/^serve:/)) {
-          let servingProtocolName = ServingProtocols[processRegistry[id].data.protocol]
-          ;(new Notification({ body: `Stopped serving ${processRegistry[id].bookmarkName} via ${servingProtocolName}` })).show()
+    BookmarkProcessRegistry[id].process.stderr.on('data', rcloneProcessWatchdog.bind(this, bookmark))
+
+    BookmarkProcessRegistry[id].process.on('close', function () {
+      if (BookmarkProcessRegistry[id].data.OK) {
+        if (BookmarkProcessRegistry[id].processName === 'download') {
+          (new Notification({ body: `Download on ${BookmarkProcessRegistry[id].bookmarkName} process finished` })).show()
+        } else if (BookmarkProcessRegistry[id].processName === 'upload') {
+          (new Notification({ body: `Upload process on ${BookmarkProcessRegistry[id].bookmarkName} finished` })).show()
+        } else if (BookmarkProcessRegistry[id].processName === 'mount') {
+          (new Notification({ body: `Unmounted ${BookmarkProcessRegistry[id].bookmarkName}` })).show()
+        } else if (BookmarkProcessRegistry[id].processName.match(/^serve:/)) {
+          let servingProtocolName = ServingProtocols[BookmarkProcessRegistry[id].data.protocol]
+          ;(new Notification({ body: `Stopped serving ${BookmarkProcessRegistry[id].bookmarkName} via ${servingProtocolName}` })).show()
         }
       }
-      delete processRegistry[id]
-      require('./tray').refresh()
+      delete BookmarkProcessRegistry[id]
+      refreshTray()
     })
   }
 
   set (key, value) {
     if (this.exists()) {
-      processRegistry[this.id].data[key] = value
+      BookmarkProcessRegistry[this.id].data[key] = value
       return true
     } else {
       return false
@@ -97,23 +156,23 @@ class BookmarkProcessManager {
   }
 
   get (key) {
-    return processRegistry[this.id].data[key]
+    return BookmarkProcessRegistry[this.id].data[key]
   }
 
   exists () {
-    return processRegistry.hasOwnProperty(this.id)
+    return BookmarkProcessRegistry.hasOwnProperty(this.id)
   }
 
   kill (signal) {
     if (this.exists()) {
-      processRegistry[this.id].process.kill(signal || 'SIGTERM')
+      BookmarkProcessRegistry[this.id].process.kill(signal || 'SIGTERM')
     } else {
       throw Error('No such process')
     }
   }
 
   static killAll (bookmarkName, signal) {
-    Object.values(processRegistry).forEach(function (item) {
+    Object.values(BookmarkProcessRegistry).forEach(function (item) {
       if (item.bookmarkName === bookmarkName) {
         item.process.kill(signal || 'SIGTERM')
       }
@@ -121,13 +180,15 @@ class BookmarkProcessManager {
   }
 
   static getActiveProcessesCount () {
-    return Object.values(processRegistry).length
+    return Object.values(BookmarkProcessRegistry).length
   }
 }
 
 /**
  * Process rclone output line and do action
- * @param {*} logLine
+ * @param {string} logLine
+ * @param {{}} bookmark
+ * @param {BookmarkProcessManager} bookmarkProcess
  */
 const rcloneProcessWatchdogLine = function (logLine, bookmark, bookmarkProcess) {
   // Prepare lineInfo{time,level,message}
@@ -145,39 +206,42 @@ const rcloneProcessWatchdogLine = function (logLine, bookmark, bookmarkProcess) 
     lineInfo.message = logLine.join(':').trim()
   } else {
     // String message
-    lineInfo.message = logLine.join(':').trim()
+    lineInfo.message = logLine.slice(1).join(':').trim()
   }
 
+  console.log(lineInfo)
+
+  // Starts the line watchdog.
   if (lineInfo.message.match(/(Error while Logging.*)/)) {
     (new Notification({ body: lineInfo.message })).show()
     bookmarkProcess.kill()
-    require('./tray').refresh()
+    refreshTray()
     return
   }
 
   if (lineInfo.message.match(/(Error while Dialing|Failed to)/i)) {
     (new Notification({ body: lineInfo.message })).show()
     bookmarkProcess.kill()
-    require('./tray').refresh()
+    refreshTray()
     return
   }
 
   if (lineInfo.message.match('Mounting on "')) {
     (new Notification({ body: `Mounted ${bookmark.$name}` })).show()
-    require('./tray').refresh()
+    refreshTray()
     bookmarkProcess.set('OK', true)
     return
   }
 
   if (lineInfo.message.match('finishing with parameters')) {
-    require('./tray').refresh()
+    refreshTray()
   }
 
   let addressInUse = lineInfo.message.match(/Opening listener.*address already in use/)
   if (addressInUse) {
     (new Notification({ body: addressInUse[0] })).show()
     bookmarkProcess.kill()
-    require('./tray').refresh()
+    refreshTray()
     return
   }
 
@@ -186,41 +250,45 @@ const rcloneProcessWatchdogLine = function (logLine, bookmark, bookmarkProcess) 
     (new Notification({ body: matchingString[0] })).show()
     bookmarkProcess.set('OK', true)
     bookmarkProcess.set('URI', matchingString[2])
-    require('./tray').refresh()
+    refreshTray()
     return
   }
 
   if (lineInfo.message.match(/Fatal Error/i)) {
     (new Notification({ body: lineInfo.message })).show()
     bookmarkProcess.kill()
-    require('./tray').refresh()
+    refreshTray()
     return
   }
 
   if (lineInfo.level === 'couldn\'t connect ') {
     (new Notification({ body: lineInfo.message })).show()
     bookmarkProcess.kill()
-    require('./tray').refresh()
+    refreshTray()
     return
   }
 
-  if (process.argv.indexOf('--debug') !== -1) {
+  if (process.isDebug) {
     console.log('Unhandled process message', lineInfo)
   }
 }
 
 /**
  * Helper function that split stream to lines and send to rcloneProcessWatchdogLine for processing
- * @param {*} bookmark
- * @param {*} data
+ * @param {{}} bookmark
+ * @param {{}} data
  */
 const rcloneProcessWatchdog = function (bookmark, data) {
   // https://stackoverflow.com/a/30136877
   let acc = ''
   let splitted = data.toString().split(/\r?\n/)
   let inTactLines = splitted.slice(0, splitted.length - 1)
-  inTactLines[0] = acc + inTactLines[0] // if there was a partial, unended line in the previous dump, it is completed by the first section.
-  acc = splitted[splitted.length - 1] // if there is a partial, unended line in this dump, store it to be completed by the next (we assume there will be a terminating newline at some point. This is, generally, a safe assumption.)
+  // if there was a partial, unended line in the previous dump, it is completed by the first section.
+  inTactLines[0] = acc + inTactLines[0]
+  // if there is a partial, unended line in this dump,
+  // store it to be completed by the next (we assume there will be a terminating newline at some point.
+  // This is, generally, a safe assumption.)
+  acc = splitted[splitted.length - 1]
   for (var i = 0; i < inTactLines.length; ++i) {
     rcloneProcessWatchdogLine(inTactLines[i].trim(), bookmark, this)
   }
@@ -242,7 +310,7 @@ const updateRcloneBinaryPathCache = function () {
 
 /**
  * Get current config file location
- * @returns {string|*}
+ * @returns {string}
  */
 const getConfigFile = function () {
   return Cache.configFile
@@ -251,110 +319,55 @@ const getConfigFile = function () {
 /**
  * Prepare array to Rclone command, rclone binary should be ommited
  * @param rcloneCommand
- * @returns {string}
+ * @returns {string|Array}
  * @private
  */
-const prepareRcloneCommand = function (rcloneCommand, pargs) {
-  if (typeof rcloneCommand === 'string') {
-    rcloneCommand = [ rcloneCommand ]
-  }
-
-  if (!Array.isArray(rcloneCommand)) {
-    throw Error('Broken Command')
-  }
-
-  // @TODO escape command args.
-
-  let command = [
-    Cache.binaryPath
-  ]
-
+const prepareRcloneCommand = function (command) {
   let config = getConfigFile()
   if (config) {
-    command.push('--config', config)
+    command.unshift('--config', config)
   }
 
-  command = command.concat(rcloneCommand)
+  command.unshift(Cache.binaryPath)
 
-  if (pargs === true) {
-    command = [
-      command.shift(),
-      command
-    ]
-  } else {
-    // Qoting all parameters
-    for (let i in command) {
-      if (command[i].substr(0, 2) !== '--') {
-        command[i] = JSON.stringify(command[i])
-      }
-    }
-    command = command.join(' ')
-  }
   return command
 }
 
 /**
  * Append custom rclone args to command array
- *
- * @param {*} commandArray
- * @param {*} bookmark
- *
- * @return {Array}
+ * @param {Array} commandArray
+ * @param {string} bookmarkName
+ * @returns {Array}
  */
-const appendCustomRcloneCommandArgs = function (commandArray, bookmark) {
+const appendCustomRcloneCommandArgs = function (commandArray, bookmarkName) {
   let argsSplitterPattern = new RegExp(/\n+/)
+
   let customGlobalArgs = settings.get('custom_args').trim().split(argsSplitterPattern)
+  customGlobalArgs = customGlobalArgs.filter(function (element) {
+    if (element.match(/^-v+\b/)) {
+      return false
+    }
+  })
   commandArray = commandArray.concat(customGlobalArgs)
 
-  if (bookmark) {
-    let customBookmarkArgs = settings.get('custom_args:' + bookmark.$name, '').trim().split(argsSplitterPattern)
+  if (bookmarkName) {
+    let customBookmarkArgs = settings.get('custom_args:' + bookmarkName, '').trim().split(argsSplitterPattern)
+    customBookmarkArgs = customBookmarkArgs.filter(function (element) {
+      if (element.match(/^-v+\b/)) {
+        return false
+      }
+    })
     commandArray = commandArray.concat(customBookmarkArgs)
   }
 
   return commandArray.filter(function (element) {
-    if (element.match(/^-v/)) {
-      return false
-    }
-    return !!element
-  })
-}
-
-/**
- * Execute synchronious Rclone command and return the output
- * @param command
- * @returns {*}
- * @private
- * @throws {err}
- */
-const doSyncCommand = function (command) {
-  command = prepareRcloneCommand(command)
-  console.info('Rclone[S]', command)
-  return execSync(command).toString()
-}
-
-/**
- * Execute async Rclone command
- * @param command
- * @returns {Promise}
- * @private
- */
-const doCommand = function (command) {
-  return new Promise(function (resolve, reject) {
-    command = prepareRcloneCommand(command)
-    console.info('Rclone[A]', command)
-    exec(command, function (err, stdout, stderr) {
-      if (err) {
-        console.error('Rclone', err)
-        reject(Error('Rclone command error.'))
-      } else {
-        resolve(stdout)
-      }
-    })
+    return !!element.trim()
   })
 }
 
 /**
  * Update version cache
+ * @private
  */
 const updateVersionCache = function () {
   try {
@@ -431,7 +444,7 @@ const updateProvidersCache = function () {
           }
           return optionDefinition
         })
-        Cache.providers[provider.Name] = provider
+        Cache.providers[provider.Prefix] = provider
       })
 
       fireRcloneUpdateActions()
@@ -439,10 +452,11 @@ const updateProvidersCache = function () {
 }
 
 /**
- *
- * @param {*} bookmarkName
- * @param {*} providerObject
- * @param {*} values
+ * Update existing bookmark's fields (rclone remote optons)
+ * @param {string} bookmarkName
+ * @param {{}} providerObject
+ * @param {{}} values
+ * @throws {Error}
  */
 const updateBookmarkFields = function (bookmarkName, providerObject, values) {
   const reserved = [
@@ -497,20 +511,11 @@ const fireRcloneUpdateActions = function (eventName) {
 }
 
 /**
- *
+ * Perform Rclone sync command, this function is used as shared for Download and Upload tasks
  * @private
- */
-const resetRcloneCache = function () {
-  console.info('Resetting Rclone cache')
-  updateProvidersCache()
-  updateBookmarksCache()
-  // updateVersionCache()
-}
-
-/**
- *
- * @param {*} bookmarkName
- * @param {*} pathName
+ * @param {string} method
+ * @param {{}} bookmark
+ * @throws {Error}
  */
 let _sync = function (method, bookmark) {
   if (method !== 'upload' && method !== 'download') {
@@ -528,8 +533,6 @@ let _sync = function (method, bookmark) {
     cmd.push(bookmark._local_path_map, bookmark.$name + ':')
   }
   cmd.push('-vv')
-  cmd = prepareRcloneCommand(cmd, true)
-  cmd[1] = appendCustomRcloneCommandArgs(cmd[1], bookmark)
 
   if ('_local_path_map' in bookmark && bookmark._local_path_map) {
     // Check if source directory is empty because this could damage remote one.
@@ -549,18 +552,39 @@ let _sync = function (method, bookmark) {
       throw Error(`Cannot perform downloading and uploading in same time.`)
     }
 
-    console.log('Rclone Bookmark Command:', cmd)
-    proc.create(spawn(cmd[0], cmd[1]), bookmark)
-    require('./tray').refresh()
+    proc.create(cmd)
+    refreshTray()
   } else {
     console.error('SYNC', 'Local Path Map is not set for this bookmark', bookmark)
     throw Error('Local Path Map is not set for this bookmark')
   }
 }
 
-const exposedApi = {
+/**
+ * Get bookmark
+ * @param {{}|string} bookmark
+ * @returns {{}}
+ * @throws {Error}
+ */
+const getBookmark = function (bookmark) {
+  if (typeof bookmark === 'object') {
+    if ('$name' in bookmark && 'type' in bookmark) {
+      return bookmark
+    } else {
+      throw Error(`Invalid bookmark object argument.`)
+    }
+  } else if (bookmark in Cache.bookmarks) {
+    return Cache.bookmarks[bookmark]
+  } else {
+    throw Error(`No such bookmark ${bookmark}`)
+  }
+}
 
-  init: resetRcloneCache,
+/**
+ * Use this object as a holder that will be exported via {module.exports}
+ * @type private
+ */
+const exposedApi = {
 
   /**
    * Add callback to execute when Rclone config is changed.
@@ -570,16 +594,10 @@ const exposedApi = {
     Cache.registeredUpdateCallbacks.push(callback)
   },
 
-  /**
-   * Get current config file
-   *
-   * @param {string}
-   */
   getConfigFile: getConfigFile,
 
   /**
    * Get available providers
-   *
    * @returns {Cache.providers|{}}
    */
   getProviders: function () {
@@ -588,10 +606,9 @@ const exposedApi = {
 
   /**
    * Get specific provider
-   *
    * @param providerName
-   *
-   * @returns {*}
+   * @returns {{}}
+   * @throws {Error}
    */
   getProvider: function (providerName) {
     if (Cache.providers.hasOwnProperty(providerName)) {
@@ -603,41 +620,19 @@ const exposedApi = {
 
   /**
    * Get bookmarks
-   *
-   * @returns {Cache.bookmarks|{}|*}
+   * @returns {Cache.bookmarks}
    */
   getBookmarks: function () {
     return Cache.bookmarks
   },
 
-  /**
-   * Get bookmark
-   *
-   * @param bookmarkName
-   *
-   * @returns {*}
-   */
-  getBookmark: function (bookmark) {
-    if (typeof bookmark === 'object') {
-      if ('$name' in bookmark && 'type' in bookmark) {
-        return bookmark
-      } else {
-        throw Error(`Invalid bookmark object argument.`)
-      }
-    } else if (bookmark in Cache.bookmarks) {
-      return Cache.bookmarks[bookmark]
-    } else {
-      throw Error(`No such bookmark ${bookmark}`)
-    }
-  },
+  getBookmark: getBookmark,
 
   /**
    * Create new bookmark
-   *
-   * @param type
-   * @param bookmarkName
-   * @param options
-   *
+   * @param {string} type
+   * @param {string} bookmarkName
+   * @param {{}} options
    * @returns {Promise}
    */
   addBookmark: function (type, bookmarkName, values, customArgs) {
@@ -685,10 +680,9 @@ const exposedApi = {
 
   /**
    * Update existing bookmark
-   *
-   * @param bookmarkName
-   * @param options
-   *
+   * @param {{}|string} bookmark
+   * @param {{}} values
+   * @param {string} customArgs
    * @returns {Promise}
    */
   updateBookmark: function (bookmark, values, customArgs) {
@@ -711,9 +705,7 @@ const exposedApi = {
 
   /**
    * Delete existing bookmark
-   *
-   * @param bookmarkName
-   *
+   * @param {{}|string} bookmark
    * @returns {Promise}
    */
   deleteBookmark: function (bookmark) {
@@ -735,9 +727,7 @@ const exposedApi = {
 
   /**
    * Get (generate) path to bookmark mountpoint
-   *
-   * @param {*} bookmark
-   *
+   * @param {{}|string} bookmark
    * @returns {String}
    */
   getMountpointVolumePath: function (bookmark) {
@@ -747,8 +737,7 @@ const exposedApi = {
 
   /**
    * Mount given bookmark
-   *
-   * @param {*} bookmark
+   * @param {{}|string} bookmark
    */
   mount: function (bookmark) {
     bookmark = this.getBookmark(bookmark)
@@ -758,7 +747,8 @@ const exposedApi = {
       throw Error(`Bookmark ${bookmark.$name} already mounted.`)
     }
     let mountpoint = this.getMountpointVolumePath(bookmark)
-    let cmd = prepareRcloneCommand([
+
+    proc.create([
       'mount',
       bookmark.$name + ':',
       mountpoint,
@@ -767,18 +757,14 @@ const exposedApi = {
       '--allow-non-empty',
       '--volname', bookmark.$name,
       '-vv'
-    ], true)
+    ])
 
-    cmd[1] = appendCustomRcloneCommandArgs(cmd[1], bookmark)
-    console.log('Rclone Bookmark Command:', cmd)
-    proc.create(spawn(cmd[0], cmd[1]), bookmark)
-    require('./tray').refresh()
+    refreshTray()
   },
 
   /**
    * Unmount given bookmark (if it's mounted)
-   *
-   * @param {*} bookmark
+   * @param {{}|string} bookmark
    */
   unmount: function (bookmark) {
     bookmark = this.getBookmark(bookmark)
@@ -786,19 +772,20 @@ const exposedApi = {
     if (mountStatus !== false) {
       let proc = new BookmarkProcessManager('mount', bookmark.$name)
       if (proc.exists()) {
-        proc.kill()
-      }
-      if (mountStatus) {
-        exec(`umount -f "${mountStatus}"`)
+        proc.kill('SIGTERM')
+      } else {
+        if (process.platform === 'darwin') {
+          exec(`umount -f "${mountStatus}"`, refreshTray)
+        } else if (process.platform === 'linux') {
+          exec(`umount "${mountStatus}"`, refreshTray)
+        }
       }
     }
   },
 
   /**
    * Check is given bookmark is mounted
-   *
-   * @param {boolean} bookmark
-   *
+   * @param {{}|string} bookmark
    * @returns {false|string Mountpoint}
    */
   mountStatus: function (bookmark) {
@@ -809,7 +796,9 @@ const exposedApi = {
     let mountpointExists = fs.existsSync(mountpoint)
     if (exists && mountpointExists) {
       return mountpoint
-    } else if (exists || mountpointExists) {
+    } else if (mountpointExists) {
+      return mountpoint
+    } else if (exists) {
       return ''
     } else {
       return false
@@ -818,8 +807,7 @@ const exposedApi = {
 
   /**
    * Open mounted directory bookmark in platform's file browser
-   *
-   * @param {*} bookmark
+   * @param {{}|string} bookmark
    */
   openMounted: function (bookmark) {
     bookmark = this.getBookmark(bookmark)
@@ -831,16 +819,18 @@ const exposedApi = {
   },
 
   /**
-   *
-   * @param {*} bookmarkName
+   * Perform download task
+   * @see _sync()
+   * @param {{}|string} bookmark
    */
   download: function (bookmark) {
     _sync('download', this.getBookmark(bookmark))
   },
 
   /**
-   *
-   * @param {*} bookmarkName
+   * Perform upload task
+   * @see _sync()
+   * @param {{}|string} bookmark
    */
   upload: function (bookmark) {
     _sync('upload', this.getBookmark(bookmark))
@@ -848,10 +838,7 @@ const exposedApi = {
 
   /**
    * Check if current is uploading
-   *
-   * @param {*} protocol
-   * @param {*} bookmark
-   *
+   * @param {{}|string} bookmark
    * @returns {boolean}
    */
   isUploading: function (bookmark) {
@@ -861,10 +848,7 @@ const exposedApi = {
 
   /**
    * Check if current is downloading
-   *
-   * @param {*} protocol
-   * @param {*} bookmark
-   *
+   * @param {{}|string} bookmark
    * @returns {boolean}
    */
   isDownloading: function (bookmark) {
@@ -873,27 +857,26 @@ const exposedApi = {
   },
 
   /**
-   *
-   * @param {*} bookmark
+   * Stop currently running downloading process
+   * @param {{}|string} bookmark
    */
   stopDownloading (bookmark) {
     bookmark = this.getBookmark(bookmark)
-    ;(new BookmarkProcessManager('download', bookmark.$name)).kill()
+    ;(new BookmarkProcessManager('download', bookmark.$name)).kill('SIGTERM')
   },
 
   /**
-   *
-   * @param {*} bookmark
+   * Stop currently running uploading process
+   * @param {{}|string} bookmark
    */
   stopUploading (bookmark) {
     bookmark = this.getBookmark(bookmark)
-    ;(new BookmarkProcessManager('upload', bookmark.$name)).kill()
+    ;(new BookmarkProcessManager('upload', bookmark.$name)).kill('SIGTERM')
   },
 
   /**
    * Open local path mapping
-   *
-   * @param {*} bookmark
+   * @param {{}|string} bookmark
    */
   openLocal: function (bookmark) {
     bookmark = this.getBookmark(bookmark)
@@ -911,8 +894,7 @@ const exposedApi = {
 
   /**
    * Get available serving protocols
-   *
-   * @returns {Object}
+   * @returns {ServingProtocols}
    */
   getServingProtocols: function () {
     return ServingProtocols
@@ -920,10 +902,8 @@ const exposedApi = {
 
   /**
    * Start serving protocol+bookmark
-   *
-   * @param {*} method
-   * @param {*} bookmarkName
-   * @param {*} pathName
+   * @param {string} protocol
+   * @param {{}|string} bookmark
    */
   serveStart: function (protocol, bookmark) {
     if (!ServingProtocols.hasOwnProperty(protocol)) {
@@ -938,24 +918,20 @@ const exposedApi = {
       throw Error(`${bookmark.$name} is already serving.`)
     }
 
-    let cmd = prepareRcloneCommand([
+    proc.create([
       'serve',
       protocol,
       bookmark.$name + ':',
       '-vv'
-    ], true)
-    cmd[1] = appendCustomRcloneCommandArgs(cmd[1], bookmark)
-    console.log('Rclone Bookmark Command:', cmd)
-    proc.create(spawn(cmd[0], cmd[1]), bookmark)
+    ])
     proc.set('protocol', protocol)
-    require('./tray').refresh()
+    refreshTray()
   },
 
   /**
    * Stop serving protocol+bookmark
-   *
-   * @param {*} protocol
-   * @param {*} bookmark
+   * @param {string} protocol
+   * @param {{}|string} bookmark
    */
   serveStop: function (protocol, bookmark) {
     bookmark = this.getBookmark(bookmark)
@@ -969,11 +945,9 @@ const exposedApi = {
 
   /**
    * Check if current protocol+bookmark is in serving
-   *
-   * @param {*} protocol
-   * @param {*} bookmark
-   *
-   * @returns {boolean}
+   * @param {string} protocol
+   * @param {{}} bookmark
+   * @returns {string|boolean}
    */
   serveStatus (protocol, bookmark) {
     bookmark = this.getBookmark(bookmark)
@@ -987,21 +961,20 @@ const exposedApi = {
 
   /**
    * Open NCDU in platform's terminal emulator
-   *
-   * @param {*} bookmarkName
+   * @param {{}|string} bookmark
    */
   ncdu: function (bookmark) {
     bookmark = this.getBookmark(bookmark)
 
     let cmd = prepareRcloneCommand(['ncdu', bookmark.$name + ':/'])
-    cmd = appendCustomRcloneCommandArgs(cmd, bookmark)
+    cmd = appendCustomRcloneCommandArgs(cmd, bookmark.$name)
     console.log('Rclone Bookmark Command:', cmd)
 
     if (process.platform === 'darwin') {
       cmd = cmd.replace(new RegExp('"', 'g'), '\\"')
       spawn('/usr/bin/osascript', ['-e', `tell application "Terminal" to do script "${cmd}" activate`])
     } else if (process.platform === 'linux') {
-      let tempCmdWrapper = path.join(app.getPath('temp'), 'linux-cmd-wrapper.sh')
+      let tempCmdWrapper = path.join(app.getPath('temp'), 'rclonetray-linux-cmd-wrapper.sh')
       const data = new Uint8Array(Buffer.from(cmd))
       fs.writeFile(tempCmdWrapper, data, function (err) {
         if (err) {
@@ -1019,8 +992,7 @@ const exposedApi = {
   },
 
   /**
-   * Get Rclone version
-   *
+   * Get version of installed Rclone
    * @returns {string}
    */
   getVersion: function () {
@@ -1049,6 +1021,12 @@ if (!fs.existsSync(getConfigFile())) {
   fs.appendFileSync(getConfigFile(), '')
 }
 
+// Update providers cache.
+updateProvidersCache()
+
+// Update bookmarks cache.
+updateBookmarksCache()
+
 // chokidar seems to be more relyable than fs.watch() and give better results.
 chokidar.watch(getConfigFile(), {
   ignoreInitial: true,
@@ -1059,11 +1037,11 @@ chokidar.watch(getConfigFile(), {
   alwaysStat: true,
   atomic: true
 })
-  .on('change', resetRcloneCache)
+  .on('change', updateBookmarksCache)
 
 // Force killing all processes if the app is going to quit.
 app.on('before-quit', function (event) {
-  if (Object.keys(processRegistry).length > 0) {
+  if (Object.keys(BookmarkProcessRegistry).length > 0) {
     let choice = dialog.showMessageBox(null, {
       type: 'warning',
       buttons: ['Yes', 'No'],
@@ -1077,8 +1055,8 @@ app.on('before-quit', function (event) {
     }
   }
 
-  Object.keys(processRegistry).map(function (key) {
-    processRegistry[key].process.kill()
+  Object.keys(BookmarkProcessRegistry).map(function (key) {
+    BookmarkProcessRegistry[key].process.kill()
   })
 })
 

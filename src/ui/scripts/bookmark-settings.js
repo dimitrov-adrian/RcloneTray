@@ -2,9 +2,10 @@
 
 /**
  *
- * @param {*} placeholder
- * @param {*} providerObject
- * @param {*} values
+ * @param {HTMLElement} placeholder
+ * @param {{}} providerObject
+ * @param {{}} values
+ * @param {{}} values
  */
 window.renderBookmarkSettings = function (placeholder, providerObject, values, external) {
   // Seems no provider object is passed, so clear the placeholder
@@ -86,10 +87,10 @@ window.renderBookmarkSettings = function (placeholder, providerObject, values, e
     Hide: false,
     Advanced: false,
     Help: `
-        Custom arguments separated by space or new-line. Check the list
-        on https://rclone.org/${providerObject.Name}/#standard-options #rclone.org documentation
+      Custom arguments separated by space or new-line. Check the list
+      on https://rclone.org/${providerObject.Name}/#standard-options #rclone.org documentation
       `
-  }, external['custom_args'] || null, 'custom_args'))
+  }, external && external.custom_args ? external.custom_args : null), 'custom_args')
 
   // Override
   let range = document.createRange()

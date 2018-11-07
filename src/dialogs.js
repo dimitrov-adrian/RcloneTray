@@ -7,7 +7,7 @@ const path = require('path')
 require('electron-context-menu')({
   showCopyImageAddress: false,
   showSaveImageAs: false,
-  showInspectElement: false
+  showInspectElement: process.isDebug
 })
 
 /**
@@ -19,15 +19,16 @@ const dialogsSingletoneInstances = {}
 
 /**
  * Simple factory for the dialogs
- *
- * @param dialogName
- * @param options
- * @param props
- * @returns {*}
+ * @param {string} dialogName
+ * @param {{}} options
+ * @param {{}} props
+ * @returns {BrowserWindow}
  * @private
  */
 const createNewDialog = function (dialogName, options, props) {
-  let singleId = options && options.hasOwnProperty('singleId')
+  // Use $singleId options property with special meaning of not allowing,
+  // dialog to have multiple instances.
+  let singleId = options && options.hasOwnProperty('$singleId')
   if (singleId) {
     delete options['$singleId']
     singleId = dialogName + '/' + singleId.toString()
@@ -50,7 +51,7 @@ const createNewDialog = function (dialogName, options, props) {
     webPreferences: {
       backgroundThrottling: false,
       preload: path.join(__dirname, 'dialogs-preload.js'),
-      devTools: false,
+      devTools: process.isDebug,
       defaultEncoding: 'UTF-8',
       nodeIntegration: false,
       sandbox: true
@@ -114,7 +115,6 @@ module.exports = {
 
   /**
    * Show About dialog
-   * @returns {*}
    */
   about: function () {
     createNewDialog('About', {
@@ -135,7 +135,6 @@ module.exports = {
 
   /**
    * Show Preferences dialog
-   * @returns {*}
    */
   preferences: function () {
     createNewDialog('Preferences', {
@@ -147,7 +146,6 @@ module.exports = {
 
   /**
    * Show new Bookmark dialog
-   * @returns {*}
    */
   addBookmark: function () {
     createNewDialog('AddBookmark', {
@@ -159,7 +157,6 @@ module.exports = {
 
   /**
    * Show edit Bookmark dialog
-   * @returns {*}
    */
   editBookmark: function () {
     createNewDialog('EditBookmark', {

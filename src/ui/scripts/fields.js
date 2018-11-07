@@ -1,7 +1,7 @@
 'use strict'
 
 /**
- *
+ * @returns {{}}
  */
 window.fieldRowProviderDepenencies = {
   registry: [],
@@ -32,10 +32,11 @@ window.fieldRowProviderDepenencies = {
 }
 
 /**
-*
-* @param {*} fieldDefinition
-* @param {*} value
-* @param {*} fieldName
+* Create new row
+* @param {{}} fieldDefinition
+* @param {string} value
+* @param {string} fieldName
+* @returns {HTMLElement}
 */
 window.createFieldRow = function (fieldDefinition, value, fieldName) {
   let row = document.createElement('div')

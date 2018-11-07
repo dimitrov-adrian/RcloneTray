@@ -10,7 +10,7 @@
 
       /**
        * Add available providers as options to select HTML element
-       * @param {*} selectElement
+       * @param {HTMLSelectElement} selectElement
        */
       window.renderAvailableProvidersSelectOptions = function (selectElement) {
         let optionsContainer = document.createDocumentFragment()
@@ -22,7 +22,7 @@
 
         for (let providerName in providers) {
           let option = document.createElement('option')
-          option.value = providers[providerName].Name
+          option.value = providerName
           option.innerText = providers[providerName].Description
           option.providerObject = providers[providerName]
           optionsContainer.appendChild(option)
@@ -99,8 +99,12 @@
 
           <div class="row">
             <div class="cell-left">
-              <label>Name</label>
-              <div class="label-required">required</div>
+              <label>
+                Name
+              </label>
+              <div class="label-required">
+                required
+              </div>
             </div>
             <div class="cell-right">
               <input type="text" name="name" value="" maxlength="20" size="20" style="width:12em" />

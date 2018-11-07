@@ -14,13 +14,12 @@ window.$main = {
   settings: remote.require('./settings')
 }
 
-window.$main.r = remote
-window.$main.re = remoteElectron
+window.$main.r = remote // @TODO remove before release
+window.$main.re = remoteElectron // @TODO remove before release
 
 /**
  * Popup context menu from given template
- *
- * @param {{Menu}}
+ * @param {Array}
  */
 window.popupContextMenu = function (menuTemplate) {
   remote.Menu.buildFromTemplate(menuTemplate).popup()
@@ -28,7 +27,7 @@ window.popupContextMenu = function (menuTemplate) {
 
 /**
  * Get assigned window props
- * @returns {*|{}}
+ * @returns {{}}
  */
 window.$main.getProps = function () {
   return remote.getCurrentWindow().$props
@@ -36,7 +35,7 @@ window.$main.getProps = function () {
 
 /**
  * Show node's message box
- * @param options
+ * @param {string} message
  * @returns {number}
  */
 window.messageBox = function (message) {
@@ -48,7 +47,9 @@ window.messageBox = function (message) {
 }
 
 /**
- *
+ * Override the standard confirm dialog
+ * @param {string} message
+ * @returns {boolean}
  */
 window.confirm = function (message) {
   let choice = remoteElectron.dialog.showMessageBox(
@@ -62,6 +63,7 @@ window.confirm = function (message) {
 
 /**
  * Show error box
+ * @param {string} message
  */
 window.errorBox = function (message) {
   remoteElectron.dialog.showMessageBox(
@@ -73,8 +75,7 @@ window.errorBox = function (message) {
 
 /**
  * Show OS notification shorthand
- * @param message
- * @private
+ * @param {string} message
  */
 window.notification = function (message) {
   new remoteElectron.Notification({
@@ -103,6 +104,8 @@ window.addEventListener('load', window.resizeToContent)
 
 /**
  * Directory selector dialog
+ * @param {string} defaultDirectory
+ * @param {callback} callback
  */
 window.selectDirectory = function (defaultDirectory, callback) {
   remoteElectron.dialog.showOpenDialog(remote.getCurrentWindow(), {
@@ -117,6 +120,8 @@ window.selectDirectory = function (defaultDirectory, callback) {
 
 /**
  * File selector dialog
+ * @param {string} defaultFile
+ * @param {callback} callback
  */
 window.selectFile = function (defaultFile, callback) {
   remoteElectron.dialog.showOpenDialog(remote.getCurrentWindow(), {
@@ -131,6 +136,7 @@ window.selectFile = function (defaultFile, callback) {
 
 /**
  * Scripts loader
+ * @param {string} script
  */
 window.$main.require = function (script) {
   if (script === 'ui') {

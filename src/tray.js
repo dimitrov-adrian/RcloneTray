@@ -1,18 +1,27 @@
 'use strict'
 
-// Modules to control application life and create native browser window
 const { Tray, Menu, shell } = require('electron')
 const path = require('path')
 const settings = require('./settings')
 const rclone = require('./rclone')
 const dialogs = require('./dialogs')
 
-// Host the initialized Tray object.
+/**
+ * Host the initialized Tray object.
+ * @private
+ */
 let trayIndicator = null
 
-// Store timer to avoid multiple neartime menu refreshes.
+/**
+ * Store timer to avoid multiple neartime menu refreshes.
+ * @private
+ */
 let refreshTrayMenuAtomicTimer = null
 
+/**
+ * Label for platform's file browser
+ * @private
+ */
 const fileExplorerLabel = process.platform === 'darwin'
   ? 'Finder'
   : process.platform === 'win32'
@@ -21,7 +30,7 @@ const fileExplorerLabel = process.platform === 'darwin'
 
 /**
  * Do action with bookmark
- * @param action
+ * @param {string} action
  * @param ...args
  */
 const bookmarkActionRouter = function (action, ...args) {
@@ -62,7 +71,7 @@ const bookmarkActionRouter = function (action, ...args) {
  * Bookmark submenu
  *
  * @param {{bookmark}}
- * @returns {*}
+ * @returns {{}}
  */
 const generateBookmarkActionsSubmenu = function (bookmark) {
   // If by some reason bookmark is broken, then show actions menu.
@@ -71,7 +80,6 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
       label: bookmark.$name || '<Unknown>',
       enabled: false,
       type: 'submenu',
-      // icon: icons.empty,
       submenu: [
         {
           label: 'Fix config file',
@@ -94,14 +102,16 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
 
   // Mount
   let isMounted = rclone.mountStatus(bookmark)
+
+  template.submenu.push({
+    label: 'Mount',
+    click: bookmarkActionRouter.bind(bookmark, 'mount'),
+    checked: !!isMounted,
+    enabled: isMounted === false
+  })
+
   if (isMounted !== false) {
     template.submenu.push(
-      {
-        label: isMounted ? 'Mounted' : 'Mounting',
-        type: 'checkbox',
-        checked: !!isMounted,
-        enabled: false
-      },
       {
         label: 'Unmount',
         click: bookmarkActionRouter.bind(bookmark, 'unmount')
@@ -112,17 +122,15 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
         click: bookmarkActionRouter.bind(bookmark, 'open-mounted')
       }
     )
-  } else {
-    template.submenu.push({
-      label: 'Mount',
-      click: bookmarkActionRouter.bind(bookmark, 'mount')
-    })
   }
 
   // Download/Upload
-  let isDownloading = rclone.isDownloading(bookmark)
-  let isUploading = rclone.isUploading(bookmark)
+  let isDownloading = false
+  let isUploading = false
+
   if ('_local_path_map' in bookmark) {
+    isDownloading = rclone.isDownloading(bookmark)
+    isUploading = rclone.isUploading(bookmark)
     template.submenu.push(
       {
         type: 'separator'
@@ -174,43 +182,43 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
     Object.keys(servingProtocols).forEach(function (protocol) {
       i++
       let servingURI = rclone.serveStatus(protocol, bookmark)
+
+      // Add separator before the menu item, only if current serve method is in process.
       if (servingURI !== false) {
         isServing = true
-
         if (i > 1) {
           template.submenu.push({
             type: 'separator'
           })
         }
+      }
 
-        template.submenu.push({
-          label: servingURI ? `Serving ${servingProtocols[protocol]}` : `Starting ${servingProtocols[protocol]} server`,
-          type: 'checkbox',
-          checked: true,
-          enabled: false
-        },
-        {
-          label: 'Stop',
-          click: bookmarkActionRouter.bind(bookmark, 'serve-stop', protocol)
-        })
+      template.submenu.push({
+        label: `Serve ${servingProtocols[protocol]}`,
+        click: bookmarkActionRouter.bind(bookmark, 'serve-start', protocol),
+        enabled: servingURI === false,
+        checked: !!servingURI
+      })
 
-        if (servingURI) {
-          template.submenu.push({
+      if (servingURI !== false) {
+        template.submenu.push(
+          {
+            label: 'Stop',
+            click: bookmarkActionRouter.bind(bookmark, 'serve-stop', protocol)
+          },
+          {
             label: `Open "${servingURI}"`,
-            click: bookmarkActionRouter.bind(bookmark, 'open-web-browser', servingURI)
-          })
-        }
+            click: bookmarkActionRouter.bind(bookmark, 'open-web-browser', servingURI),
+            enabled: !!servingURI
+          }
+        )
 
+        // Add separator after the menu item, only if current serve method is in process.
         if (i < servingProtocolsLen) {
           template.submenu.push({
             type: 'separator'
           })
         }
-      } else {
-        template.submenu.push({
-          label: `Serve ${servingProtocols[protocol]}`,
-          click: bookmarkActionRouter.bind(bookmark, 'serve-start', protocol)
-        })
       }
     })
   }
@@ -267,7 +275,8 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
  * Refreshing try menu.
  */
 const refreshTrayMenu = function () {
-  // If by some reason some part of the code do this.refresh() we should'nt do anything with the tray.
+  // If by some reason some part of the code do this.refresh(),
+  // before the tray icon initialization, must not continue because possible error.
   if (!trayIndicator) {
     console.error('ERROR', 'tray-indicator: refresh() before init()')
     return
@@ -329,6 +338,9 @@ const refreshTrayMenu = function () {
 // Exports.
 module.exports = {
 
+  /**
+   * Refresh the tray menu.
+   */
   refresh: function () {
     if (refreshTrayMenuAtomicTimer) {
       clearTimeout(refreshTrayMenuAtomicTimer)
@@ -351,7 +363,6 @@ module.exports = {
       }
       trayIndicator = new Tray(icon)
       rclone.onUpdate(this.refresh)
-      rclone.init()
     } else {
       throw Error('Cannot start more than one tray indicators.')
     }
