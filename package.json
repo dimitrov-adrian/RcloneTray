@@ -48,7 +48,7 @@
         "extraResources": [
             "bin/${platform}/*"
         ],
-        "compression": "maximum",
+        "compression": "normal",
         "mac": {
             "category": "public.app-category.utilities",
             "type": "distribution",
@@ -84,7 +84,6 @@
         "ini": "^1.3.5"
     },
     "devDependencies": {
-        "devtron": "^1.4.0",
         "electron": "4.0.0-beta.6",
         "electron-builder": "latest",
         "electron-reload": "^1.2.5",

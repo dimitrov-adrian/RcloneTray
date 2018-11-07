@@ -3,22 +3,6 @@
 const { app, dialog } = require('electron')
 const path = require('path')
 
-// let x = require('child_process').spawn('"rclone"', [ '--config',
-//   '"/Users/e01/.config/rclone/rclone.conf"',
-//   '"mount"',
-//   '"ftp_scifi_bg:"',
-//   '"/Volumes/ftp.ftp_scifi_bg"',
-//   '--attr-timeout',
-//   '"3s"',
-//   '--dir-cache-time',
-//   '"3s"',
-//   '--allow-non-empty',
-//   '--volname',
-//   '"ftp_scifi_bg"',
-//   '"-vv"' ])
-// console.log(x)
-// app.exit()
-
 // Error handler
 process.on('uncaughtException', function (error) {
   console.error('ERROR', error)
