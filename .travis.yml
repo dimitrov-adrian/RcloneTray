@@ -5,6 +5,12 @@ matrix:
   include:
   - os: osx
   - os: linux
+script:
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; npm run dist:linux; fi
+- if [[ "$TRAVIS_OS_NAME" == "linux" ]]; npm run dist:win; fi
+- if [[ "$TRAVIS_OS_NAME" == "osx" ]]; npm run dist:mac; fi
 branches:
   only:
   - master
+notifications:
+  email: false

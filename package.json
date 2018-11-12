@@ -28,6 +28,9 @@
         "start": "node_modules/.bin/electron . --debug",
         "pack": "electron-builder --dir",
         "dist": "electron-builder",
+        "dist:linux": "electron-builder --x64 --linux",
+        "dist:darwin": "electron-builder --x64 --darwin",
+        "dist:win": "electron-builder --x64 --win",
         "publish": "build -p always"
     },
     "eslintConfig": {
