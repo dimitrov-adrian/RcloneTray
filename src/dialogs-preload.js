@@ -1,5 +1,7 @@
 'use strict'
 
+// Workaround because some of the modules that are intended to works in renderer,
+// exports modules via module.exports
 window.module = {}
 
 const remote = require('electron').remote
@@ -8,6 +10,7 @@ const appPath = remote.app.getAppPath()
 
 window.$main = {
   platform: process.platform,
+  currentWindow: remote.getCurrentWindow(),
   app: remote.app,
   tray: remote.require('./tray'),
   rclone: remote.require('./rclone'),
@@ -16,6 +19,23 @@ window.$main = {
 
 window.$main.r = remote // @TODO remove before release
 window.$main.re = remoteElectron // @TODO remove before release
+
+/**
+ * Set autostart
+ */
+window.$main.setAutostart = function (state) {
+  remoteElectron.app.setLoginItemSettings({
+    openAtLogin: !!state
+  })
+}
+
+/**
+ * Check if the app is set to autostart
+ * @returns {boolean}
+ */
+window.$main.isAutostart = function () {
+  return remoteElectron.app.getLoginItemSettings().openAtLogin
+}
 
 /**
  * Popup context menu from given template
@@ -41,7 +61,6 @@ window.$main.getProps = function () {
 window.messageBox = function (message) {
   return remoteElectron.dialog.showMessageBox(
     remote.getCurrentWindow(), {
-      title: 'RcloneTray',
       message: message
     })
 }
@@ -55,7 +74,6 @@ window.confirm = function (message) {
   let choice = remoteElectron.dialog.showMessageBox(
     remote.getCurrentWindow(), {
       buttons: ['No', 'Yes'],
-      title: 'RcloneTray',
       message: message
     })
   return choice === 1
@@ -68,7 +86,6 @@ window.confirm = function (message) {
 window.errorBox = function (message) {
   remoteElectron.dialog.showMessageBox(
     remote.getCurrentWindow(), {
-      title: 'RcloneTray',
       message: message.toString()
     })
 }
@@ -79,7 +96,6 @@ window.errorBox = function (message) {
  */
 window.notification = function (message) {
   new remoteElectron.Notification({
-    title: 'RcloneTray',
     body: message.toString()
   }).show()
 }

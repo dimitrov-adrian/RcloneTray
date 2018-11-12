@@ -1,8 +1,8 @@
 'use strict'
 
-const { app } = require('electron')
 const path = require('path')
 const fs = require('fs')
+const { app } = require('electron')
 
 /**
  * Path to settings.json file
@@ -10,16 +10,60 @@ const fs = require('fs')
  */
 const settingsFile = path.join(app.getPath('userData'), 'settings.json')
 
-// May be the directory doesn't exists yet.
-if (!fs.existsSync(app.getPath('userData'))) {
-  fs.mkdirSync(app.getPath('userData'))
-}
-
 /**
  * Cache for current settings
  * @private
  */
-let cache = {}
+const cache = {}
+
+/**
+ * Check if setting exists
+ * @param {string} item
+ * @returns {boolean}
+ */
+const has = function (item) {
+  return cache.hasOwnProperty(item)
+}
+
+/**
+ * Get setting value
+ * @param {string} item
+ * @param {*} defaultValue
+ * @returns {*}
+ */
+const get = function (item, defaultValue) {
+  return this.has(item) ? cache[item] : defaultValue
+}
+
+/**
+ * Set setting value
+ * @param {string} item
+ * @param {*} newValue
+ */
+const set = function (item, newValue) {
+  cache[item] = newValue
+  updateFile()
+}
+
+/**
+ * Remove setting
+ * @param {string} item
+ */
+const remove = function (item) {
+  delete cache[item]
+  updateFile()
+}
+
+/**
+ * Merge current settings
+ * @param {{}} settingsObject
+ */
+const merge = function (settings) {
+  Object.keys(settings).forEach(function (key) {
+    cache[key] = settings[key]
+  })
+  updateFile()
+}
 
 /**
  * Update the settings file.
@@ -34,74 +78,37 @@ const updateFile = function () {
 }
 
 /**
- * Read settings from file.
+ * Read the settings file and init the settings cache.
  */
 const readFile = function () {
+  // Create the directory if not exists yet.
+  if (!fs.existsSync(app.getPath('userData'))) {
+    fs.mkdirSync(app.getPath('userData'))
+  }
+
+  // Initialize settings cache.
   if (fs.existsSync(settingsFile)) {
     try {
-      cache = JSON.parse(fs.readFileSync(settingsFile))
+      let settings = JSON.parse(fs.readFileSync(settingsFile))
+      Object.keys(settings).forEach(function (key) {
+        cache[key] = settings[key]
+      })
     } catch (err) {
-      cache = {}
-      console.log(err)
+      console.error('Settings', err)
     }
-  } else {
-    cache = {}
   }
 }
+
+// Read the settings file and init the settings cache.
+readFile()
 
 // Exports.
+// Because next keywords are very common and delete has an collision,
+// should pick more odd names or do some longnames.
 module.exports = {
-
-  /**
-   * Check if setting exists
-   * @param {string} item
-   * @returns {boolean}
-   */
-  has: function (item) {
-    return cache.hasOwnProperty(item)
-  },
-
-  /**
-   * Get setting value
-   * @param {string} item
-   * @param {*} defaultValue
-   * @returns {*}
-   */
-  get: function (item, defaultValue) {
-    return this.has(item) ? cache[item] : defaultValue
-  },
-
-  /**
-   * Set setting value
-   * @param {string} item
-   * @param {*} newValue
-   */
-  set: function (item, newValue) {
-    cache[item] = newValue
-    updateFile()
-  },
-
-  /**
-   * Remove setting
-   * @param {string} item
-   */
-  delete: function (item) {
-    delete cache[item]
-    updateFile()
-  },
-
-  /**
-   * Merge current settings
-   * @param {{}} settingsObject
-   */
-  setFromObject: function (settingsObject) {
-    Object.keys(settingsObject).forEach(function (key) {
-      cache[key] = settingsObject[key]
-    })
-    updateFile()
-  }
-
+  set,
+  get,
+  has,
+  remove,
+  merge
 }
-
-// Initialize the cache.
-readFile()

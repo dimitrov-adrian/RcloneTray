@@ -2,13 +2,28 @@
 <html>
 
   <head>
-    <title>RcloneTray Preferences</title>
+    <title>Preferences</title>
     <script defer>
       $main.require('ui')
       $main.require('node_modules/form-serialize/index.js')
       $main.require('src/ui/scripts/fields.js');
 
       const settingDefinition = [
+        {
+          $Label: 'Auto Start at login',
+          $type: 'bool',
+          Name: 'auto_start',
+          Help: '',
+          Provider: '',
+          Default: $main.isAutostart(),
+          Value: '',
+          ShortOpt: '',
+          Hide: 0,
+          Required: false,
+          IsPassword: false,
+          NoPrefix: false,
+          Advanced: false
+        },
         {
           $Label: 'Show bookmarks type',
           $type: 'bool',
@@ -54,7 +69,7 @@
         }
       ]
 
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
         let container = document.createDocumentFragment()
         settingDefinition.forEach(function (field) {
           container.appendChild(createFieldRow(field, $main.settings.get(field.Name)))
@@ -62,13 +77,19 @@
         document.getElementById('current-provider-settings').appendChild(container)
 
         let theForm = document.getElementById('the-form')
-        theForm.addEventListener('submit', function(event) {
+        theForm.addEventListener('submit', function (event) {
           event.preventDefault();
           let data = serialize(this, {
             hash: true,
             empty: true
           })
-          $main.settings.setFromObject(data.options)
+
+          $main.setAutostart(data.auto_start || false)
+          if (data.hasOwnProperty('auto_start')) {
+            delete data['auto_start']
+          }
+
+          $main.settings.merge(data.options)
           $main.tray.refresh()
           window.close()
         })

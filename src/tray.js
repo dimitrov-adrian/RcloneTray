@@ -1,22 +1,28 @@
 'use strict'
 
-const { Tray, Menu, shell } = require('electron')
 const path = require('path')
+const { Tray, Menu, shell } = require('electron')
 const settings = require('./settings')
 const rclone = require('./rclone')
 const dialogs = require('./dialogs')
 
 /**
  * Host the initialized Tray object.
+ * @type {Tray}
  * @private
  */
 let trayIndicator = null
 
 /**
- * Store timer to avoid multiple neartime menu refreshes.
+ * Tray icon, default state
  * @private
  */
-let refreshTrayMenuAtomicTimer = null
+let iconDefault
+
+/**
+ * Tray icon, connected state
+ */
+let iconConnected
 
 /**
  * Label for platform's file browser
@@ -48,14 +54,16 @@ const bookmarkActionRouter = function (action, ...args) {
     rclone.upload(this)
   } else if (action === 'stop-uploading') {
     rclone.stopUploading(this)
+  } else if (action === 'toggle-automatic-upload') {
+    rclone.toggleAutomaticUpload(this)
   } else if (action === 'open-local') {
     rclone.openLocal(this)
   } else if (action === 'serve-start') {
     rclone.serveStart(args[0], this)
   } else if (action === 'serve-stop') {
     rclone.serveStop(args[0], this)
-  } else if (action === 'ncdu') {
-    rclone.ncdu(this)
+  } else if (action === 'open-ncdu') {
+    rclone.openNCDU(this)
   } else if (action === 'open-web-browser') {
     shell.openExternal(args[0])
   } else if (action === 'open-config') {
@@ -127,25 +135,35 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
   // Download/Upload
   let isDownloading = false
   let isUploading = false
+  let isAutomaticUpload = false
 
   if ('_local_path_map' in bookmark) {
     isDownloading = rclone.isDownloading(bookmark)
     isUploading = rclone.isUploading(bookmark)
+    isAutomaticUpload = rclone.isAutomaticUpload(bookmark)
     template.submenu.push(
       {
         type: 'separator'
       },
       {
+        type: 'checkbox',
         label: 'Download',
-        enabled: !isUploading && !isDownloading,
+        enabled: !isAutomaticUpload && !isUploading && !isDownloading,
         checked: isDownloading,
         click: bookmarkActionRouter.bind(bookmark, 'download')
       },
       {
+        type: 'checkbox',
         label: 'Upload',
-        enabled: !isUploading && !isDownloading,
+        enabled: !isAutomaticUpload && !isUploading && !isDownloading,
         checked: isUploading,
         click: bookmarkActionRouter.bind(bookmark, 'upload')
+      },
+      {
+        type: 'checkbox',
+        label: 'Automatic Upload',
+        checked: isAutomaticUpload,
+        click: bookmarkActionRouter.bind(bookmark, 'toggle-automatic-upload')
       })
 
     if (isDownloading) {
@@ -194,6 +212,7 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
       }
 
       template.submenu.push({
+        type: 'checkbox',
         label: `Serve ${servingProtocols[protocol]}`,
         click: bookmarkActionRouter.bind(bookmark, 'serve-start', protocol),
         enabled: servingURI === false,
@@ -230,7 +249,7 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
     },
     {
       label: 'Console Browser',
-      click: bookmarkActionRouter.bind(bookmark, 'ncdu')
+      click: bookmarkActionRouter.bind(bookmark, 'open-ncdu')
     }
   )
 
@@ -245,7 +264,7 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
     }
   )
 
-  let isConnected = isMounted || isDownloading || isUploading || isServing
+  let isConnected = isMounted || isDownloading || isUploading || isServing || isAutomaticUpload
 
   // Set the bookmark label
   template.label = bookmark.$name
@@ -266,8 +285,8 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
   }
 
   return {
-    template: template,
-    connected: isConnected
+    template,
+    isConnected
   }
 }
 
@@ -283,9 +302,9 @@ const refreshTrayMenu = function () {
   }
 
   console.log('Refresh tray indicator menu')
-  let isConnected = false
 
   let menuItems = []
+  let isConnected = false
 
   menuItems.push({
     label: 'New Bookmark',
@@ -329,43 +348,52 @@ const refreshTrayMenu = function () {
       role: 'quit'
     })
 
+  // Set the menu.
   trayIndicator.setContextMenu(Menu.buildFromTemplate(menuItems))
-  if (isConnected) {
-    // @TODO Add indicator symbol to the icon
+
+  // Set icon acording to the status
+  trayIndicator.setImage(isConnected ? iconConnected : iconDefault)
+}
+
+/**
+ * Refresh the tray menu.
+ */
+const refresh = function () {
+  // Use some kind of static variable to store the timer
+  if (typeof refresh.refreshTrayMenuAtomicTimer !== 'undefined' && refresh.refreshTrayMenuAtomicTimer) {
+    clearTimeout(refresh.refreshTrayMenuAtomicTimer)
   }
+
+  // 500ms delay should be enough to prevent multiple updates in neartime.
+  refresh.refreshTrayMenuAtomicTimer = setTimeout(refreshTrayMenu, 500)
+}
+
+/**
+ * Initialize the tray menu.
+ */
+const init = function () {
+  if (trayIndicator) {
+    // Avoid double tray loader
+    console.error('Cannot start more than one tray indicators.')
+    return
+  }
+
+  if (process.platform === 'win32') {
+    iconDefault = path.join(__dirname, 'ui', 'icons', 'icon.ico')
+    iconConnected = path.join(__dirname, 'ui', 'icons', 'icon-connected.ico')
+  } else if (process.platform === 'linux') {
+    iconDefault = path.join(__dirname, 'ui', 'icons', 'icon.png')
+    iconConnected = path.join(__dirname, 'ui', 'icons', 'icon-connected.png')
+  } else {
+    iconDefault = path.join(__dirname, 'ui', 'icons', 'iconTemplate.png')
+    iconConnected = path.join(__dirname, 'ui', 'icons', 'icon-connectedTemplate.png')
+  }
+
+  trayIndicator = new Tray(iconDefault)
 }
 
 // Exports.
 module.exports = {
-
-  /**
-   * Refresh the tray menu.
-   */
-  refresh: function () {
-    if (refreshTrayMenuAtomicTimer) {
-      clearTimeout(refreshTrayMenuAtomicTimer)
-    }
-    refreshTrayMenuAtomicTimer = setTimeout(refreshTrayMenu, 250)
-  },
-
-  /**
-   * Initialize the tray menu.
-   */
-  init: function () {
-    if (trayIndicator === null) {
-      let icon = null
-      if (process.platform === 'win32') {
-        icon = path.join(__dirname, 'ui', 'icons', 'icon.ico')
-      } else if (process.platform === 'linux') {
-        icon = path.join(__dirname, 'ui', 'icons', 'icon.png')
-      } else {
-        icon = path.join(__dirname, 'ui', 'icons', 'iconTemplate.png')
-      }
-      trayIndicator = new Tray(icon)
-      rclone.onUpdate(this.refresh)
-    } else {
-      throw Error('Cannot start more than one tray indicators.')
-    }
-  }
-
+  refresh: refresh,
+  init: init
 }

@@ -1,0 +1,14 @@
+{
+    "standard.autoFixOnSave": true,
+    "html.format.endWithNewline": true,
+    "html.format.indentInnerHtml": true,
+    "editor.tabSize": 2,
+    "standard.enable": true,
+    "editor.renderWhitespace": "all",
+    "editor.find.autoFindInSelection": true,
+    "editor.formatOnSave": true,
+    "editor.minimap.renderCharacters": false,
+    "git.promptToSaveFilesBeforeCommit": true,
+    "html.format.indentHandlebars": true,
+    "npm.enableScriptExplorer": true
+}

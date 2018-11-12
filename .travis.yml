@@ -1,6 +1,10 @@
 language: node_js
 node_js:
   - "10"
+matrix:
+  include:
+  - os: osx
+  - os: linux
 branches:
   only:
   - master

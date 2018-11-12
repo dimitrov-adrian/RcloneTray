@@ -1,41 +1,31 @@
 'use strict'
 
-const { app, dialog } = require('electron')
 const path = require('path')
+const { app } = require('electron')
+const { autoUpdater } = require('electron-updater')
+const isDev = require('electron-is-dev')
+const dialogs = require('./dialogs')
+const rclone = require('./rclone')
+const tray = require('./tray')
 
 // Error handler
 process.on('uncaughtException', function (error) {
-  console.error('ERROR', error)
-  if (app.isReady()) {
-    // When error happen when app is ready then seems to be happen on late stage,
-    // and user should decide to ignore or to exit (because could have active transfers)
-    let choice = dialog.showMessageBox(null, {
-      type: 'warning',
-      buttons: [ 'Quit RcloneTray', 'Ignore' ],
-      title: 'Error',
-      message: 'Unexpected runtime error.',
-      detail: error.toString()
-    })
-    if (choice === 0) {
-      app.exit()
-    }
-  } else {
-    // This message will be shown on very early stage before most of the app is loaded.
-    dialog.showErrorBox('Error', 'Unexpected runtime error. RcloneTray cannot starts.')
+  console.error('ERROR', 'Uncaught Exception', error)
+  if (dialogs.uncaughtException(error)) {
     app.exit()
   }
 })
 
 // Do not allow multiple instances.
 if (!app.requestSingleInstanceLock()) {
-  console.error('Cannot start twice.')
-  dialog.showErrorBox('Cannot start', 'RcloneTray is already started and cannot be started twice.')
+  console.log('There is already started RcloneTray instance.')
+  app.focus()
+  dialogs.errorMultiInstance()
   app.exit()
 }
 
-process.isDebug = (process.argv.indexOf('--debug') !== -1)
 // Starts remote debugging on port, BUT IF the app is not packaged (devel mode)
-if (process.isDebug) {
+if (isDev) {
   // Export interact from console
   require('inspector').open()
   global.$main = {
@@ -44,35 +34,41 @@ if (process.isDebug) {
     require: require
   }
   // load electron-reload
-  require('electron-reload')(__dirname, {
-    electron: require('path').join(__dirname, '..', 'node_modules', '.bin', 'electron')
-  })
+  try {
+    require('electron-reload')(__dirname, {
+      electron: path.join(__dirname, '..', 'node_modules', '.bin', 'electron')
+    })
+  } catch (err) { }
 }
 
-// Adds Resources/bin/<platform> PATH variable to system PATH
-let localBinPath = path.join(process.resourcesPath, 'bin', process.platform)
+// Sets process.env.LOCAL_BINARIES_PATH to Resources/bin/<platform> and add as system Path variable
+process.env.LOCAL_BINARIES_PATH = path.join(process.resourcesPath, 'bin', process.platform)
 if (process.platform === 'linux' || process.platform === 'darwin') {
   process.env.PATH = process.env.PATH + ':' + path.join('/', 'usr', 'local', 'bin')
-  process.env.PATH = process.env.PATH + ':' + localBinPath
+  process.env.PATH = process.env.PATH + ':' + process.env.LOCAL_BINARIES_PATH
 } else if (process.platform === 'win32') {
-  process.env.Path = process.env.Path + ';' + localBinPath
+  process.env.Path = process.env.Path + ';' + process.env.LOCAL_BINARIES_PATH
 }
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', function () {
-  // Initialize app menu.
-  require('./app-menu')
+  // Initialize the tray.
+  tray.init()
 
-  // Initialize the tray indicator.
-  require('./tray').init()
+  // Initialize Rclone.
+  rclone.init()
+  rclone.onUpdate(tray.refresh)
 
   // Only on macOS there is app.dock.
   if (process.platform === 'darwin') {
     // Hide the app from dock and taskbar.
     app.dock.hide()
   }
+
+  // Run the auto-updater.
+  autoUpdater.checkForUpdatesAndNotify()
 })
 
 // Should not quit when all windows are closed, because have a tray indicator.

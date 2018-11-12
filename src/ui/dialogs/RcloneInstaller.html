@@ -1,0 +1,30 @@
+<!doctype html>
+<html class="transparent">
+
+  <body>
+
+    <script>
+      $main.require('ui')
+    </script>
+
+    <main class="center" style="padding-top:3rem;padding-bottom:1rem;">
+      <progress id="progress-bar" value="0" max="100"></progress>
+      <p id="progress-message"></p>
+    </main>
+
+    <script>
+      const $progressBar = document.getElementById('progress-bar')
+      const $progressMessage = document.getElementById('progress-message')
+      setInterval(function () {
+        let progress = $main.getProps().progress * 100;
+        if (progress != $progressBar.getAttribute('value')) {
+          $progressBar.setAttribute('value', progress)
+          $progressMessage.innerText = $main.getProps().message
+          window.resizeToContent()
+        }
+      }, 75)
+    </script>
+
+  </body>
+
+</html>

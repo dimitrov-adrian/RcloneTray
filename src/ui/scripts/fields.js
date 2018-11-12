@@ -179,12 +179,16 @@ window.createFieldRow = function (fieldDefinition, value, fieldName) {
   })
 
   // Setup field label.
-  th.innerText = (fieldDefinition.$Label || fieldDefinition.Name)
-    .replace(/_/g, ' ')
-    .replace(/\w\S*/g, function (string) {
-      return string.charAt(0).toUpperCase() + string.substr(1)
-    })
-    .trim()
+  if (fieldDefinition.$Label) {
+    th.innerText = fieldDefinition.$Label
+  } else {
+    th.innerText = fieldDefinition.Name
+      .replace(/_/g, ' ')
+      .replace(/\w\S*/g, function (string) {
+        return string.charAt(0).toUpperCase() + string.substr(1)
+      })
+      .trim()
+  }
 
   // Setup helping text.
   // It's not very reliable to convert urls to links with pattern, but don't want to include some full bloated
