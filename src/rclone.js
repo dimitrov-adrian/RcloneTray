@@ -20,7 +20,7 @@ const RcloneBinaryName = process.platform === 'win32' ? 'rclone.exe' : 'rclone'
  * Bundled Rclone path
  * @private
  */
-const RcloneBinaryBundled = path.join(app.getAppPath(), 'rclone', process.platform, RcloneBinaryName)
+const RcloneBinaryBundled = path.join(process.resourcesPath, 'rclone', process.platform, RcloneBinaryName)
 
 /**
  * Rclone settings cache
