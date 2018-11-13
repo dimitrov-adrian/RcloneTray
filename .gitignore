@@ -3,6 +3,8 @@ package-lock.json
 .experimental
 .DS_Store
 ._.*
+.env
 node_modules
 dist
 bin/*
+rclone/*

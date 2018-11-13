@@ -9,36 +9,39 @@
 
     <main class="center">
 
-      <div class="padded-v">
+      <div class="padded-v margin-v">
         <img src="../icons/source-icon-color.png" width="78" height="78" />
+      </div>
+
+      <div class="padded-v">
         <h3>
-          <script> document.write($main.app.getName()) </script>
+          <a href="https://github.com/dimitrov-adrian/RcloneTray" target="_blank">
+            <script> document.write($main.app.getName()) </script>
+          </a>
         </h3>
         <div class="label-help">
-          <script>document.write('v' + $main.app.getVersion())</script>
+          <script> document.write('v' + $main.app.getVersion()) </script>
         </div>
         <div>
           by Adrian Dimitrov
         </div>
       </div>
 
-      <section class="margin-v">
+      <div class="margin-v">
         <div class="padded-v">
-          <div>
+          <h3>
             <a href="https://rclone.org/" target="_blank">
-              Rclone (
-              <script>document.write($main.rclone.getVersion())</script>)</a>
+              Rclone
+            </a>
+          </h3>
+          <div class="label-help">
+            <script> document.write($main.rclone.getVersion()) </script>
           </div>
           <div>
             by Nick Craig-Wood
           </div>
         </div>
-
-        <div class="padded-v">
-          <a href="https://electronjs.org/" target="_blank">
-            Powered by Electron</a>
-        </div>
-      </section>
+      </div>
 
       <div style="margin-top:2rem;">
         <button onclick="window.open('https://github.com/dimitrov-adrian/RcloneTray/issues')">

@@ -4,6 +4,7 @@ const path = require('path')
 const { shell, app, BrowserWindow, Menu, dialog } = require('electron')
 const electronContextMenu = require('electron-context-menu')
 const isDev = require('electron-is-dev')
+const settings = require('./settings')
 
 /**
  * Dialog names that should be opened with single instances
@@ -151,35 +152,6 @@ const editBookmark = function () {
 }
 
 /**
- * Show edit Bookmark dialog
- */
-const rcloneInstaller = function () {
-  let dialog = createNewDialog('RcloneInstaller', {
-    $singleId: 1,
-    width: 250,
-    height: 250,
-    minimizable: true,
-    closable: false,
-    acceptFirstMouse: true,
-
-    // Make the window sexy.
-    vibrancy: 'appearance-based',
-    titleBarStyle: 'hiddenInset',
-    backgroundColor: null
-  }, this)
-
-  dialog.setInstallProgress = function (value, message) {
-    dialog.$props = {
-      progress: value,
-      message: message
-    }
-    dialog.setProgressBar(value)
-  }
-
-  return dialog
-}
-
-/**
  * Multi Instance error
  */
 const errorMultiInstance = function () {
@@ -234,21 +206,30 @@ const confirmExit = function () {
  * Show missing Rclone action dialog
  * @returns {Number}
  */
-const missingRcloneAction = function () {
+const missingRclone = function () {
   let choice = dialog.showMessageBox(null, {
     type: 'warning',
-    buttons: ['Automatic Install', 'Rclone Homepage', 'Quit'],
+    buttons: ['Go Rclone Website', 'Switch to bundled version', 'Quit'],
     title: 'Error',
-    message: 'Seems that Rclone is not installed (or cannot be found) on your system.\n\nYou need to install Rclne to your system, or to automatic install locally for this application only?\n'
+    message: 'Seems that Rclone is not installed (or cannot be found) on your system.\n\nYou need to install Rclne to your system or to switch to use bundled version of Rclone.\n'
   })
-  app.focus()
+
+  if (choice === 0) {
+    shell.openExternal('http://rclone.org/downloads/')
+    app.exit()
+  } else if (choice === 1) {
+    settings.set('rclone_use_bundled', true)
+  } else {
+    app.exit()
+  }
+
   return choice
-};
+}
 
 /**
  * Initialize module
- */
-(function () {
+*/
+const init = function () {
   // Build the global menu
   // @see https://electronjs.org/docs/api/menu#examples
   let template = [
@@ -326,7 +307,10 @@ const missingRcloneAction = function () {
     showSaveImageAs: false,
     showInspectElement: isDev
   })
-})()
+}
+
+// Do the initialization.
+init()
 
 // Module object.
 module.exports = {
@@ -337,6 +321,5 @@ module.exports = {
   errorMultiInstance,
   uncaughtException,
   confirmExit,
-  missingRcloneAction,
-  rcloneInstaller
+  missingRclone
 }

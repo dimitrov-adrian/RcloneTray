@@ -16,6 +16,11 @@ process.on('uncaughtException', function (error) {
   }
 })
 
+// Check the OS
+if (['win32', 'linux', 'darwin'].indexOf(process.platform) === -1) {
+  throw Error('Unsupported platform')
+}
+
 // Do not allow multiple instances.
 if (!app.requestSingleInstanceLock()) {
   console.log('There is already started RcloneTray instance.')
@@ -24,7 +29,7 @@ if (!app.requestSingleInstanceLock()) {
   app.exit()
 }
 
-// Starts remote debugging on port, BUT IF the app is not packaged (devel mode)
+// For debugging purposes.
 if (isDev) {
   // Export interact from console
   require('inspector').open()
@@ -39,15 +44,6 @@ if (isDev) {
       electron: path.join(__dirname, '..', 'node_modules', '.bin', 'electron')
     })
   } catch (err) { }
-}
-
-// Sets process.env.LOCAL_BINARIES_PATH to Resources/bin/<platform> and add as system Path variable
-process.env.LOCAL_BINARIES_PATH = path.join(process.resourcesPath, 'bin', process.platform)
-if (process.platform === 'linux' || process.platform === 'darwin') {
-  process.env.PATH = process.env.PATH + ':' + path.join('/', 'usr', 'local', 'bin')
-  process.env.PATH = process.env.PATH + ':' + process.env.LOCAL_BINARIES_PATH
-} else if (process.platform === 'win32') {
-  process.env.Path = process.env.Path + ';' + process.env.LOCAL_BINARIES_PATH
 }
 
 // This method will be called when Electron has finished
@@ -71,7 +67,8 @@ app.on('ready', function () {
   autoUpdater.checkForUpdatesAndNotify()
 })
 
-// Should not quit when all windows are closed, because have a tray indicator.
+// Should not quit when all windows are closed,
+// because the application is staying as system tray indicator.
 app.on('window-all-closed', function (event) {
   event.preventDefault()
 })

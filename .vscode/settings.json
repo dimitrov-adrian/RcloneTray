@@ -1,7 +1,5 @@
 {
     "standard.autoFixOnSave": true,
-    "html.format.endWithNewline": true,
-    "html.format.indentInnerHtml": true,
     "editor.tabSize": 2,
     "standard.enable": true,
     "editor.renderWhitespace": "all",
@@ -9,6 +7,8 @@
     "editor.formatOnSave": true,
     "editor.minimap.renderCharacters": false,
     "git.promptToSaveFilesBeforeCommit": true,
+    "npm.enableScriptExplorer": true,
+    "html.format.endWithNewline": true,
     "html.format.indentHandlebars": true,
-    "npm.enableScriptExplorer": true
+    "html.format.indentInnerHtml": true
 }

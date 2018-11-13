@@ -264,6 +264,7 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
     }
   )
 
+  // Set the menu item state if there is any kind of connection or current running process.
   let isConnected = isMounted || isDownloading || isUploading || isServing || isAutomaticUpload
 
   // Set the bookmark label

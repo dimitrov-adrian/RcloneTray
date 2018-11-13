@@ -10,7 +10,7 @@
 
       const settingDefinition = [
         {
-          $Label: 'Auto Start at login',
+          $Label: 'Start with the system',
           $type: 'bool',
           Name: 'auto_start',
           Help: '',
@@ -41,7 +41,7 @@
         },
         {
           Name: "rclone_config",
-          $title: 'Config',
+          $Label: 'Config',
           $type: 'file',
           Help: 'Changing this option require restart.',
           Provider: '',
@@ -55,8 +55,23 @@
           Advanced: false
         },
         {
+          Name: "rclone_use_bundled",
+          $Label: 'Use bundled Rclone',
+          $type: 'bool',
+          Help: 'Use the Rclone binary that is bundled with the app, otherwise installed system wide version will be used (if not found, then you will receive and error).',
+          Provider: '',
+          Default: true,
+          Value: '',
+          ShortOpt: '',
+          Hide: 0,
+          Required: false,
+          IsPassword: false,
+          NoPrefix: false,
+          Advanced: false
+        },
+        {
           Name: "custom_args",
-          $title: 'Custom Rclone setting args.',
+          $Label: 'Custom Rclone setting args.',
           $type: 'text',
           Help: "Space or new-line separated rclone command arguments to be appended to all commands.\nCheck more at https://rclone.org/docs/",
           Value: '',
@@ -72,7 +87,7 @@
       document.addEventListener('DOMContentLoaded', function () {
         let container = document.createDocumentFragment()
         settingDefinition.forEach(function (field) {
-          container.appendChild(createFieldRow(field, $main.settings.get(field.Name)))
+          container.appendChild(createFieldRow(field, $main.settings.get(field.Name, field.Default || null)))
         })
         document.getElementById('current-provider-settings').appendChild(container)
 
