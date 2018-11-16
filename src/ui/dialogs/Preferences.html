@@ -4,14 +4,14 @@
   <head>
     <title>Preferences</title>
     <script defer>
-      $main.require('ui')
+      $main.require('style')
       $main.require('node_modules/form-serialize/index.js')
       $main.require('src/ui/scripts/fields.js');
 
       const settingDefinition = [
         {
           $Label: 'Start with the system',
-          $type: 'bool',
+          $type: 'boolean',
           Name: 'auto_start',
           Help: '',
           Provider: '',
@@ -25,8 +25,23 @@
           Advanced: false
         },
         {
+          $Label: 'Check for updates',
+          $type: 'boolean',
+          Name: 'enable_updates',
+          Help: 'Enable checking for updates on application start',
+          Provider: '',
+          Default: false,
+          Value: '',
+          ShortOpt: '',
+          Hide: 0,
+          Required: false,
+          IsPassword: false,
+          NoPrefix: false,
+          Advanced: false
+        },
+        {
           $Label: 'Show bookmarks type',
-          $type: 'bool',
+          $type: 'boolean',
           Name: 'tray_menu_show_type',
           Help: '',
           Provider: '',
@@ -40,7 +55,7 @@
           Advanced: false
         },
         {
-          Name: "rclone_config",
+          Name: 'rclone_config',
           $Label: 'Config',
           $type: 'file',
           Help: 'Changing this option require restart.',
@@ -55,9 +70,9 @@
           Advanced: false
         },
         {
-          Name: "rclone_use_bundled",
+          Name: 'rclone_use_bundled',
           $Label: 'Use bundled Rclone',
-          $type: 'bool',
+          $type: 'boolean',
           Help: 'Use the Rclone binary that is bundled with the app, otherwise installed system wide version will be used (if not found, then you will receive and error).',
           Provider: '',
           Default: true,
@@ -70,7 +85,7 @@
           Advanced: false
         },
         {
-          Name: "custom_args",
+          Name: 'custom_args',
           $Label: 'Custom Rclone setting args.',
           $type: 'text',
           Help: "Space or new-line separated rclone command arguments to be appended to all commands.\nCheck more at https://rclone.org/docs/",

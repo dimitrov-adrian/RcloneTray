@@ -4,6 +4,7 @@ const path = require('path')
 const { app } = require('electron')
 const { autoUpdater } = require('electron-updater')
 const isDev = require('electron-is-dev')
+const settings = require('./settings')
 const dialogs = require('./dialogs')
 const rclone = require('./rclone')
 const tray = require('./tray')
@@ -23,7 +24,9 @@ if (['win32', 'linux', 'darwin'].indexOf(process.platform) === -1) {
 
 // Do not allow multiple instances.
 if (!app.requestSingleInstanceLock()) {
-  console.log('There is already started RcloneTray instance.')
+  if (isDev) {
+    console.log('There is already started RcloneTray instance.')
+  }
   app.focus()
   dialogs.errorMultiInstance()
   app.exit()
@@ -46,6 +49,9 @@ if (isDev) {
   } catch (err) { }
 }
 
+// Focus the app if second instance is going to starts.
+app.on('second-instance', app.focus)
+
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
@@ -64,7 +70,16 @@ app.on('ready', function () {
   }
 
   // Run the auto-updater.
-  autoUpdater.checkForUpdatesAndNotify()
+  if (settings.get('enable_updates')) {
+    try {
+      autoUpdater.checkForUpdatesAndNotify()
+    } catch (err) {
+      if (isDev) {
+        console.error(err)
+      }
+      dialogs.brokenUpdates()
+    }
+  }
 })
 
 // Should not quit when all windows are closed,

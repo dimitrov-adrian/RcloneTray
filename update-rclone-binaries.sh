@@ -22,13 +22,13 @@ cd "${tmp_dir}/osx-x64"/*
 cp -f rclone "${bin_dir}/darwin/"
 chmod +x "${bin_dir}/darwin/rclone"
 
-echo "Preparing linux binaries..."
-curl --progress-bar -o "${tmp_dir}/linux-x64.zip" "https://downloads.rclone.org/rclone-current-linux-amd64.zip"
-mkdir -p "${bin_dir}/linux/"
-unzip -q -a "${tmp_dir}/linux-x64.zip" -d "${tmp_dir}/linux-x64"
-cd "${tmp_dir}/linux-x64"/*
-cp -f rclone "${bin_dir}/linux/"
-chmod +x "${bin_dir}/linux/rclone"
+# echo "Preparing linux binaries..."
+# curl --progress-bar -o "${tmp_dir}/linux-x64.zip" "https://downloads.rclone.org/rclone-current-linux-amd64.zip"
+# mkdir -p "${bin_dir}/linux/"
+# unzip -q -a "${tmp_dir}/linux-x64.zip" -d "${tmp_dir}/linux-x64"
+# cd "${tmp_dir}/linux-x64"/*
+# cp -f rclone "${bin_dir}/linux/"
+# chmod +x "${bin_dir}/linux/rclone"
 
 echo "Copy the LICENSE"
 curl -s -o "${bin_dir}/LICENSE" "https://raw.githubusercontent.com/ncw/rclone/master/COPYING"

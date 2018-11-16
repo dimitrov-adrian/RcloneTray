@@ -155,7 +155,7 @@ window.selectFile = function (defaultFile, callback) {
  * @param {string} script
  */
 window.$main.require = function (script) {
-  if (script === 'ui') {
+  if (script === 'style') {
     document.write('<link rel="stylesheet" href="' + appPath + '/src/ui/styles/ui.css" />')
     document.write('<link rel="stylesheet" href="' + appPath + '/src/ui/styles/ui-' + process.platform + '.css" />')
   } else {

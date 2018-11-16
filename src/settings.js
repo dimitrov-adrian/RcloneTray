@@ -11,10 +11,16 @@ const { app } = require('electron')
 const settingsFile = path.join(app.getPath('userData'), 'settings.json')
 
 /**
- * Cache for current settings
+ * Cache for current settings and predefine defaults.
  * @private
  */
-const cache = {}
+const cache = {
+  tray_menu_show_type: true,
+  enable_updates: false,
+  rclone_use_bundled: true,
+  rclone_config: '',
+  custom_args: ''
+}
 
 /**
  * Check if setting exists
@@ -32,7 +38,7 @@ const has = function (item) {
  * @returns {*}
  */
 const get = function (item, defaultValue) {
-  return this.has(item) ? cache[item] : defaultValue
+  return has(item) ? cache[item] : defaultValue
 }
 
 /**
@@ -48,10 +54,16 @@ const set = function (item, newValue) {
 /**
  * Remove setting
  * @param {string} item
+ * @returns {boolean}
  */
 const remove = function (item) {
-  delete cache[item]
-  updateFile()
+  if (has(item)) {
+    delete cache[item]
+    updateFile()
+    return true
+  }
+
+  return false
 }
 
 /**
@@ -71,9 +83,10 @@ const merge = function (settings) {
 const updateFile = function () {
   try {
     console.log('Update settings file: ' + settingsFile)
-    fs.writeFileSync(settingsFile, JSON.stringify(cache))
+    let jsonContent = JSON.stringify(cache)
+    fs.writeFileSync(settingsFile, jsonContent)
   } catch (err) {
-    console.error(err)
+    console.error('Settings', err)
   }
 }
 

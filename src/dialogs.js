@@ -1,7 +1,7 @@
 'use strict'
 
 const path = require('path')
-const { shell, app, BrowserWindow, Menu, dialog } = require('electron')
+const { shell, app, BrowserWindow, Menu, Notification, dialog } = require('electron')
 const electronContextMenu = require('electron-context-menu')
 const isDev = require('electron-is-dev')
 const settings = require('./settings')
@@ -152,13 +152,23 @@ const editBookmark = function () {
 }
 
 /**
+ * Show OS notification
+ * @param {string} message
+ */
+const notification = function (message) {
+  (new Notification({
+    body: message
+  })).show()
+}
+
+/**
  * Multi Instance error
  */
 const errorMultiInstance = function () {
   // @TODO consider switch to notification (baloon),
   //       the problem is that Notifications are available after app is ready
-  // dialog.showErrorBox('Cannot start', 'RcloneTray is already started and cannot be started twice.')
   // (new Notification({ body: 'RcloneTray is already started and cannot be started twice.' })).show()
+  dialog.showErrorBox('', 'RcloneTray is already started and cannot be started twice.')
 }
 
 /**
@@ -172,7 +182,7 @@ const uncaughtException = function (detail) {
     // and user should decide to ignore or to exit (because could have active transfers)
     let choice = dialog.showMessageBox(null, {
       type: 'warning',
-      buttons: ['Quit RcloneTray', 'Ignore'],
+      buttons: ['Quit RcloneTray', 'Cancel'],
       title: 'Error',
       message: 'Unexpected runtime error.',
       detail: (detail || '').toString()
@@ -198,6 +208,19 @@ const confirmExit = function () {
     buttons: ['Yes', 'No'],
     title: 'Quit RcloneTray',
     message: 'Are you sure you want to quit? There is active processes that will be terminated.'
+  })
+  return choice === 0
+}
+
+/**
+ * Show confirm exit dialog.
+ * @returns {boolean}
+ */
+const brokenUpdates = function () {
+  let choice = dialog.showMessageBox(null, {
+    type: 'warning',
+    buttons: ['OK'],
+    message: 'There is a problem while doing update check. The problem is not critical and do not affect normal work of the app, but the update notification will not be displayed.'
   })
   return choice === 0
 }
@@ -321,5 +344,7 @@ module.exports = {
   errorMultiInstance,
   uncaughtException,
   confirmExit,
-  missingRclone
+  brokenUpdates,
+  missingRclone,
+  notification
 }

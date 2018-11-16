@@ -26,10 +26,10 @@
     "main": "src/main.js",
     "scripts": {
         "postinstall": "electron-builder install-app-deps && ./update-rclone-binaries.sh",
-        "start": "node_modules/.bin/electron . --debug",
+        "start": "ELECTRON_IS_DEV=1 node_modules/.bin/electron .",
         "pack": "electron-builder --dir",
         "dist": "electron-builder",
-        "publish": "build -p always --platform all --x64"
+        "publish": "build -p always --mac --win --x64"
     },
     "eslintConfig": {
         "fix": true,
@@ -48,31 +48,40 @@
         "asarUnpack": [
             "src/ui/icons/*"
         ],
-        "extraResources": [
-            "rclone/${platform}/*",
-            "rclone/LICENSE"
-        ],
         "compression": "normal",
         "mac": {
             "category": "public.app-category.utilities",
             "type": "distribution",
             "publish": [
                 "github"
+            ],
+            "extraResources": [
+                "rclone/darwin/*",
+                "rclone/LICENSE"
             ]
         },
         "linux": {
             "target": [
                 "AppImage",
-                "deb"
+                "deb",
+                "rpm"
             ],
             "publish": [
                 "github"
+            ],
+            "extraResources": [
+                "rclone/linux/*",
+                "rclone/LICENSE"
             ]
         },
         "win": {
             "target": "nsis",
             "publish": [
                 "github"
+            ],
+            "extraResources": [
+                "rclone/win32/*",
+                "rclone/LICENSE"
             ]
         },
         "nsis": {
@@ -84,14 +93,14 @@
         "chokidar": "^2.0.4",
         "electron-context-menu": "^0.10.1",
         "electron-is-dev": "^1.0.1",
-        "electron-updater": "^3.2.2",
+        "electron-updater": "^4.0.0",
         "form-serialize": "^0.7.2",
         "ini": "^1.3.5"
     },
     "devDependencies": {
         "electron": "4.0.0-beta.7",
-        "electron-builder": "latest",
-        "electron-reload": "^1.2.5",
+        "electron-builder": "*",
+        "electron-reload": "^1.3.0",
         "standard": "*"
     }
 }

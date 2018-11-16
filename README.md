@@ -13,6 +13,20 @@ RcloneTray is simple cross-platform GUI for [Rclone](https://rclone.org/) and is
 ![Screenshot](https://raw.githubusercontent.com/dimitrov-adrian/RcloneTray/master/screenshot.png)
 
 
+## Requirements
+Only 64bit binaries are provided in distributions.
+
+Supported operation systems:
+* Windows 7/8/10 (x64)
+* macOS 10.10 and later
+
+There is some general problems with linux supports, so until fix them, can't say it is supported.
+
+To get mount function working, you need to install extra packages:
+* Windows - http://www.secfs.net/winfsp/
+* macOS - https://osxfuse.github.io/
+
+
 ## Downloads
 The project is still in development, you can check latest builds from [releases](https://github.com/dimitrov-adrian/RcloneTray/releases)
 

@@ -2,6 +2,7 @@
 
 const path = require('path')
 const { Tray, Menu, shell } = require('electron')
+const isDev = require('electron-is-dev')
 const settings = require('./settings')
 const rclone = require('./rclone')
 const dialogs = require('./dialogs')
@@ -14,15 +15,16 @@ const dialogs = require('./dialogs')
 let trayIndicator = null
 
 /**
- * Tray icon, default state
+ * Host the atomic timer
  * @private
  */
-let iconDefault
+let refreshTrayMenuAtomicTimer = null
 
 /**
- * Tray icon, connected state
+ * Tray icons
+ * @private
  */
-let iconConnected
+const icons = {}
 
 /**
  * Label for platform's file browser
@@ -45,15 +47,15 @@ const bookmarkActionRouter = function (action, ...args) {
   } else if (action === 'unmount') {
     rclone.unmount(this)
   } else if (action === 'open-mounted') {
-    rclone.openMounted(this)
+    rclone.openMountPoint(this)
   } else if (action === 'download') {
     rclone.download(this)
   } else if (action === 'stop-downloading') {
-    rclone.stopDownloading(this)
+    rclone.stopDownload(this)
   } else if (action === 'upload') {
     rclone.upload(this)
   } else if (action === 'stop-uploading') {
-    rclone.stopUploading(this)
+    rclone.stopUpload(this)
   } else if (action === 'toggle-automatic-upload') {
     rclone.toggleAutomaticUpload(this)
   } else if (action === 'open-local') {
@@ -109,15 +111,13 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
   }
 
   // Mount
-  let isMounted = rclone.mountStatus(bookmark)
-
+  let isMounted = rclone.getMountStatus(bookmark)
   template.submenu.push({
     label: 'Mount',
     click: bookmarkActionRouter.bind(bookmark, 'mount'),
     checked: !!isMounted,
     enabled: isMounted === false
   })
-
   if (isMounted !== false) {
     template.submenu.push(
       {
@@ -133,13 +133,12 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
   }
 
   // Download/Upload
-  let isDownloading = false
-  let isUploading = false
+  let isDownload = false
+  let isUpload = false
   let isAutomaticUpload = false
-
-  if ('_local_path_map' in bookmark) {
-    isDownloading = rclone.isDownloading(bookmark)
-    isUploading = rclone.isUploading(bookmark)
+  if ('_rclonetray_local_path_map' in bookmark && bookmark._rclonetray_local_path_map.trim()) {
+    isDownload = rclone.isDownload(bookmark)
+    isUpload = rclone.isUpload(bookmark)
     isAutomaticUpload = rclone.isAutomaticUpload(bookmark)
     template.submenu.push(
       {
@@ -148,15 +147,15 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
       {
         type: 'checkbox',
         label: 'Download',
-        enabled: !isAutomaticUpload && !isUploading && !isDownloading,
-        checked: isDownloading,
+        enabled: !isAutomaticUpload && !isUpload && !isDownload,
+        checked: isDownload,
         click: bookmarkActionRouter.bind(bookmark, 'download')
       },
       {
         type: 'checkbox',
         label: 'Upload',
-        enabled: !isAutomaticUpload && !isUploading && !isDownloading,
-        checked: isUploading,
+        enabled: !isAutomaticUpload && !isUpload && !isDownload,
+        checked: isUpload,
         click: bookmarkActionRouter.bind(bookmark, 'upload')
       },
       {
@@ -166,14 +165,14 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
         click: bookmarkActionRouter.bind(bookmark, 'toggle-automatic-upload')
       })
 
-    if (isDownloading) {
+    if (isDownload) {
       template.submenu.push({
         label: 'Stop Downloading',
         click: bookmarkActionRouter.bind(bookmark, 'stop-downloading')
       })
     }
 
-    if (isUploading) {
+    if (isUpload) {
       template.submenu.push({
         label: 'Stop Uploading',
         click: bookmarkActionRouter.bind(bookmark, 'stop-uploading')
@@ -188,16 +187,16 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
 
   // Serving.
   let isServing = false
-  let servingProtocols = rclone.getServingProtocols()
-  let servingProtocolsLen = Object.keys(servingProtocols).length
-  if (servingProtocolsLen) {
+  let availableServingProtocols = rclone.getAvailableServeProtocols()
+  let availableServingProtocolsLen = Object.keys(availableServingProtocols).length
+  if (availableServingProtocolsLen) {
     template.submenu.push(
       {
         type: 'separator'
       })
 
     let i = 0
-    Object.keys(servingProtocols).forEach(function (protocol) {
+    Object.keys(availableServingProtocols).forEach(function (protocol) {
       i++
       let servingURI = rclone.serveStatus(protocol, bookmark)
 
@@ -213,7 +212,7 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
 
       template.submenu.push({
         type: 'checkbox',
-        label: `Serve ${servingProtocols[protocol]}`,
+        label: `Serve ${availableServingProtocols[protocol]}`,
         click: bookmarkActionRouter.bind(bookmark, 'serve-start', protocol),
         enabled: servingURI === false,
         checked: !!servingURI
@@ -233,7 +232,7 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
         )
 
         // Add separator after the menu item, only if current serve method is in process.
-        if (i < servingProtocolsLen) {
+        if (i < availableServingProtocolsLen) {
           template.submenu.push({
             type: 'separator'
           })
@@ -265,7 +264,7 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
   )
 
   // Set the menu item state if there is any kind of connection or current running process.
-  let isConnected = isMounted || isDownloading || isUploading || isServing || isAutomaticUpload
+  let isConnected = isMounted || isDownload || isUpload || isServing || isAutomaticUpload
 
   // Set the bookmark label
   template.label = bookmark.$name
@@ -281,6 +280,7 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
     template.label = (isConnected ? '● ' : '○ ') + template.label
   }
 
+  // Usually should not goes here.
   if (!template.label) {
     template.label = '<Unknown>'
   }
@@ -298,11 +298,12 @@ const refreshTrayMenu = function () {
   // If by some reason some part of the code do this.refresh(),
   // before the tray icon initialization, must not continue because possible error.
   if (!trayIndicator) {
-    console.error('ERROR', 'tray-indicator: refresh() before init()')
     return
   }
 
-  console.log('Refresh tray indicator menu')
+  if (isDev) {
+    console.log('Refresh tray indicator menu')
+  }
 
   let menuItems = []
   let isConnected = false
@@ -353,7 +354,7 @@ const refreshTrayMenu = function () {
   trayIndicator.setContextMenu(Menu.buildFromTemplate(menuItems))
 
   // Set icon acording to the status
-  trayIndicator.setImage(isConnected ? iconConnected : iconDefault)
+  trayIndicator.setImage(isConnected ? icons.connected : icons.default)
 }
 
 /**
@@ -361,12 +362,12 @@ const refreshTrayMenu = function () {
  */
 const refresh = function () {
   // Use some kind of static variable to store the timer
-  if (typeof refresh.refreshTrayMenuAtomicTimer !== 'undefined' && refresh.refreshTrayMenuAtomicTimer) {
-    clearTimeout(refresh.refreshTrayMenuAtomicTimer)
+  if (refreshTrayMenuAtomicTimer) {
+    clearTimeout(refreshTrayMenuAtomicTimer)
   }
 
-  // 500ms delay should be enough to prevent multiple updates in neartime.
-  refresh.refreshTrayMenuAtomicTimer = setTimeout(refreshTrayMenu, 500)
+  // Set some delay to avoid multiple updates in close time.
+  refreshTrayMenuAtomicTimer = setTimeout(refreshTrayMenu, 500)
 }
 
 /**
@@ -380,17 +381,20 @@ const init = function () {
   }
 
   if (process.platform === 'win32') {
-    iconDefault = path.join(__dirname, 'ui', 'icons', 'icon.ico')
-    iconConnected = path.join(__dirname, 'ui', 'icons', 'icon-connected.ico')
+    icons.default = path.join(__dirname, 'ui', 'icons', 'icon.ico')
+    icons.connected = path.join(__dirname, 'ui', 'icons', 'icon-connected.ico')
   } else if (process.platform === 'linux') {
-    iconDefault = path.join(__dirname, 'ui', 'icons', 'icon.png')
-    iconConnected = path.join(__dirname, 'ui', 'icons', 'icon-connected.png')
+    // @TODO in some cases the tray icon is blury, it's ok on Deepin and KDE, Xfce
+    //       but on ubuntu doesn't looks good.
+    //       need more tests with Gnome 3 (topicons), Mate, Cinnamon, Budgie
+    icons.default = path.join(__dirname, 'ui', 'icons', 'icon.png')
+    icons.connected = path.join(__dirname, 'ui', 'icons', 'icon-connected.png')
   } else {
-    iconDefault = path.join(__dirname, 'ui', 'icons', 'iconTemplate.png')
-    iconConnected = path.join(__dirname, 'ui', 'icons', 'icon-connectedTemplate.png')
+    icons.default = path.join(__dirname, 'ui', 'icons', 'iconTemplate.png')
+    icons.connected = path.join(__dirname, 'ui', 'icons', 'icon-connectedTemplate.png')
   }
 
-  trayIndicator = new Tray(iconDefault)
+  trayIndicator = new Tray(icons.default)
 }
 
 // Exports.

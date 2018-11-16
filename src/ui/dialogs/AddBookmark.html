@@ -3,7 +3,7 @@
 
   <head>
     <script defer>
-      $main.require('ui')
+      $main.require('style')
       $main.require('node_modules/form-serialize/index.js')
       $main.require('src/ui/scripts/fields.js');
       $main.require('src/ui/scripts/bookmark-settings.js');
@@ -34,7 +34,7 @@
         selectElement.appendChild(optionsContainer)
       }
 
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
 
         const theForm = document.getElementById('the-form')
         const providerSettingsWrapper = document.getElementById('provider-settings-wrapper')
@@ -43,7 +43,7 @@
         providerSettingsWrapper.style.display = 'none'
 
         const providersListSelect = document.getElementById('providers-list');
-        providersListSelect.addEventListener('change', function() {
+        providersListSelect.addEventListener('change', function () {
           if (this.selectedOptions[0].hasOwnProperty('providerObject')) {
             let provider = this.selectedOptions[0].providerObject
             document.title = `Create new ${provider.Name} Bookmark (${provider.Description})`
@@ -62,7 +62,7 @@
         })
         renderAvailableProvidersSelectOptions(providersListSelect)
 
-        theForm.addEventListener('submit', function(event) {
+        theForm.addEventListener('submit', function (event) {
           event.preventDefault();
 
           let data = serialize(this, {
@@ -71,7 +71,7 @@
           })
 
           $main.rclone.addBookmark(data.type, data.name, data.options, data.custom_args)
-            .then(function() {
+            .then(function () {
               window.close()
             })
             .catch(window.errorBox)
@@ -123,5 +123,7 @@
 
       </form>
     </main>
+
   </body>
+
 </html>

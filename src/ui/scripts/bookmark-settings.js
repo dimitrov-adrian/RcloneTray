@@ -59,7 +59,9 @@ window.renderBookmarkSettings = function (placeholder, providerObject, values, e
   // Populate connection and connection - advanced.
   providerObject.Options.forEach(function (field) {
     if (!field.Hide) {
-      if (field.Advanced) {
+      if (field.Name === '_rclonetray_local_path_map') {
+        tabs['local-path'].content.appendChild(window.createFieldRow(field, values[field.Name] || null))
+      } else if (field.Advanced) {
         tabs['connection-advanced'].content.appendChild(window.createFieldRow(field, values[field.Name] || null))
       } else {
         tabs['connection'].content.appendChild(window.createFieldRow(field, values[field.Name] || null))
@@ -70,15 +72,6 @@ window.renderBookmarkSettings = function (placeholder, providerObject, values, e
   if (tabs['connection-advanced'].content.childNodes.length < 1) {
     tabs['connection-advanced'].element.style.display = 'none'
   }
-
-  tabs['local-path'].content.appendChild(window.createFieldRow({
-    Name: '_local_path_map',
-    $type: 'directory',
-    Required: false,
-    Hide: false,
-    Advanced: false,
-    Help: 'Set local directory that could coresponding to the remotes root.'
-  }, values['_local_path_map'] || null))
 
   tabs['custom-args'].content.appendChild(window.createFieldRow({
     Name: 'custom_args',

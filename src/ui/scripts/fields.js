@@ -73,7 +73,7 @@ window.createFieldRow = function (fieldDefinition, value, fieldName) {
   inputField.value = ''
 
   // Assign values.
-  if (fieldDefinition.$type === 'bool') {
+  if (fieldDefinition.$type === 'boolean') {
     if ([true, 1, 'true'].indexOf(value) > -1) {
       inputField.checked = 'checked'
     }
@@ -84,7 +84,7 @@ window.createFieldRow = function (fieldDefinition, value, fieldName) {
   td.appendChild(inputField)
 
   if ('$type' in fieldDefinition) {
-    if (fieldDefinition.$type === 'bool') {
+    if (fieldDefinition.$type === 'boolean') {
       inputField.type = 'checkbox'
       inputField.value = 'true'
     } else if (fieldDefinition.$type === 'numeric') {
@@ -133,7 +133,7 @@ window.createFieldRow = function (fieldDefinition, value, fieldName) {
   }
 
   // Set examples
-  if (fieldDefinition.Examples && fieldDefinition.$type !== 'bool' && fieldDefinition.$type !== 'select') {
+  if (fieldDefinition.Examples && fieldDefinition.$type !== 'boolean' && fieldDefinition.$type !== 'select') {
     let inputFieldOptions = document.createElement('datalist')
     inputFieldOptions.id = inputField.id + '_datalist'
     inputField.setAttribute('list', inputFieldOptions.id)

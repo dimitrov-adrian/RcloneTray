@@ -1,13 +1,14 @@
 <!doctype html>
 <html>
+
   <head>
     <script defer>
-      $main.require('ui')
+      $main.require('style')
       $main.require('node_modules/form-serialize/index.js')
       $main.require('src/ui/scripts/fields.js');
       $main.require('src/ui/scripts/bookmark-settings.js');
 
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener('DOMContentLoaded', function () {
         const theForm = document.getElementById('the-form')
         const currentProviderSettings = document.getElementById('current-provider-settings')
 
@@ -19,7 +20,7 @@
         window.location.hash = 'connection'
         renderBookmarkSettings(currentProviderSettings, provider, $main.getProps(), $main.getProps().$externals)
 
-        theForm.addEventListener('submit', function(event) {
+        theForm.addEventListener('submit', function (event) {
           event.preventDefault();
 
           let data = serialize(this, {
@@ -33,7 +34,7 @@
         })
 
         document.getElementById('delete-bookmark-button')
-          .addEventListener('click', function(event) {
+          .addEventListener('click', function (event) {
             event.preventDefault()
             if (confirm('Are you sure you want to delete the bookmark?')) {
               $main.rclone.deleteBookmark($main.getProps().$name)
@@ -50,7 +51,7 @@
   <body>
     <main>
 
-        <form id="the-form">
+      <form id="the-form">
 
         <div class="row">
           <div class="cell-left">
@@ -89,4 +90,5 @@
     </main>
 
   </body>
+
 </html>
