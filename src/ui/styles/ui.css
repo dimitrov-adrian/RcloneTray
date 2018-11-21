@@ -1,16 +1,10 @@
-/* Define the "system" font family */
-@font-face {
-  font-family: system;
-  font-style: normal;
-  font-weight: 300;
-  src: local(".SFNSText-Light"), local(".HelveticaNeueDeskInterface-Light"), local(".LucidaGrandeUI"), local("Ubuntu Light"), local("Segoe UI Light"), local("Roboto-Light"), local("DroidSans"), local("Tahoma");
+/* Deal with margins */
+body:before,
+body:after {
+  content: '';
+  clear: both;
+  display: table;
 }
-
-/* Now, let's apply it on an element */
-body {
-  font-family: "system";
-}
-
 * {
   box-sizing: border-box;
   margin: 0;
@@ -22,7 +16,8 @@ html {
   user-select: none;
   background: rgba(0,0,0,0);
   user-select: none;
-  text-rendering: optimizeLegibility;
+  text-rendering: optimizeSpeed;
+  font: caption;
 }
 :dir(rtl) html {
   direction: ltr;
@@ -30,80 +25,90 @@ html {
 html:not(.transparent) {
   background: Window;
 }
-html, body, input, select, textarea {
-  font: caption;
-  font: small-caption;
+body, input, select, textarea {
+  font: inherit;
 }
 body {
   background: inherit;
   color: WindowText;
-  overflow: hidden;
 }
 
 img {
   pointer-events: none;
 }
 
-main {
-  padding: 1rem;
-}
-p {
-  margin-top: 1rem;
-  margin-bottom: 1rem;
-}
-p:last-child {
-  margin-bottom: 0;
+p,
+main,
+.p,
+.row {
+  margin: 1rem;
 }
 
-/* Summary */
-summary {
-  outline: none;
-  padding: .4rem 0;
-  border-bottom: 1px solid #0000001a;
-  cursor: pointer;
+/* Tabs */
+.tab-buttons {
+  display: flex;
 }
-details:first-child summary {
-  border-top: 1px solid #0000001a;
+.tab-buttons > * {
+  padding: 0 1em;
+  font: small-caption;
+  line-height: 1.8em;
+  vertical-align: middle;
 }
-details summary::-webkit-details-marker {
-  opacity: .6;
+.tab-buttons > .active {
+  cursor: default;
 }
-details[open] summary {
-  border-bottom: none;
-}
-
-[readonly],
-[disabled],
-.disabled {
-  opacity: .6;
-  background: #00000010;
+.tab-content {
+  max-height: 400px;
+  overflow: auto;
 }
 
-/* Highlight colors (background + text) */
-.highlight {
-  background: Highlight;
-  color: HighlightText;
+/* Row */
+.row {
+  display: flex;
 }
 
-/* Info colors (background + text) */
-.info {
-  background: InfoBackground;
-  color: InfoText;
+/* Cells: Left (start) */
+.cell-left {
+  width: 30%;
+  text-align: end;
+  vertical-align: top;
+  margin-right: 1rem;
+  padding-top: 5px;
+  overflow-wrap: break-word;
+}
+
+/* Cells: Right (end) */
+.cell-right {
+  width: 70%;
+  text-align: start;
+  vertical-align: top;
+  overflow-wrap: break-word;
 }
 
 /* Alignment: Center */
 .center {
   text-align: center;
+  justify-content: center;
 }
 
 /* Alignment: Left */
 .left {
   text-align: start;
+  justify-content: flex-start;
 }
 
 /* Alignment: Right*/
 .right {
   text-align: end;
+  justify-content: flex-end;
+}
+
+/* Form, Fields, and decorations */
+[readonly],
+[disabled],
+.disabled {
+  opacity: .6;
+  background: #00000010;
 }
 
 /* Label: Required */
@@ -117,67 +122,9 @@ details[open] summary {
 .label-help {
   margin-top: .2em;
   margin-bottom: .6em;
+  font-size: .8em;
   font-style: italic;
   user-select: text;
-}
-
-/* Label: tag */
-.label-tag {
-  font-size: .8rem;
-  background: WindowText;
-  color: Window;
-  border-radius: 3px;
-  padding: 0 .2rem;
-  line-height: 1.2rem;
-  display: inline-block;
-}
-
-/* Padded element: Vertical */
-.padded-v {
-  padding-top: .4rem;
-  padding-bottom: .4rem;
-}
-
-/* Padded element: Horizontal */
-.padded-h {
-  padding-left: .4rem;
-  padding-right: .4rem;
-}
-
-/* Padded element: Vertical */
-.margin-v {
-  margin-top: .4rem;
-  margin-bottom: .4rem;
-}
-
-/* Padded element: Horizontal */
-.margin-h {
-  margin-left: .4rem;
-  margin-right: .4rem;
-}
-
-/* Row */
-.row {
-  display: flex;
-  margin-bottom: 1rem;
-}
-
-/* Cells: Left (start) */
-.cell-left {
-  width: 30%;
-  text-align: end;
-  vertical-align: top;
-  margin-right: 2%;
-  padding-top: 5px;
-  overflow-wrap: break-word;
-}
-
-/* Cells: Right (end) */
-.cell-right {
-  width: 70%;
-  text-align: start;
-  vertical-align: top;
-  overflow-wrap: break-word;
 }
 
 /* Form elements */
@@ -185,6 +132,7 @@ var {
   padding: 5px 6px;
   display: inline-block;
 }
+
 input,
 textarea {
   user-select: unset
@@ -220,4 +168,17 @@ input:not([type="checkbox"]):not([type="radio"]):focus,
 textarea:focus {
   outline: -webkit-focus-ring-color auto 3px;
   outline-offset: -2px;
+}
+button,
+input[type="button"] {
+  margin-left: .6rem;
+  margin-right: .6rem;
+}
+button:first-child,
+input[type="button"]:first-child {
+  margin-left: unset;
+}
+button:last-child,
+input[type="button"]:last-child {
+  margin-right: unset;
 }

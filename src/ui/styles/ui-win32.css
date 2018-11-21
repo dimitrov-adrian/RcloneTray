@@ -1,30 +1,66 @@
 /* win32 stles */
+html {
+  font: small-caption;
+}
 
 /* Input, Textarea, Select */
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
-  border: 2px solid #aaa;
-  background: #fff;
-  padding: 3px 6px;
+  -webkit-appearance: none;
+  border-radius: 0;
+  border: 2px solid WindowFrame;
+  background: Window;
+  padding: .3em .6em;
+}
+button {
+  border-radius: 0;
+  border: 2px solid ButtonFace;
+  background: ButtonFace;
+  padding: .4em 1em;
 }
 input:not([type="checkbox"]):not([type="radio"]):focus,
 select:focus,
+button:focus,
+button:active,
 textarea:focus {
-    border-color: blue;
+    border-color: #0078d4;
     outline: none;
     box-shadow: none;
 }
 
-/* Buttons */
-button {
-    border: 2px solid #cecece;
-    background: #cecece;
-    padding: 3px 6px;
+/* Tabs */
+.tabs {
+  margin: 1rem;
+  border: 1px solid ThreeDFace;
 }
-button:focus,
-button:active {
-    outline: none;
-    box-shadow: none;
-    border-color: blue;
+.tab-buttons {
+  background: rgba(0,0,0,.12);
+  border-bottom: 1px solid ThreeDFace;
+}
+.tab-buttons > * {
+  padding: .4em 2em;
+  border-right: 1px solid ThreeDFace;
+}
+.tab-buttons > :hover,
+.tab-buttons > .active {
+  background: rgba(0,0,0,.2);
+  background: ThreeDFace;
+}
+.tab-buttons > .active {
+  background: Window;
+  border-top: 2px solid #0078d4;
+  margin-bottom: -1px;
+}
+.tab-content {
+  background: Window;
+}
+
+
+/* Hacks */
+#current-provider-settings .tabs {
+  margin: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
 }

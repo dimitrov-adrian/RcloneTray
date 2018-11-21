@@ -25,11 +25,11 @@
     "license": "MIT",
     "main": "src/main.js",
     "scripts": {
-        "postinstall": "electron-builder install-app-deps && ./update-rclone-binaries.sh",
-        "start": "ELECTRON_IS_DEV=1 node_modules/.bin/electron .",
+        "postinstall": "electron-builder install-app-deps",
+        "start": "node_modules/.bin/electron .",
         "pack": "electron-builder --dir",
         "dist": "electron-builder",
-        "publish": "build -p always --mac --win --x64"
+        "publish": "./update-rclone-binaries.sh && build -p always --mac --win --x64"
     },
     "eslintConfig": {
         "fix": true,
@@ -94,7 +94,6 @@
         "electron-context-menu": "^0.10.1",
         "electron-is-dev": "^1.0.1",
         "electron-updater": "^4.0.0",
-        "form-serialize": "^0.7.2",
         "ini": "^1.3.5"
     },
     "devDependencies": {

@@ -1,12 +1,48 @@
 /* darwin styles */
+html {
+  font: small-caption;
+}
+
+select {
+  margin-top: 3px;
+}
 
 fieldset,
 section {
-    border-radius: 5px;
+  border-radius: 5px;
 }
 
 /* Buttons */
 button,
 input[type="button"] {
-    -webkit-appearance: button
+  -webkit-appearance: button
+}
+
+/* Tabs */
+.tab-buttons {
+  border-top: 1px solid ThreeDFace;
+  justify-content: center;
+}
+.tab-buttons > * {
+  border-radius: 6px;
+  margin: .5rem;
+}
+.tab-buttons > :hover,
+.tab-buttons > .active {
+  background: rgba(0,0,0,.2);
+  background: ThreeDFace;
+  color: ButtonFace;
+}
+.tab-buttons > .active {
+    background: WindowFrame
+}
+.tab-content {
+  background: ThreeDHighlight;
+  border-top: 1px solid ThreeDFace;
+  border-bottom: 1px solid ThreeDFace;
+}
+
+/* Hacks */
+#current-provider-settings .tab-buttons {
+  border-top: 0;
 }

@@ -61,7 +61,7 @@ const createNewDialog = function (dialogName, options, props) {
     app.dock.show()
   }
 
-  // Assign $props that we will use in RenderUtils.getProps() as window properties (params) on load time.
+  // Assign $props that we will use in window.getProps() as window properties (params) on load time.
   theDialog.$props = props || {}
 
   theDialog.on('ready-to-show', theDialog.show)
@@ -81,11 +81,13 @@ const createNewDialog = function (dialogName, options, props) {
       delete dialogsSingletoneInstances[singleId]
     }
 
+    // On macos hide the dock icon when no active windows by this app.
     if (process.platform === 'darwin' && BrowserWindow.getAllWindows().length < 1) {
       app.dock.hide()
     }
   })
 
+  // Open links in system default browser.
   theDialog.webContents.on('new-window', function (event, url) {
     event.preventDefault()
     shell.openExternal(url)
@@ -102,10 +104,10 @@ const createNewDialog = function (dialogName, options, props) {
  * Show About dialog
  */
 const about = function () {
-  createNewDialog('About', {
+  let aboutDialog = createNewDialog('About', {
     $singleId: 1,
     title: 'About',
-    width: 320,
+    width: 340,
     height: 296,
     minimizable: false,
     alwaysOnTop: true,
@@ -116,6 +118,11 @@ const about = function () {
     titleBarStyle: 'hidden',
     backgroundColor: null
   })
+
+  // Close when loose focus, but only when non-dev because even the dev tool trigger the close.
+  if (!isDev) {
+    aboutDialog.on('blur', aboutDialog.close)
+  }
 }
 
 /**
@@ -124,8 +131,8 @@ const about = function () {
 const preferences = function () {
   createNewDialog('Preferences', {
     $singleId: 1,
-    width: 460,
-    height: 296
+    width: 600,
+    height: 300
   })
 }
 
@@ -144,11 +151,12 @@ const addBookmark = function () {
  * Show edit Bookmark dialog
  */
 const editBookmark = function () {
+  let props = this
   createNewDialog('EditBookmark', {
     $singleId: this.$name,
     width: 600,
     height: 460
-  }, this)
+  }, props)
 }
 
 /**

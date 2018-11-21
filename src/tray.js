@@ -252,6 +252,9 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
     }
   )
 
+  // Set the menu item state if there is any kind of connection or current running process.
+  let isConnected = isMounted || isDownload || isUpload || isServing || isAutomaticUpload
+
   // Bookmark controls.
   template.submenu.push(
     {
@@ -259,12 +262,10 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
     },
     {
       label: 'Edit',
+      enabled: !isConnected,
       click: dialogs.editBookmark.bind(bookmark)
     }
   )
-
-  // Set the menu item state if there is any kind of connection or current running process.
-  let isConnected = isMounted || isDownload || isUpload || isServing || isAutomaticUpload
 
   // Set the bookmark label
   template.label = bookmark.$name
@@ -384,7 +385,7 @@ const init = function () {
     icons.default = path.join(__dirname, 'ui', 'icons', 'icon.ico')
     icons.connected = path.join(__dirname, 'ui', 'icons', 'icon-connected.ico')
   } else if (process.platform === 'linux') {
-    // @TODO in some cases the tray icon is blury, it's ok on Deepin and KDE, Xfce
+    // @TODO in some cases the tray icon is blury, it's ok on Deepin, KDE, Xfce
     //       but on ubuntu doesn't looks good.
     //       need more tests with Gnome 3 (topicons), Mate, Cinnamon, Budgie
     icons.default = path.join(__dirname, 'ui', 'icons', 'icon.png')

@@ -4,36 +4,40 @@
   <body>
 
     <script>
-      $main.require('style')
+      $main.loadStyles()
     </script>
 
-    <main class="center">
+    <main class="center" style="padding-top:2rem;">
 
-      <div class="padded-v margin-v">
+      <div class="p">
         <img src="../icons/source-icon-color.png" width="78" height="78" />
       </div>
 
-      <div class="padded-v">
-        <h3>
-          <a href="https://github.com/dimitrov-adrian/RcloneTray" target="_blank">
-            <script> document.write($main.app.getName()) </script>
-          </a>
-        </h3>
+      <div class="p">
         <div>
-          <script> document.write('v' + $main.app.getVersion()) </script>
+          <a href="https://github.com/dimitrov-adrian/RcloneTray" target="_blank">
+            <strong>
+              <script> document.write($main.app.name) </script>
+            </strong>
+          </a>
+        </div>
+        <div>
+          <script> document.write('v' + $main.app.version) </script>
         </div>
         <div>
           by Adrian Dimitrov
         </div>
       </div>
 
-      <div class="margin-v">
-        <div class="padded-v">
-          <h3>
+      <div class="p">
+        <div>
+          <div>
             <a href="https://rclone.org/" target="_blank">
-              Rclone
+              <strong>
+                Rclone
+              </strong>
             </a>
-          </h3>
+          </div>
           <div>
             <script> document.write($main.rclone.getVersion()) </script>
           </div>
@@ -43,7 +47,7 @@
         </div>
       </div>
 
-      <div style="margin-top:2rem;">
+      <div class="row center" style="margin-top:3rem;">
         <button onclick="window.open('https://github.com/dimitrov-adrian/RcloneTray/issues')">
           Report Issue
         </button>

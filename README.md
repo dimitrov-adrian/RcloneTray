@@ -4,7 +4,9 @@
 
 # <img src="https://raw.githubusercontent.com/dimitrov-adrian/RcloneTray/master/src/ui/icons/source-icon-color.png" width="48px" align="center" alt="RcloneTray Icon" /> RcloneTray
 
-[![Build Status](https://travis-ci.org/dimitrov-adrian/RcloneTray.svg?branch=master)](https://travis-ci.org/dimitrov-adrian/rclonetray) [![JavaScript Standard Style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com)
+[![Build Status](https://travis-ci.org/dimitrov-adrian/RcloneTray.svg?branch=master)](https://travis-ci.org/dimitrov-adrian/rclonetray)
+[![JavaScript Standard Style](https://img.shields.io/badge/code%20style-standard-brightgreen.svg)](http://standardjs.com)
+![Dependencies](https://david-dm.org/dimitrov-adrian/RcloneTray/status.svg)
 
 RcloneTray is simple cross-platform GUI for [Rclone](https://rclone.org/) and is intended to provide a free altenative to [Mountain Duck](https://mountainduck.io/)
 
@@ -25,6 +27,13 @@ There is some general problems with linux supports, so until fix them, can't say
 To get mount function working, you need to install extra packages:
 * Windows - http://www.secfs.net/winfsp/
 * macOS - https://osxfuse.github.io/
+
+
+## FAQ
+
+**The application bundle comes with Rclone version XXX, but I want to use version YYY?**
+No problem, you need just to uncheck the option "Use bundled Rclone" and then RcloneTray will
+use the system installed Rclone
 
 
 ## Downloads

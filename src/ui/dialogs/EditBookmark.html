@@ -2,36 +2,31 @@
 <html>
 
   <head>
-    <script defer>
-      $main.require('style')
-      $main.require('node_modules/form-serialize/index.js')
-      $main.require('src/ui/scripts/fields.js');
-      $main.require('src/ui/scripts/bookmark-settings.js');
+
+    <script>
+      $main.loadStyles()
+      document.title = `Edit ${$main.getProps().$name}`
 
       document.addEventListener('DOMContentLoaded', function () {
-        const theForm = document.getElementById('the-form')
-        const currentProviderSettings = document.getElementById('current-provider-settings')
 
-        let provider = $main.rclone.getProvider($main.getProps().type)
+        let opts = window.$main.getProps();
+        renderBookmarkSettings(
+          document.getElementById('bookmark-settings'),
+          window.$main.getProps().type,
+          {
+            options: opts,
+          }
+        )
 
-        document.getElementById('$providerName').innerText = provider.Name
-        document.getElementById('$bookmarkName').innerText = $main.getProps().$name
-        document.title = `Edit ${$main.getProps().$name}`
-        window.location.hash = 'connection'
-        renderBookmarkSettings(currentProviderSettings, provider, $main.getProps(), $main.getProps().$externals)
-
-        theForm.addEventListener('submit', function (event) {
-          event.preventDefault();
-
-          let data = serialize(this, {
-            hash: true,
-            empty: true
+        document.getElementById('the-form')
+          .addEventListener('submit', function (event) {
+            event.preventDefault()
+            let data = getTheFormData(this)
+            $main.rclone
+              .updateBookmark($main.getProps().$name, data.options)
+              .then(window.close)
+              .catch(errorBox)
           })
-
-          $main.rclone.updateBookmark($main.getProps().$name, data.options, data.custom_args)
-            .then(window.close)
-            .catch(errorBox)
-        })
 
         document.getElementById('delete-bookmark-button')
           .addEventListener('click', function (event) {
@@ -49,45 +44,45 @@
   </head>
 
   <body>
-    <main>
 
-      <form id="the-form">
+    <form id="the-form">
 
-        <div class="row">
-          <div class="cell-left">
-            Type
-          </div>
-          <div class="cell-right">
-            <var id="$providerName"></var>
-          </div>
+      <div class="row">
+        <div class="cell-left">
+          Type
         </div>
-
-        <div class="row">
-          <div class="cell-left">
-            <label>
-              Name
-            </label>
-          </div>
-          <div class="cell-right">
-            <var id="$bookmarkName"></var>
-          </div>
+        <div class="cell-right">
+          <var>
+            <script>document.write($main.getProps().type)</script>
+          </var>
         </div>
+      </div>
 
-        <div id="current-provider-settings"></div>
-
-        <div class="padded-v right">
-
-          <button id="delete-bookmark-button">
-            Delete
-          </button>
-
-          <button type="submit">
-            Save
-          </button>
+      <div class="row">
+        <div class="cell-left">
+          Name
         </div>
+        <div class="cell-right">
+          <var>
+            <script>document.write($main.getProps().$name)</script>
+          </var>
+        </div>
+      </div>
 
-      </form>
-    </main>
+      <div id="bookmark-settings"></div>
+
+      <div class="row right">
+
+        <button id="delete-bookmark-button">
+          Delete
+        </button>
+
+        <button type="submit">
+          Update
+        </button>
+      </div>
+
+    </form>
 
   </body>
 

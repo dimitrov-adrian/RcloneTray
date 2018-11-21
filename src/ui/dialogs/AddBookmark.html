@@ -3,10 +3,7 @@
 
   <head>
     <script defer>
-      $main.require('style')
-      $main.require('node_modules/form-serialize/index.js')
-      $main.require('src/ui/scripts/fields.js');
-      $main.require('src/ui/scripts/bookmark-settings.js');
+      $main.loadStyles()
 
       /**
        * Add available providers as options to select HTML element
@@ -38,42 +35,32 @@
 
         const theForm = document.getElementById('the-form')
         const providerSettingsWrapper = document.getElementById('provider-settings-wrapper')
-        const currentProviderSettings = document.getElementById('current-provider-settings')
-        document.title = 'Create new Bookmark'
-        providerSettingsWrapper.style.display = 'none'
+        const bookmarkSettingsWrapper = document.getElementById('bookmark-settings')
 
         const providersListSelect = document.getElementById('providers-list');
         providersListSelect.addEventListener('change', function () {
-          if (this.selectedOptions[0].hasOwnProperty('providerObject')) {
+          if (this.selectedOptions.length > 0 && this.selectedOptions[0].hasOwnProperty('providerObject')) {
             let provider = this.selectedOptions[0].providerObject
             document.title = `Create new ${provider.Name} Bookmark (${provider.Description})`
-            renderBookmarkSettings(currentProviderSettings, provider)
-            window.location.hash = 'connection'
+            renderBookmarkSettings(bookmarkSettingsWrapper, this.value)
             providerSettingsWrapper.style.display = null
-            resizeToContent()
           } else {
             document.title = 'Create new Bookmark'
             providerSettingsWrapper.style.display = 'none'
-            currentProviderSettings.innerHTML = '<p>Select connection type</p>'
-            renderBookmarkSettings(currentProviderSettings)
-            window.location.hash = null
-            resizeToContent()
+            bookmarkSettingsWrapper.innerHTML = ''
           }
+          resizeToContent()
         })
+        providersListSelect.dispatchEvent(new Event('change'))
         renderAvailableProvidersSelectOptions(providersListSelect)
 
         theForm.addEventListener('submit', function (event) {
           event.preventDefault();
 
-          let data = serialize(this, {
-            hash: true,
-            empty: true
-          })
+          let data = getTheFormData(this)
 
-          $main.rclone.addBookmark(data.type, data.name, data.options, data.custom_args)
-            .then(function () {
-              window.close()
-            })
+          $main.rclone.addBookmark(data.type, data.name, data.options)
+            .then(window.close)
             .catch(window.errorBox)
         })
       });
@@ -82,47 +69,44 @@
 
   <body>
 
-    <main>
+    <form id="the-form">
 
-      <form id="the-form">
+      <div class="row">
+        <div class="cell-left">
+          Connection Type
+        </div>
+        <div class="cell-right">
+          <select name="type" id="providers-list" style="width:20em;"></select>
+        </div>
+      </div>
+
+      <div id="provider-settings-wrapper">
 
         <div class="row">
           <div class="cell-left">
-            Connection Type
+            <label>
+              Name
+            </label>
+            <div class="label-required">
+              required
+            </div>
           </div>
           <div class="cell-right">
-            <select name="type" id="providers-list" style="width:20em;"></select>
+            <input type="text" name="name" value="" maxlength="20" size="20" style="width:12em" />
           </div>
         </div>
 
-        <div id="provider-settings-wrapper">
+        <div id="bookmark-settings"></div>
 
-          <div class="row">
-            <div class="cell-left">
-              <label>
-                Name
-              </label>
-              <div class="label-required">
-                required
-              </div>
-            </div>
-            <div class="cell-right">
-              <input type="text" name="name" value="" maxlength="20" size="20" style="width:12em" />
-            </div>
-          </div>
-
-          <div id="current-provider-settings"></div>
-
-          <div class="padded-v right">
-            <button type="submit">
-              Save
-            </button>
-          </div>
-
+        <div class="row right">
+          <button type="submit">
+            Add
+          </button>
         </div>
 
-      </form>
-    </main>
+      </div>
+
+    </form>
 
   </body>
 

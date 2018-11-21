@@ -78,6 +78,14 @@ const merge = function (settings) {
 }
 
 /**
+ * Get all settings
+ * @returns {{}}
+ */
+const getAll = function () {
+  return cache
+}
+
+/**
  * Update the settings file.
  */
 const updateFile = function () {
@@ -122,6 +130,7 @@ module.exports = {
   set,
   get,
   has,
+  getAll,
   remove,
   merge
 }

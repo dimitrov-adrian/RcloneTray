@@ -484,29 +484,44 @@ const updateProvidersCache = function () {
       providers.forEach(function (provider) {
         provider.Options.map(function (optionDefinition) {
           // Detect type acording the default value and other criteries.
-          optionDefinition.$type = 'string'
+          optionDefinition.$Type = 'string'
           if (optionDefinition.Default === true || optionDefinition.Default === false) {
-            optionDefinition.$type = 'boolean'
+            optionDefinition.$Type = 'boolean'
           } else if (!isNaN(parseFloat(optionDefinition.Default)) && isFinite(optionDefinition.Default)) {
-            optionDefinition.$type = 'number'
+            optionDefinition.$Type = 'number'
           } else if (optionDefinition.IsPassword) {
-            optionDefinition.$type = 'password'
+            optionDefinition.$Type = 'password'
           } else {
-            optionDefinition.$type = 'string'
+            optionDefinition.$Type = 'string'
           }
 
+          optionDefinition.$Namespace = 'options'
           return optionDefinition
         })
 
         // Add custom preferences.
         provider.Options.push({
-          Name: '_rclonetray_local_path_map',
           $Label: 'Local Path',
+          $Type: 'directory',
+          Name: '_rclonetray_local_path_map',
           Help: 'Set local directory that could coresponding to the remote root. This option is required in order to use upload and download functions.',
-          $type: 'directory',
           Required: false,
           Hide: false,
           Advanced: false
+        })
+
+        // custom args
+        provider.Options.push({
+          $Label: 'Custom Args',
+          $Type: 'text',
+          Name: '_rclonetray_custom_args',
+          Help: `
+            Custom arguments separated by space or new-line.
+            Read more about options at https://rclone.org/${provider.Name}/#standard-options
+          `,
+          Required: false,
+          Hide: false,
+          Advanced: true
         })
 
         Cache.providers[provider.Prefix] = provider
@@ -523,19 +538,17 @@ const updateProvidersCache = function () {
  * @param {{}} values
  * @throws {Error}
  */
-const updateBookmarkFields = function (bookmarkName, providerObject, values) {
+const updateBookmarkFields = function (bookmarkName, providerObject, values, oldValues) {
   let valuesPlain = {}
 
   providerObject.Options.forEach(function (optionDefinition) {
-    if (optionDefinition.$type === 'pass') {
-      if (optionDefinition.Name in values) {
-        if (values[optionDefinition.Name] !== '') {
-          doCommandSync(['config', 'password', bookmarkName, optionDefinition.Name, values[optionDefinition.Name]])
-        }
+    if (optionDefinition.$Type === 'password') {
+      if (!oldValues || oldValues[optionDefinition.Name] !== values[optionDefinition.Name]) {
+        doCommandSync(['config', 'password', bookmarkName, optionDefinition.Name, values[optionDefinition.Name]])
       }
     } else {
       // Sanitize booleans.
-      if (optionDefinition.$type === 'bool') {
+      if (optionDefinition.$Type === 'boolean') {
         if (optionDefinition.Name in values && ['true', 'yes', true, 1].indexOf(values[optionDefinition.Name]) > -1) {
           values[optionDefinition.Name] = 'true'
         } else {
@@ -577,7 +590,7 @@ const fireRcloneUpdateActions = function (eventName) {
  * @param {{}} bookmark
  * @throws {Error}
  */
-const _sync = function (method, bookmark) {
+const sync = function (method, bookmark) {
   // Check supported method
   if (method !== 'upload' && method !== 'download') {
     throw Error(`Unsupported sync method ${method}`)
@@ -682,10 +695,10 @@ const getBookmarks = function () {
  * Create new bookmark
  * @param {string} type
  * @param {string} bookmarkName
- * @param {{}} options
+ * @param {{}} values
  * @returns {Promise}
  */
-const addBookmark = function (type, bookmarkName, values, customArgs) {
+const addBookmark = function (type, bookmarkName, values) {
   // Will throw an error if no such provider exists.
   let providerObject = getProvider(type)
   let configFile = getConfigFile()
@@ -706,18 +719,13 @@ const addBookmark = function (type, bookmarkName, values, customArgs) {
       console.log('Rclone', 'Creating new bookmark', bookmarkName)
       try {
         updateBookmarkFields(bookmarkName, providerObject, values)
-
-        // Set custom args.
-        settings.set(`custom_args:${bookmarkName}`, customArgs || '')
-
+        dialogs.notification(`Bookmark ${bookmarkName} is created`)
         resolve()
-
         // Done.
       } catch (err) {
         console.error('Rclone', 'Reverting bookmark because of a problem', bookmarkName, err)
         doCommand(['config', 'delete', bookmarkName])
           .then(function () {
-            dialogs.notification(`Bookmark ${bookmarkName} is created`)
             reject(Error('Cannot write bookmark options to config.'))
           })
           .catch(reject)
@@ -728,22 +736,19 @@ const addBookmark = function (type, bookmarkName, values, customArgs) {
     }
   })
 }
+
 /**
  * Update existing bookmark
  * @param {{}|string} bookmark
  * @param {{}} values
- * @param {string} customArgs
  * @returns {Promise}
  */
-const updateBookmark = function (bookmark, values, customArgs) {
+const updateBookmark = function (bookmark, values) {
   bookmark = getBookmark(bookmark)
   let providerObject = getProvider(bookmark.type)
   return new Promise(function (resolve, reject) {
     try {
-      updateBookmarkFields(bookmark.$name, providerObject, values)
-
-      // Set custom args.
-      settings.set(`custom_args:${bookmark.$name}`, customArgs || '')
+      updateBookmarkFields(bookmark.$name, providerObject, values, bookmark)
       dialogs.notification(`Bookmark ${bookmark.$name} is updated.`)
       resolve()
     } catch (err) {
@@ -763,10 +768,6 @@ const deleteBookmark = function (bookmark) {
       .then(function () {
         BookmarkProcessManager.killAll(bookmark.$name)
         dialogs.notification(`Bookmark ${bookmark.$name} is deleted.`)
-
-        // Delete custom args.
-        settings.delete(`custom_args:${bookmark.$name}`)
-
         resolve()
       })
       .catch(reject)
@@ -868,20 +869,20 @@ const openMountPoint = function (bookmark) {
 
 /**
  * Perform download task
- * @see _sync()
+ * @see sync()
  * @param {{}|string} bookmark
  */
 const download = function (bookmark) {
-  _sync('download', getBookmark(bookmark))
+  sync('download', getBookmark(bookmark))
 }
 
 /**
  * Perform upload task
- * @see _sync()
+ * @see sync()
  * @param {{}|string} bookmark
  */
 const upload = function (bookmark) {
-  _sync('upload', getBookmark(bookmark))
+  sync('upload', getBookmark(bookmark))
 }
 
 /**
@@ -966,7 +967,7 @@ const toggleAutomaticUpload = function (bookmark) {
         clearTimeout(AutomaticUploadRegistry[bookmark.$name].timer)
       }
       AutomaticUploadRegistry[bookmark.$name].timer = setTimeout(function () {
-        _sync('upload', bookmark)
+        sync('upload', bookmark)
       }, 3000)
     })
   }
