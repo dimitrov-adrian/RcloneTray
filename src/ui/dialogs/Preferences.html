@@ -8,14 +8,14 @@
 
       document.addEventListener('DOMContentLoaded', function () {
         let tabs = createTabsElement()
-        document.getElementById('current-provider-settings').appendChild(tabs)
+        document.getElementById('preferences').appendChild(tabs)
 
         tabs.addTab('General', createOptionsFields([
           {
-            $Label: 'Start with the system',
+            $Label: 'Auto launch',
             $Type: 'boolean',
             Name: 'auto_start',
-            Help: '',
+            Help: 'Automatically launch the app during user login',
             Provider: '',
             Default: false,
             Value: $main.isAutostart(),
@@ -30,10 +30,10 @@
             $Label: 'Check for updates',
             $Type: 'boolean',
             Name: 'enable_updates',
-            Help: 'Enable checking for updates on application start',
+            Help: 'Automatically check for updates',
             Provider: '',
             Default: false,
-            Value: '',
+            Value: $main.settings.get('enable_updates'),
             ShortOpt: '',
             Hide: 0,
             Required: false,
@@ -48,7 +48,7 @@
             Help: '',
             Provider: '',
             Default: true,
-            Value: '',
+            Value: $main.settings.get('tray_menu_show_type'),
             ShortOpt: '',
             Hide: 0,
             Required: false,
@@ -56,7 +56,7 @@
             NoPrefix: false,
             Advanced: false
           }
-        ], null, $main.settings.getAll()))
+        ]))
 
         tabs.addTab('Rclone', createOptionsFields([
           {
@@ -81,7 +81,7 @@
             Help: 'Use the Rclone binary that is bundled with the app, otherwise installed system wide version will be used (if not found, then you will receive and error).',
             Provider: '',
             Default: true,
-            Value: '',
+            Value: $main.settings.get('rclone_use_bundled'),
             ShortOpt: '',
             Hide: 0,
             Required: false,
@@ -93,8 +93,8 @@
             Name: 'custom_args',
             $Label: 'Custom Rclone setting args.',
             $Type: 'text',
-            Help: "Space or new-line separated rclone command arguments to be appended to all commands.\nCheck more at https://rclone.org/docs/",
-            Value: '',
+            Help: 'Space or new-line separated rclone command arguments to be appended to all commands.\nCheck more at https://rclone.org/docs/',
+            Value: $main.settings.get('custom_args'),
             ShortOpt: '',
             Hide: 0,
             Required: false,
@@ -102,61 +102,9 @@
             NoPrefix: false,
             Advanced: false
           }
-        ], null, $main.settings.getAll()))
+        ]))
 
-        tabs.addTab('Mount', createOptionsFields([
-          {
-            $Label: 'Enable',
-            $Type: 'boolean',
-            Name: 'enable_mounts',
-            Help: '',
-            Provider: '',
-            Default: true,
-            Value: '',
-            ShortOpt: '',
-            Hide: 0,
-            Required: false,
-            IsPassword: false,
-            NoPrefix: false,
-            Advanced: false
-          }
-        ], null, $main.settings.getAll()))
-
-        tabs.addTab('Sync', createOptionsFields([
-          {
-            $Label: 'Enable',
-            $Type: 'boolean',
-            Name: 'enable_sync',
-            Help: '',
-            Provider: '',
-            Default: true,
-            Value: '',
-            ShortOpt: '',
-            Hide: 0,
-            Required: false,
-            IsPassword: false,
-            NoPrefix: false,
-            Advanced: false
-          }
-        ], null, $main.settings.getAll()))
-
-        tabs.addTab('Serve', createOptionsFields([
-          {
-            $Label: 'Enable',
-            $Type: 'boolean',
-            Name: 'enable_serve_http',
-            Help: '',
-            Provider: '',
-            Default: true,
-            Value: '',
-            ShortOpt: '',
-            Hide: 0,
-            Required: false,
-            IsPassword: false,
-            NoPrefix: false,
-            Advanced: false
-          }
-        ], null, $main.settings.getAll()))
+        // @TODO add default configuration per commands (mount/sync/serve/ncdu)
 
         let theForm = document.getElementById('the-form')
         theForm.addEventListener('submit', function (event) {
@@ -180,7 +128,7 @@
 
   <body>
     <form id="the-form">
-      <div id="current-provider-settings"></div>
+      <div id="preferences"></div>
       <div class="row right">
         <button type="submit">
           Save

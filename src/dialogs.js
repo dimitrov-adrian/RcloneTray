@@ -45,6 +45,7 @@ const createNewDialog = function (dialogName, options, props) {
     backgroundColor: process.platform === 'win32' ? '#ffffff' : '#ececec',
     zoomToPageWidth: true,
     autoHideMenuBar: true,
+    skipTaskbar: false,
     webPreferences: {
       backgroundThrottling: false,
       preload: path.join(__dirname, 'dialogs-preload.js'),

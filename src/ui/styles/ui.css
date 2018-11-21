@@ -118,11 +118,17 @@ main,
   opacity: .7;
 }
 
-/* Label: Required */
+/* Label: Help */
 .label-help {
   margin-top: .2em;
   margin-bottom: .6em;
   font-size: .8em;
+  font-style: italic;
+  user-select: text;
+}
+.label-help-inline {
+  display: inline;
+  margin-left: .6em;
   font-style: italic;
   user-select: text;
 }

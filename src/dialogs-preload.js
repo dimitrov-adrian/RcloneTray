@@ -103,15 +103,19 @@ window.notification = function (message) {
  * Resize current window to conent
  */
 window.resizeToContent = function () {
-  let h = document.body.scrollHeight + (window.outerHeight - window.innerHeight)
-  if (h > window.screen.height * 0.8) {
-    h = Math.ceil(window.screen.height * 0.8)
+  let newHeight = document.body.scrollHeight + (window.outerHeight - window.innerHeight)
+  if (newHeight > window.screen.height * 0.8) {
+    newHeight = Math.ceil(window.screen.height * 0.8)
     document.body.style.overflow = 'auto'
   } else {
     document.body.style.overflow = 'hidden'
   }
-  window.resizeTo(window.outerWidth, h)
-  // remote.getCurrentWindow().setSize(window.outerWidth, h, false) // works only on mac
+
+  if (process.platform === 'darwin') {
+    remote.getCurrentWindow().setSize(window.outerWidth, newHeight, true)
+  } else {
+    window.resizeTo(window.outerWidth, newHeight)
+  }
 }
 window.addEventListener('load', window.resizeToContent)
 
@@ -280,6 +284,10 @@ window.optionFieldDepenencies = {
 * @returns {HTMLElement}
 */
 window.createOptionField = function (optionFieldDefinition, optionFieldNamespace, value) {
+  if (value === undefined || value === null) {
+    value = optionFieldDefinition.Value
+  }
+
   let row = document.createElement('div')
   let th = document.createElement('div')
   let td = document.createElement('div')
@@ -392,48 +400,37 @@ window.createOptionField = function (optionFieldDefinition, optionFieldNamespace
       }
     })
 
-    // datalist macOS workaround
-    // seems the native way doesn't works.
-    if (process.platform === 'darwin' || process.platform === 'win32') {
-      inputField.addEventListener('click', function (event) {
-        // const { left, bottom, width, height } = event.target.getBoundingClientRect()
-        const { width, height } = event.target.getBoundingClientRect()
-        if (event.offsetX < width - height) {
-          return
+    // Until Electron fixes the datalist, we are stuck with next solution.
+    inputField.addEventListener('click', function (event) {
+      const { width, height } = event.target.getBoundingClientRect()
+      if (event.offsetX < width - height) {
+        return
+      }
+      event.preventDefault()
+      let menuTemplate = []
+      inputFieldOptions.childNodes.forEach(function (childNode) {
+        if (childNode.value) {
+          menuTemplate.push({
+            label: childNode.value,
+            click: function () {
+              inputField.value = childNode.value
+              inputField.dispatchEvent(new window.Event('change'))
+            }
+          })
         }
-        let menuTemplate = []
-        inputFieldOptions.childNodes.forEach(function (childNode) {
-          if (childNode.value) {
-            menuTemplate.push({
-              label: childNode.value,
-              click: function () {
-                inputField.value = childNode.value
-                inputField.dispatchEvent(new window.Event('change'))
-              }
-            })
-          }
-        })
-        window.popupContextMenu(menuTemplate)
       })
-    }
+      window.popupContextMenu(menuTemplate)
+    })
   }
 
   // Trigger provider's show/hide
   inputField.addEventListener('change', function () {
     window.optionFieldDepenencies.select(this.value)
   })
+  window.optionFieldDepenencies.select(this.value)
 
   // Setup field label.
-  if (optionFieldDefinition.$Label) {
-    th.innerText = optionFieldDefinition.$Label
-  } else {
-    th.innerText = optionFieldDefinition.Name
-      .replace(/_/g, ' ')
-      .replace(/\w\S*/g, function (string) {
-        return string.charAt(0).toUpperCase() + string.substr(1)
-      })
-      .trim()
-  }
+  th.innerText = optionFieldDefinition.$Label || optionFieldDefinition.Name
 
   // Setup helping text.
   // It's not very reliable to convert urls to links with pattern, but don't want to include some full bloated
@@ -443,7 +440,11 @@ window.createOptionField = function (optionFieldDefinition, optionFieldNamespace
       .replace(/(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#/%?=~_|!:,.;]*[-A-Z0-9+&@#/%=~_|])/ig, '<a target="_blank" href="$1">$1</a>')
       .replace(/\n/g, '<br />')
     td.appendChild(fieldHelpText)
-    fieldHelpText.className = 'label-help'
+    if (optionFieldDefinition.$Type === 'boolean') {
+      fieldHelpText.className = 'label-help-inline'
+    } else {
+      fieldHelpText.className = 'label-help'
+    }
   }
 
   // Make some fields required.
@@ -459,7 +460,7 @@ window.createOptionField = function (optionFieldDefinition, optionFieldNamespace
 }
 
 /**
- * Render option fields by definition array
+ * Construct option fields by definition array
  * @returns {DocumentFragment}
  */
 window.createOptionsFields = function (optionFields, optionFieldsNamespace, optionValues) {
@@ -477,6 +478,7 @@ window.createOptionsFields = function (optionFields, optionFieldsNamespace, opti
 }
 
 /**
+ * Render bookmark settings
  * @TODO refactor
  */
 window.renderBookmarkSettings = function (placeholder, providerName, values) {

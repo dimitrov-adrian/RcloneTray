@@ -15,7 +15,9 @@ section {
 /* Buttons */
 button,
 input[type="button"] {
-  -webkit-appearance: button
+  -webkit-appearance: button;
+  padding-left: 1em;
+  padding-right: 1em;
 }
 
 /* Tabs */
@@ -43,6 +45,6 @@ input[type="button"] {
 }
 
 /* Hacks */
-#current-provider-settings .tab-buttons {
+#preferences .tab-buttons {
   border-top: 0;
 }

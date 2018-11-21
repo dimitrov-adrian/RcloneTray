@@ -11,6 +11,15 @@ const settings = require('./settings')
 const dialogs = require('./dialogs')
 
 /**
+ * Define unsupported provider types
+ * @private
+ */
+const UnsupportedRcloneProviders = [
+  'union',
+  'crypt'
+]
+
+/**
  * Rclone executable filename
  * @private
  */
@@ -449,20 +458,21 @@ const updateVersionCache = function () {
 const updateBookmarksCache = function () {
   doCommand(['config', 'dump'])
     .then(function (bookmarks) {
+      Cache.bookmarks = {}
       try {
         bookmarks = JSON.parse(bookmarks)
 
         // Add virtual $name representing the bookmark name from index.
-        Object.keys(bookmarks).map(function (key) {
-          bookmarks[key].$name = key
-          bookmarks[key].$externals = {
-            custom_args: settings.get(`custom_args:${key}`)
+        Object.keys(bookmarks).forEach(function (key) {
+          if (UnsupportedRcloneProviders.indexOf(bookmarks[key].type) !== -1) {
+            return
           }
+          Cache.bookmarks[key] = bookmarks[key]
+          Cache.bookmarks[key].$name = key
         })
       } catch (err) {
         throw Error('Problem reading bookmarks list.')
       }
-      Cache.bookmarks = bookmarks
       fireRcloneUpdateActions()
     })
 }
@@ -482,6 +492,22 @@ const updateProvidersCache = function () {
 
       Cache.providers = {}
       providers.forEach(function (provider) {
+        if (UnsupportedRcloneProviders.indexOf(provider.Prefix) !== -1) {
+          return false
+        }
+
+        if (['b2', 's3'].indexOf(provider.Prefix) !== -1) {
+          provider.Options.unshift({
+            $Label: 'Bucket or Path',
+            $Type: 'string',
+            Name: '_rclonetray_remote_path',
+            Help: '',
+            Required: true,
+            Hide: false,
+            Advanced: false
+          })
+        }
+
         provider.Options.map(function (optionDefinition) {
           // Detect type acording the default value and other criteries.
           optionDefinition.$Type = 'string'
@@ -524,52 +550,23 @@ const updateProvidersCache = function () {
           Advanced: true
         })
 
+        // Set system $Label
+        provider.Options.map(function (item) {
+          if (!item.hasOwnProperty('$Label')) {
+            item.$Label = item.Name
+              .replace(/_/g, ' ')
+              .replace(/\w\S*/g, function (string) {
+                return string.charAt(0).toUpperCase() + string.substr(1)
+              })
+              .trim()
+          }
+        })
+
         Cache.providers[provider.Prefix] = provider
       })
 
       fireRcloneUpdateActions()
     })
-}
-
-/**
- * Update existing bookmark's fields (rclone remote optons)
- * @param {string} bookmarkName
- * @param {{}} providerObject
- * @param {{}} values
- * @throws {Error}
- */
-const updateBookmarkFields = function (bookmarkName, providerObject, values, oldValues) {
-  let valuesPlain = {}
-
-  providerObject.Options.forEach(function (optionDefinition) {
-    if (optionDefinition.$Type === 'password') {
-      if (!oldValues || oldValues[optionDefinition.Name] !== values[optionDefinition.Name]) {
-        doCommandSync(['config', 'password', bookmarkName, optionDefinition.Name, values[optionDefinition.Name]])
-      }
-    } else {
-      // Sanitize booleans.
-      if (optionDefinition.$Type === 'boolean') {
-        if (optionDefinition.Name in values && ['true', 'yes', true, 1].indexOf(values[optionDefinition.Name]) > -1) {
-          values[optionDefinition.Name] = 'true'
-        } else {
-          values[optionDefinition.Name] = 'false'
-        }
-      }
-      valuesPlain[optionDefinition.Name] = values[optionDefinition.Name]
-    }
-  })
-
-  try {
-    let configIniStruct = ini.decode(fs.readFileSync(getConfigFile()).toString())
-    configIniStruct[bookmarkName] = Object.assign(configIniStruct[bookmarkName], valuesPlain)
-    fs.writeFileSync(getConfigFile(), ini.encode(configIniStruct, {
-      whitespace: true
-    }))
-  } catch (err) {
-    console.error(err)
-    throw Error('Cannot update bookmark fields.')
-  }
-  console.log('Rclone', 'Updated bookmark', bookmarkName)
 }
 
 /**
@@ -612,9 +609,9 @@ const sync = function (method, bookmark) {
 
   let cmd = ['sync']
   if (method === 'upload') {
-    cmd.push(bookmark._rclonetray_local_path_map, bookmark.$name + ':')
+    cmd.push(bookmark._rclonetray_local_path_map, bookmark.$name + ':' + (bookmark._rclonetray_remote_path || ''))
   } else {
-    cmd.push(bookmark.$name + ':', bookmark._rclonetray_local_path_map)
+    cmd.push(bookmark.$name + ':' + (bookmark._rclonetray_remote_path || ''), bookmark._rclonetray_local_path_map)
   }
   cmd.push('-vv')
 
@@ -692,6 +689,63 @@ const getBookmarks = function () {
 }
 
 /**
+ * Check if bookmark options are valid
+ * @param {*} providerObject
+ * @param {*} values
+ * @return Error|null
+ */
+const validateBookmarkOptions = function (providerObject, values) {
+  providerObject.Options.forEach(function (optionDefinition) {
+    let fieldName = optionDefinition.$Label || optionDefinition.Name
+    if (optionDefinition.Required && (!values.hasOwnProperty(optionDefinition.Name) || !values[optionDefinition.Name])) {
+      throw Error(`${fieldName} field is required`)
+    }
+    // @TODO type checks
+  })
+}
+
+/**
+ * Update existing bookmark's fields (rclone remote optons)
+ * @param {string} bookmarkName
+ * @param {{}} providerObject
+ * @param {{}} values
+ * @throws {Error}
+ */
+const updateBookmarkFields = function (bookmarkName, providerObject, values, oldValues) {
+  let valuesPlain = {}
+
+  providerObject.Options.forEach(function (optionDefinition) {
+    if (optionDefinition.$Type === 'password') {
+      if (!oldValues || oldValues[optionDefinition.Name] !== values[optionDefinition.Name]) {
+        doCommandSync(['config', 'password', bookmarkName, optionDefinition.Name, values[optionDefinition.Name]])
+      }
+    } else {
+      // Sanitize booleans.
+      if (optionDefinition.$Type === 'boolean') {
+        if (optionDefinition.Name in values && ['true', 'yes', true, 1].indexOf(values[optionDefinition.Name]) > -1) {
+          values[optionDefinition.Name] = 'true'
+        } else {
+          values[optionDefinition.Name] = 'false'
+        }
+      }
+      valuesPlain[optionDefinition.Name] = values[optionDefinition.Name]
+    }
+  })
+
+  try {
+    let configIniStruct = ini.decode(fs.readFileSync(getConfigFile()).toString())
+    configIniStruct[bookmarkName] = Object.assign(configIniStruct[bookmarkName], valuesPlain)
+    fs.writeFileSync(getConfigFile(), ini.encode(configIniStruct, {
+      whitespace: true
+    }))
+  } catch (err) {
+    console.error(err)
+    throw Error('Cannot update bookmark fields.')
+  }
+  console.log('Rclone', 'Updated bookmark', bookmarkName)
+}
+
+/**
  * Create new bookmark
  * @param {string} type
  * @param {string} bookmarkName
@@ -708,6 +762,9 @@ const addBookmark = function (type, bookmarkName, values) {
       reject(Error(`Invalid name.\nName should be 1-32 chars long, and should contain only letters, gidits - and _`))
       return
     }
+
+    // Validate values.
+    validateBookmarkOptions(providerObject, values)
 
     if (Cache.bookmarks.hasOwnProperty(bookmarkName)) {
       reject(Error(`There "${bookmarkName}" bookmark already`))
@@ -747,6 +804,9 @@ const updateBookmark = function (bookmark, values) {
   bookmark = getBookmark(bookmark)
   let providerObject = getProvider(bookmark.type)
   return new Promise(function (resolve, reject) {
+    // Validate values.
+    validateBookmarkOptions(providerObject, values)
+
     try {
       updateBookmarkFields(bookmark.$name, providerObject, values, bookmark)
       dialogs.notification(`Bookmark ${bookmark.$name} is updated.`)
@@ -799,7 +859,7 @@ const mount = function (bookmark) {
 
   proc.create([
     'mount',
-    bookmark.$name + ':',
+    bookmark.$name + ':' + (bookmark._rclonetray_remote_path || ''),
     mountpoint,
     '--attr-timeout', '3s',
     '--dir-cache-time', '3s',
@@ -1000,9 +1060,10 @@ const openLocal = function (bookmark) {
 const getAvailableServeProtocols = function () {
   return {
     http: 'HTTP',
-    ftp: 'FTP',
-    webdav: 'WebDAV',
-    restic: 'Restic'
+    ftp: 'FTP'
+    // May be as a user don't need WebDAV and Restic
+    // webdav: 'WebDAV',
+    // restic: 'Restic'
   }
 }
 
@@ -1027,7 +1088,7 @@ const serveStart = function (protocol, bookmark) {
   proc.create([
     'serve',
     protocol,
-    bookmark.$name + ':',
+    bookmark.$name + ':' + (bookmark._rclonetray_remote_path || ''),
     '-vv'
   ])
   proc.set('protocol', protocol)
@@ -1071,7 +1132,7 @@ const serveStatus = function (protocol, bookmark) {
  */
 const openNCDU = function (bookmark) {
   bookmark = getBookmark(bookmark)
-  let command = prepareRcloneCommand(['ncdu', bookmark.$name + ':/'])
+  let command = prepareRcloneCommand(['ncdu', bookmark.$name + ':' + (bookmark._rclonetray_remote_path || '')])
   command = appendCustomRcloneCommandArgs(command, bookmark.$name)
   doCommandInTerminal(command)
 }
