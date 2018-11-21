@@ -18,6 +18,7 @@ window.$main.currentWindow = remote.getCurrentWindow() // @TODO remove before re
 window.$main.process = process // @TODO remove before release
 window.$main.r = remote // @TODO remove before release
 window.$main.re = remoteElectron // @TODO remove before release
+window.$main.e = require('electron') // @TODO remove before release
 
 /**
  * Set autostart
@@ -112,7 +113,7 @@ window.resizeToContent = function () {
   }
 
   if (process.platform === 'darwin') {
-    remote.getCurrentWindow().setSize(window.outerWidth, newHeight, true)
+    remote.getCurrentWindow().setSizeAsync(window.outerWidth, newHeight)
   } else {
     window.resizeTo(window.outerWidth, newHeight)
   }

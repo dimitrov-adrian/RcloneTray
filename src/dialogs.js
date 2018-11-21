@@ -60,6 +60,14 @@ const createNewDialog = function (dialogName, options, props) {
   let theDialog = new BrowserWindow(options)
   if (process.platform === 'darwin') {
     app.dock.show()
+
+    // Renderer to main make blocking resize,
+    // it can be workarounded if do the setSize() method in async way.
+    theDialog.setSizeAsync = function (width, height) {
+      setTimeout(function () {
+        theDialog.setSize(width, height, true)
+      }, 0)
+    }
   }
 
   // Assign $props that we will use in window.getProps() as window properties (params) on load time.
