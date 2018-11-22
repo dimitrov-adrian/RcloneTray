@@ -122,7 +122,6 @@ main,
 .label-help {
   margin-top: .2em;
   margin-bottom: .6em;
-  font-size: .8em;
   font-style: italic;
   user-select: text;
 }
@@ -179,6 +178,7 @@ button,
 input[type="button"] {
   margin-left: .6rem;
   margin-right: .6rem;
+  word-break: keep-all;
 }
 button:first-child,
 input[type="button"]:first-child {

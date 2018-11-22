@@ -136,7 +136,7 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
   let isDownload = false
   let isUpload = false
   let isAutomaticUpload = false
-  if ('_rclonetray_local_path_map' in bookmark && bookmark._rclonetray_local_path_map.trim()) {
+  if (settings.get('rclone_sync_enable') && '_rclonetray_local_path_map' in bookmark && bookmark._rclonetray_local_path_map.trim()) {
     isDownload = rclone.isDownload(bookmark)
     isUpload = rclone.isUpload(bookmark)
     isAutomaticUpload = rclone.isAutomaticUpload(bookmark)
@@ -242,15 +242,17 @@ const generateBookmarkActionsSubmenu = function (bookmark) {
   }
 
   // NCDU
-  template.submenu.push(
-    {
-      type: 'separator'
-    },
-    {
-      label: 'Console Browser',
-      click: bookmarkActionRouter.bind(bookmark, 'open-ncdu')
-    }
-  )
+  if (settings.get('rclone_ncdu_enable')) {
+    template.submenu.push(
+      {
+        type: 'separator'
+      },
+      {
+        label: 'Console Browser',
+        click: bookmarkActionRouter.bind(bookmark, 'open-ncdu')
+      }
+    )
+  }
 
   // Set the menu item state if there is any kind of connection or current running process.
   let isConnected = isMounted || isDownload || isUpload || isServing || isAutomaticUpload

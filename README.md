@@ -32,6 +32,7 @@ To get mount function working, you need to install extra packages:
 ## FAQ
 
 **The application bundle comes with Rclone version XXX, but I want to use version YYY?**
+
 No problem, you need just to uncheck the option "Use bundled Rclone" and then RcloneTray will
 use the system installed Rclone
 

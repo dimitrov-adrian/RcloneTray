@@ -94,6 +94,8 @@ const prepareRcloneCommand = function (command) {
     command.unshift(RcloneBinaryName)
   }
 
+  command.push('--auto-confirm')
+
   return command
 }
 
@@ -609,9 +611,9 @@ const sync = function (method, bookmark) {
 
   let cmd = ['sync']
   if (method === 'upload') {
-    cmd.push(bookmark._rclonetray_local_path_map, bookmark.$name + ':' + (bookmark._rclonetray_remote_path || ''))
+    cmd.push(bookmark._rclonetray_local_path_map, getBookmarkRemoteWithRoot(bookmark))
   } else {
-    cmd.push(bookmark.$name + ':' + (bookmark._rclonetray_remote_path || ''), bookmark._rclonetray_local_path_map)
+    cmd.push(getBookmarkRemoteWithRoot(bookmark), bookmark._rclonetray_local_path_map)
   }
   cmd.push('-vv')
 
@@ -835,13 +837,60 @@ const deleteBookmark = function (bookmark) {
 }
 
 /**
+ * Get bookmark remote with root
+ * @param {{}} bookmark
+ * @returns {string}
+ */
+const getBookmarkRemoteWithRoot = function (bookmark) {
+  return bookmark.$name + ':' + (bookmark._rclonetray_remote_path || '')
+}
+
+/**
+ * On windows find free drive letter.
+ * @returns {string}
+ */
+const win32GetFreeLetter = function () {
+  // First letters are reserved, floppy, system drives etc.
+  const allLetters = ['E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z']
+  let usedDriveLetters = execSync('wmic logicaldisk get name')
+  usedDriveLetters = usedDriveLetters.toString()
+    .split(/\n/)
+    .map(function (line) {
+      let letter = line.trim().match(/^([A-Z]):/)
+      if (letter) {
+        return letter[1]
+      }
+      return null
+    })
+    .filter(function (letter) {
+      return !!letter
+    })
+
+  let freeLetter = allLetters.find(function (letter) {
+    return usedDriveLetters.indexOf(letter) === -1
+  })
+
+  if (!freeLetter) {
+    throw Error('Not available free drive letter')
+  }
+
+  return freeLetter
+}
+
+/**
  * Get (generate) path to bookmark mountpoint
  * @param {{}|string} bookmark
  * @returns {String}
  */
 const getMountPointPath = function (bookmark) {
   bookmark = getBookmark(bookmark)
-  return path.join('/', 'Volumes', `${bookmark.type}.${bookmark.$name}`)
+  if (process.platform === 'win32') {
+    return win32GetFreeLetter()
+  } else if (process.platform === 'linux') {
+    return path.join('/', 'media', `${bookmark.type}.${bookmark.$name}`)
+  } else {
+    return path.join('/', 'Volumes', `${bookmark.type}.${bookmark.$name}`)
+  }
 }
 
 /**
@@ -859,7 +908,7 @@ const mount = function (bookmark) {
 
   proc.create([
     'mount',
-    bookmark.$name + ':' + (bookmark._rclonetray_remote_path || ''),
+    getBookmarkRemoteWithRoot(bookmark),
     mountpoint,
     '--attr-timeout', '3s',
     '--dir-cache-time', '3s',
@@ -1058,13 +1107,20 @@ const openLocal = function (bookmark) {
  * @returns {{}}
  */
 const getAvailableServeProtocols = function () {
-  return {
-    http: 'HTTP',
-    ftp: 'FTP'
-    // May be as a user don't need WebDAV and Restic
-    // webdav: 'WebDAV',
-    // restic: 'Restic'
+  let protocols = {}
+  if (settings.get('rclone_serving_http_enable')) {
+    protocols.http = 'HTTP'
   }
+  if (settings.get('rclone_serving_ftp_enable')) {
+    protocols.ftp = 'FTP'
+  }
+  if (settings.get('rclone_serving_webdav_enable')) {
+    protocols.webdav = 'WebDAV'
+  }
+  if (settings.get('rclone_serving_restic_enable')) {
+    protocols.restic = 'Restic'
+  }
+  return protocols
 }
 
 /**
@@ -1088,7 +1144,7 @@ const serveStart = function (protocol, bookmark) {
   proc.create([
     'serve',
     protocol,
-    bookmark.$name + ':' + (bookmark._rclonetray_remote_path || ''),
+    getBookmarkRemoteWithRoot(bookmark),
     '-vv'
   ])
   proc.set('protocol', protocol)
@@ -1132,7 +1188,7 @@ const serveStatus = function (protocol, bookmark) {
  */
 const openNCDU = function (bookmark) {
   bookmark = getBookmark(bookmark)
-  let command = prepareRcloneCommand(['ncdu', bookmark.$name + ':' + (bookmark._rclonetray_remote_path || '')])
+  let command = prepareRcloneCommand(['ncdu', getBookmarkRemoteWithRoot(bookmark)])
   command = appendCustomRcloneCommandArgs(command, bookmark.$name)
   doCommandInTerminal(command)
 }

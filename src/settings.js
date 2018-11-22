@@ -19,7 +19,17 @@ const cache = {
   enable_updates: false,
   rclone_use_bundled: true,
   rclone_config: '',
-  custom_args: ''
+  custom_args: '',
+
+  rclone_sync_enable: true,
+  rclone_sync_autoupload_delay: 5,
+  rclone_ncdu_enable: true,
+  rclone_serving_http_enable: true,
+  rclone_serving_ftp_enable: true,
+  rclone_serving_restic_enable: false,
+  rclone_serving_webdav_enable: false,
+  rclone_serving_username: '',
+  rclone_serving_password: ''
 }
 
 /**

@@ -107,7 +107,7 @@ window.resizeToContent = function () {
   let newHeight = document.body.scrollHeight + (window.outerHeight - window.innerHeight)
   if (newHeight > window.screen.height * 0.8) {
     newHeight = Math.ceil(window.screen.height * 0.8)
-    document.body.style.overflow = 'auto'
+    document.body.style.overflow = null
   } else {
     document.body.style.overflow = 'hidden'
   }
@@ -373,15 +373,13 @@ window.createOptionField = function (optionFieldDefinition, optionFieldNamespace
       inputField.parentNode.insertBefore(browseButton, inputField.nextSibling)
     } else if (optionFieldDefinition.$Type === 'select') {
       optionFieldDefinition.Examples.forEach(function (item) {
-        if (item.Value) {
-          let selectOption = document.createElement('option')
-          selectOption.value = item.Value
-          selectOption.innerText = item.Value
-          if (value === item.Value) {
-            selectOption.selected = 'selected'
-          }
-          inputField.appendChild(selectOption)
+        let selectOption = document.createElement('option')
+        selectOption.value = item.Value
+        selectOption.innerText = item.Label || item.Value
+        if (value === item.Value) {
+          selectOption.selected = 'selected'
         }
+        inputField.appendChild(selectOption)
       })
     }
   }
@@ -393,12 +391,10 @@ window.createOptionField = function (optionFieldDefinition, optionFieldNamespace
     inputField.setAttribute('list', inputFieldOptions.id)
     td.appendChild(inputFieldOptions)
     optionFieldDefinition.Examples.forEach(function (item) {
-      if (item.Value) {
-        let datalistOption = document.createElement('option')
-        datalistOption.value = item.Value
-        datalistOption.innerText = item.Value
-        inputFieldOptions.appendChild(datalistOption)
-      }
+      let datalistOption = document.createElement('option')
+      datalistOption.value = item.Value
+      datalistOption.innerText = item.Label || item.Value
+      inputFieldOptions.appendChild(datalistOption)
     })
 
     // Until Electron fixes the datalist, we are stuck with next solution.
@@ -508,8 +504,10 @@ window.renderBookmarkSettings = function (placeholder, providerName, values) {
     tabs.addTab('Advanced', window.createOptionsFields(advancedFields, 'options', values.options))
   }
 
-  if (mappingFields.length) {
-    tabs.addTab('Mappings', window.createOptionsFields(mappingFields, 'options', values.options))
+  if (window.$main.settings.get('rclone_sync_enable')) {
+    if (mappingFields.length) {
+      tabs.addTab('Mappings', window.createOptionsFields(mappingFields, 'options', values.options))
+    }
   }
 
   let range = document.createRange()

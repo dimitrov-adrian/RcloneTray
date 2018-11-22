@@ -104,7 +104,87 @@
           }
         ]))
 
-        // @TODO add default configuration per commands (mount/sync/serve/ncdu)
+        tabs.addTab('NCDU', createOptionsFields([
+          {
+            $Label: 'Enable',
+            $Type: 'boolean',
+            Name: 'rclone_ncdu_enable',
+            Value: $main.settings.get('rclone_ncdu_enable')
+          }
+        ]))
+
+        tabs.addTab('Upload/Download', createOptionsFields([
+          {
+            $Label: 'Enable',
+            $Type: 'boolean',
+            Name: 'rclone_sync_enable',
+            Value: $main.settings.get('rclone_sync_enable')
+          },
+          {
+            $Label: 'Automatic Upload',
+            $Type: 'select',
+            Name: 'rclone_sync_autoupload_delay',
+            Examples: [
+              {
+                Label: '1s',
+                Value: 1
+              },
+              {
+                Label: '3s',
+                Value: 3
+              },
+              {
+                Label: '5s',
+                Value: 5
+              },
+              {
+                Label: '7s',
+                Value: 5
+              }
+            ],
+            Value: $main.settings.get('rclone_sync_autoupload_delay'),
+            Help: 'Need restart to take effect.'
+          }
+        ]))
+
+        tabs.addTab('Serving', createOptionsFields([
+          {
+            $Label: 'Enable HTTP',
+            $Type: 'boolean',
+            Name: 'rclone_serving_http_enable',
+            Value: $main.settings.get('rclone_serving_http_enable')
+          },
+          {
+            $Label: 'Enable FTP',
+            $Type: 'boolean',
+            Name: 'rclone_serving_ftp_enable',
+            Value: $main.settings.get('rclone_serving_ftp_enable')
+          },
+          {
+            $Label: 'Enable Restic',
+            $Type: 'boolean',
+            Name: 'rclone_serving_restic_enable',
+            Value: $main.settings.get('rclone_serving_restic_enable')
+          },
+          {
+            $Label: 'Enable WebDAV',
+            $Type: 'boolean',
+            Name: 'rclone_serving_webdav_enable',
+            Value: $main.settings.get('rclone_serving_webdav_enable')
+          },
+          {
+            $Label: 'Default username',
+            $Type: 'string',
+            Name: 'rclone_serving_username',
+            Value: $main.settings.get('rclone_serving_username')
+          },
+          {
+            $Label: 'Default password',
+            $Type: 'password',
+            Name: 'rclone_serving_password',
+            Value: $main.settings.get('rclone_serving_password')
+          }
+        ]))
 
         let theForm = document.getElementById('the-form')
         theForm.addEventListener('submit', function (event) {
