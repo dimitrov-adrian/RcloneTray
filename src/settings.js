@@ -21,6 +21,8 @@ const cache = {
   rclone_config: '',
   custom_args: '',
 
+  rclone_cache_files: 3,
+  rclone_cache_directories: 10,
   rclone_sync_enable: true,
   rclone_sync_autoupload_delay: 5,
   rclone_ncdu_enable: true,

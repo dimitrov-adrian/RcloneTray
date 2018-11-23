@@ -20,6 +20,18 @@ const UnsupportedRcloneProviders = [
 ]
 
 /**
+ * Define providers that require buckets and cannot works with root.
+ * @private
+ */
+const BucketRequiredProviders = [
+  'b2',
+  'swift',
+  's3',
+  'gsc',
+  'hubic'
+]
+
+/**
  * Rclone executable filename
  * @private
  */
@@ -498,7 +510,7 @@ const updateProvidersCache = function () {
           return false
         }
 
-        if (['b2', 's3'].indexOf(provider.Prefix) !== -1) {
+        if (BucketRequiredProviders.indexOf(provider.Prefix) !== -1) {
           provider.Options.unshift({
             $Label: 'Bucket or Path',
             $Type: 'string',
@@ -842,7 +854,7 @@ const deleteBookmark = function (bookmark) {
  * @returns {string}
  */
 const getBookmarkRemoteWithRoot = function (bookmark) {
-  return bookmark.$name + ':' + (bookmark._rclonetray_remote_path || '')
+  return bookmark.$name + ':' + (bookmark._rclonetray_remote_path || '/')
 }
 
 /**
@@ -874,23 +886,7 @@ const win32GetFreeLetter = function () {
     throw Error('Not available free drive letter')
   }
 
-  return freeLetter
-}
-
-/**
- * Get (generate) path to bookmark mountpoint
- * @param {{}|string} bookmark
- * @returns {String}
- */
-const getMountPointPath = function (bookmark) {
-  bookmark = getBookmark(bookmark)
-  if (process.platform === 'win32') {
-    return win32GetFreeLetter()
-  } else if (process.platform === 'linux') {
-    return path.join('/', 'media', `${bookmark.type}.${bookmark.$name}`)
-  } else {
-    return path.join('/', 'Volumes', `${bookmark.type}.${bookmark.$name}`)
-  }
+  return freeLetter + ':'
 }
 
 /**
@@ -904,18 +900,32 @@ const mount = function (bookmark) {
   if (proc.exists()) {
     throw Error(`Bookmark ${bookmark.$name} already mounted.`)
   }
-  let mountpoint = getMountPointPath(bookmark)
+
+  let mountpoint
+  if (process.platform === 'win32') {
+    mountpoint = win32GetFreeLetter()
+  } else if (process.platform === 'linux') {
+    mountpoint = path.join('/', 'media', `${bookmark.type}.${bookmark.$name}`)
+  } else {
+    mountpoint = path.join('/', 'Volumes', `${bookmark.type}.${bookmark.$name}`)
+  }
+
+  // Check if destination mountpoint is already used.
+  if (!mountpoint || fs.existsSync(mountpoint)) {
+    throw Error(`Destination mountpoint "${mountpoint}" is not free.`)
+  }
 
   proc.create([
     'mount',
     getBookmarkRemoteWithRoot(bookmark),
     mountpoint,
-    '--attr-timeout', '3s',
-    '--dir-cache-time', '3s',
+    '--attr-timeout', Math.max(1, parseInt(settings.get('rclone_cache_files'))) + 's',
+    '--dir-cache-time', Math.max(1, parseInt(settings.get('rclone_cache_directories'))) + 's',
     '--allow-non-empty',
     '--volname', bookmark.$name,
     '-vv'
   ])
+  proc.set('mountpoint', mountpoint)
 
   fireRcloneUpdateActions()
 }
@@ -929,17 +939,13 @@ const getMountStatus = function (bookmark) {
   bookmark = getBookmark(bookmark)
   let proc = new BookmarkProcessManager('mount', bookmark.$name)
   let exists = proc.exists()
-  let mountpoint = getMountPointPath(bookmark)
-  let mountpointExists = fs.existsSync(mountpoint)
-  if (exists && mountpointExists) {
-    return mountpoint
-  } else if (mountpointExists) {
-    return mountpoint
-  } else if (exists) {
-    return ''
-  } else {
-    return false
+  if (exists) {
+    let mountpoint = proc.get('mountpoint')
+    if (fs.existsSync(mountpoint)) {
+      return mountpoint
+    }
   }
+  return false
 }
 
 /**
@@ -948,18 +954,9 @@ const getMountStatus = function (bookmark) {
  */
 const unmount = function (bookmark) {
   bookmark = getBookmark(bookmark)
-  let currentMountStatus = getMountStatus(bookmark)
-  if (currentMountStatus !== false) {
-    let proc = new BookmarkProcessManager('mount', bookmark.$name)
-    if (proc.exists()) {
-      proc.kill('SIGTERM')
-    } else {
-      if (process.platform === 'darwin') {
-        exec(`umount -f "${currentMountStatus}"`, fireRcloneUpdateActions)
-      } else if (process.platform === 'linux') {
-        exec(`umount "${currentMountStatus}"`, fireRcloneUpdateActions)
-      }
-    }
+  let proc = new BookmarkProcessManager('mount', bookmark.$name)
+  if (proc.exists()) {
+    proc.kill()
   }
 }
 
@@ -968,11 +965,11 @@ const unmount = function (bookmark) {
  * @param {{}|string} bookmark
  */
 const openMountPoint = function (bookmark) {
-  bookmark = getBookmark(bookmark)
-  if (getMountStatus(bookmark) !== false) {
-    return shell.openExternal('file://' + getMountPointPath(bookmark))
+  let mountpoint = getMountStatus(bookmark)
+  if (mountpoint) {
+    shell.openExternal(`file://${mountpoint}`)
   } else {
-    return false
+    console.error('Trying to open non-mounted drive.')
   }
 }
 
@@ -1020,7 +1017,7 @@ const isDownload = function (bookmark) {
  */
 const stopDownload = function (bookmark) {
   bookmark = getBookmark(bookmark);
-  (new BookmarkProcessManager('download', bookmark.$name)).kill('SIGTERM')
+  (new BookmarkProcessManager('download', bookmark.$name)).kill()
 }
 
 /**
@@ -1029,7 +1026,7 @@ const stopDownload = function (bookmark) {
  */
 const stopUpload = function (bookmark) {
   bookmark = getBookmark(bookmark);
-  (new BookmarkProcessManager('upload', bookmark.$name)).kill('SIGTERM')
+  (new BookmarkProcessManager('upload', bookmark.$name)).kill()
 }
 
 /**
@@ -1145,6 +1142,8 @@ const serveStart = function (protocol, bookmark) {
     'serve',
     protocol,
     getBookmarkRemoteWithRoot(bookmark),
+    '--attr-timeout', Math.max(1, parseInt(settings.get('rclone_cache_files'))) + 's',
+    '--dir-cache-time', Math.max(1, parseInt(settings.get('rclone_cache_directories'))) + 's',
     '-vv'
   ])
   proc.set('protocol', protocol)
@@ -1287,7 +1286,6 @@ module.exports = {
   unmount,
   getMountStatus,
   openMountPoint,
-  getMountPointPath,
 
   download,
   stopDownload,

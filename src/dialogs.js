@@ -61,12 +61,11 @@ const createNewDialog = function (dialogName, options, props) {
   if (process.platform === 'darwin') {
     app.dock.show()
 
-    // Renderer to main make blocking resize,
-    // it can be workarounded if do the setSize() method in async way.
+    // Resizing from renderer is blocking process, so next is workaround to get smooth resize without IPC
     theDialog.setSizeAsync = function (width, height) {
-      setTimeout(function () {
+      setImmediate(function () {
         theDialog.setSize(width, height, true)
-      }, 0)
+      })
     }
   }
 
@@ -116,8 +115,8 @@ const about = function () {
   let aboutDialog = createNewDialog('About', {
     $singleId: 1,
     title: 'About',
-    width: 340,
-    height: 296,
+    width: 400,
+    height: 360,
     minimizable: false,
     alwaysOnTop: true,
     acceptFirstMouse: true,

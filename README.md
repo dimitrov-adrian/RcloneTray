@@ -25,7 +25,7 @@ Supported operation systems:
 There is some general problems with linux supports, so until fix them, can't say it is supported.
 
 To get mount function working, you need to install extra packages:
-* Windows - http://www.secfs.net/winfsp/
+* Windows - http://www.secfs.net/winfsp/download/
 * macOS - https://osxfuse.github.io/
 
 

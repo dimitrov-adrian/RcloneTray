@@ -90,6 +90,20 @@
             Advanced: false
           },
           {
+            Name: 'rclone_cache_files',
+            $Label: 'File cache time',
+            $Type: 'numeric',
+            Help: 'In seconds',
+            Value: $main.settings.get('rclone_cache_files')
+          },
+          {
+            Name: 'rclone_cache_directories',
+            $Label: 'Directory cache time',
+            $Type: 'numeric',
+            Help: 'In seconds',
+            Value: $main.settings.get('rclone_cache_directories')
+          },
+          {
             Name: 'custom_args',
             $Label: 'Custom Rclone setting args.',
             $Type: 'text',
@@ -140,6 +154,14 @@
               {
                 Label: '7s',
                 Value: 5
+              },
+              {
+                Label: '10s',
+                Value: 10
+              },
+              {
+                Label: '15s',
+                Value: 15
               }
             ],
             Value: $main.settings.get('rclone_sync_autoupload_delay'),
