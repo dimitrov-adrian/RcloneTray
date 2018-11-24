@@ -2,9 +2,7 @@
 
 const path = require('path')
 const { app } = require('electron')
-const { autoUpdater } = require('electron-updater')
 const isDev = require('electron-is-dev')
-const settings = require('./settings')
 const dialogs = require('./dialogs')
 const rclone = require('./rclone')
 const tray = require('./tray')
@@ -42,17 +40,19 @@ if (!app.requestSingleInstanceLock()) {
 if (isDev) {
   // Export interact from console
   require('inspector').open()
-  global.$main = {
-    app: app,
-    __dirname: __dirname,
-    require: require
-  }
   // load electron-reload
   try {
     require('electron-reload')(__dirname, {
       electron: path.join(__dirname, '..', 'node_modules', '.bin', 'electron')
     })
   } catch (err) { }
+
+  // @TODO Remove before release
+  global.$main = {
+    app: app,
+    __dirname: __dirname,
+    require: require
+  }
 }
 
 // Focus the app if second instance is going to starts.
@@ -73,18 +73,6 @@ app.on('ready', function () {
   if (process.platform === 'darwin') {
     // Hide the app from dock and taskbar.
     app.dock.hide()
-  }
-
-  // Run the auto-updater.
-  if (settings.get('enable_updates')) {
-    try {
-      autoUpdater.checkForUpdatesAndNotify()
-    } catch (err) {
-      if (isDev) {
-        console.error(err)
-      }
-      dialogs.brokenUpdates()
-    }
   }
 })
 

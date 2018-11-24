@@ -58,7 +58,7 @@ main,
   cursor: default;
 }
 .tab-content {
-  max-height: 400px;
+  max-height: 70vw;
   overflow: auto;
 }
 

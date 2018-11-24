@@ -118,26 +118,29 @@ const prepareRcloneCommand = function (command) {
  * @returns {Array}
  */
 const appendCustomRcloneCommandArgs = function (commandArray, bookmarkName) {
-  let argsSplitterPattern = new RegExp(/\n+/)
-
-  let customGlobalArgs = settings.get('custom_args').trim().split(argsSplitterPattern)
-  customGlobalArgs = customGlobalArgs.filter(function (element) {
-    if (element.match(/^-v+\b/)) {
+  // @private
+  const filterCustomArgsVerbose = function (arg) {
+    if (arg.match(/^-v+\b/)) {
       return false
     }
-  })
+  }
+
+  const argsSplitterPattern = new RegExp(/\n+/)
+
+  let customGlobalArgs = settings.get('custom_args').trim().split(argsSplitterPattern)
+  customGlobalArgs = customGlobalArgs.filter(filterCustomArgsVerbose)
   commandArray = commandArray.concat(customGlobalArgs)
 
   if (bookmarkName) {
-    let customBookmarkArgs = settings.get(`custom_args:${bookmarkName}`, '').trim().split(argsSplitterPattern)
-    customBookmarkArgs = customBookmarkArgs.filter(function (element) {
-      if (element.match(/^-v+\b/)) {
-        return false
-      }
-    })
-    commandArray = commandArray.concat(customBookmarkArgs)
+    let bookmark = getBookmark(bookmarkName)
+    if ('_rclonetray_custom_args' in bookmark && bookmark._rclonetray_custom_args.trim()) {
+      let customBookmarkArgs = bookmark._rclonetray_custom_args.trim().split(argsSplitterPattern)
+      customBookmarkArgs = customBookmarkArgs.filter(filterCustomArgsVerbose)
+      commandArray = commandArray.concat(customBookmarkArgs)
+    }
   }
 
+  // Remove empties.
   return commandArray.filter(function (element) {
     return !!element.trim()
   })

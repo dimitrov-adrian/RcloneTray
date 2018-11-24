@@ -27,21 +27,6 @@
             Advanced: false
           },
           {
-            $Label: 'Check for updates',
-            $Type: 'boolean',
-            Name: 'enable_updates',
-            Help: 'Automatically check for updates',
-            Provider: '',
-            Default: false,
-            Value: $main.settings.get('enable_updates'),
-            ShortOpt: '',
-            Hide: 0,
-            Required: false,
-            IsPassword: false,
-            NoPrefix: false,
-            Advanced: false
-          },
-          {
             $Label: 'Show bookmarks type',
             $Type: 'boolean',
             Name: 'tray_menu_show_type',
@@ -63,6 +48,7 @@
             Name: 'rclone_config',
             $Label: 'Config',
             $Type: 'file',
+            $RequireRestart: true,
             Help: 'Changing this option require restart.',
             Provider: '',
             Default: $main.rclone.getConfigFile(),
@@ -78,6 +64,7 @@
             Name: 'rclone_use_bundled',
             $Label: 'Use bundled Rclone',
             $Type: 'boolean',
+            $RequireRestart: true,
             Help: 'Use the Rclone binary that is bundled with the app, otherwise installed system wide version will be used (if not found, then you will receive and error).',
             Provider: '',
             Default: true,
@@ -165,6 +152,7 @@
               }
             ],
             Value: $main.settings.get('rclone_sync_autoupload_delay'),
+            $RequireRestart: true,
             Help: 'Need restart to take effect.'
           }
         ]))
@@ -221,6 +209,7 @@
 
           $main.settings.merge(data)
           $main.refreshTray()
+          window.checkForRequiredRestart()
           window.close()
         })
 

@@ -16,7 +16,6 @@ const settingsFile = path.join(app.getPath('userData'), 'settings.json')
  */
 const cache = {
   tray_menu_show_type: true,
-  enable_updates: false,
   rclone_use_bundled: true,
   rclone_config: '',
   custom_args: '',

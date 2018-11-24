@@ -105,8 +105,8 @@ window.notification = function (message) {
  */
 window.resizeToContent = function () {
   let newHeight = document.body.scrollHeight + (window.outerHeight - window.innerHeight)
-  if (newHeight > window.screen.height * 0.8) {
-    newHeight = Math.ceil(window.screen.height * 0.8)
+  if (newHeight > window.screen.height * 0.85) {
+    newHeight = Math.ceil(window.screen.height * 0.85)
     document.body.style.overflow = null
   } else {
     document.body.style.overflow = 'hidden'
@@ -426,6 +426,13 @@ window.createOptionField = function (optionFieldDefinition, optionFieldNamespace
   })
   window.optionFieldDepenencies.select(this.value)
 
+  // Flag that indicate app requires restart when form is saved.
+  if ('$RequireRestart' in optionFieldDefinition) {
+    inputField.addEventListener('change', function () {
+      window.requireRestart = true
+    }, { once: true })
+  }
+
   // Setup field label.
   th.innerText = optionFieldDefinition.$Label || optionFieldDefinition.Name
 
@@ -454,6 +461,24 @@ window.createOptionField = function (optionFieldDefinition, optionFieldNamespace
   }
 
   return row
+}
+
+/**
+ * Check if need to restart
+ */
+window.checkForRequiredRestart = function () {
+  if (window.requireRestart) {
+    let choice = remoteElectron.dialog.showMessageBox(remote.getCurrentWindow(), {
+      type: 'warning',
+      buttons: ['Restart', 'Ignore'],
+      title: 'Restart is required',
+      message: 'You have changed an setting that requires restart to take effect.'
+    })
+    if (choice === 0) {
+      remote.app.relaunch()
+      remote.app.quit()
+    }
+  }
 }
 
 /**
