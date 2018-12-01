@@ -2,7 +2,7 @@
     "name": "rclonetray",
     "productName": "RcloneTray",
     "title": "RcloneTray",
-    "version": "1.0.0-alpha.181123",
+    "version": "1.0.0-alpha.181201",
     "releaseType": "prerelease",
     "description": "Simple Rclone bookmark manager GUI that stays in the system tray.",
     "repository": {
