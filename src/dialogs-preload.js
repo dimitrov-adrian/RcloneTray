@@ -2,10 +2,10 @@
 
 const remote = require('electron').remote
 const remoteElectron = remote.require('electron')
-const appPath = remote.app.getAppPath()
 
 window.$main = {
   app: {
+    path: remote.app.getAppPath(),
     name: remote.app.getName(),
     version: remote.app.getVersion()
   },
@@ -13,12 +13,6 @@ window.$main = {
   rclone: remote.require('./rclone'),
   settings: remote.require('./settings')
 }
-
-window.$main.currentWindow = remote.getCurrentWindow() // @TODO remove before release
-window.$main.process = process // @TODO remove before release
-window.$main.r = remote // @TODO remove before release
-window.$main.re = remoteElectron // @TODO remove before release
-window.$main.e = require('electron') // @TODO remove before release
 
 /**
  * Set autostart
@@ -197,8 +191,11 @@ window.getTheFormData = function (form) {
  * @param {string} script
  */
 window.$main.loadStyles = function () {
-  document.write('<link rel="stylesheet" href="' + appPath + '/src/ui/styles/ui.css" />')
-  document.write('<link rel="stylesheet" href="' + appPath + '/src/ui/styles/ui-' + process.platform + '.css" />')
+  document.write('<link rel="stylesheet" href="' + window.$main.app.path + '/src/ui/styles/ui.css" />')
+  document.write('<link rel="stylesheet" href="' + window.$main.app.path + '/src/ui/styles/ui-' + process.platform + '.css" />')
+  if (remoteElectron.systemPreferences.isDarkMode()) {
+    document.documentElement.classList.add('dark')
+  }
 }
 
 /**

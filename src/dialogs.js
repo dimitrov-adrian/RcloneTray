@@ -1,10 +1,18 @@
 'use strict'
 
 const path = require('path')
-const { shell, app, BrowserWindow, Menu, Notification, dialog } = require('electron')
+const { shell, app, BrowserWindow, Menu, Notification, dialog, systemPreferences } = require('electron')
 const electronContextMenu = require('electron-context-menu')
 const isDev = require('electron-is-dev')
 const settings = require('./settings')
+
+/**
+ * Set the background color
+ * @private
+ */
+const backgroundColor = process.platform === 'win32'
+  ? '#ffffff'
+  : systemPreferences.isDarkMode() ? '#3a3937' : '#ececec'
 
 /**
  * Dialog names that should be opened with single instances
@@ -42,7 +50,7 @@ const createNewDialog = function (dialogName, options, props) {
     fullscreenable: false,
     useContentSize: true,
     show: false,
-    backgroundColor: process.platform === 'win32' ? '#ffffff' : '#ececec',
+    backgroundColor: backgroundColor,
     zoomToPageWidth: true,
     autoHideMenuBar: true,
     skipTaskbar: false,

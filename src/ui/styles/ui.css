@@ -17,19 +17,20 @@ html {
   background: rgba(0,0,0,0);
   user-select: none;
   text-rendering: optimizeSpeed;
-  font: caption;
+  /* font: caption; */
+  font: small-caption;
 }
 :dir(rtl) html {
   direction: ltr;
 }
 html:not(.transparent) {
-  background: Window;
+  background-color: Window;
 }
 body, input, select, textarea {
   font: inherit;
 }
 body {
-  background: inherit;
+  background: transparent;
   color: WindowText;
 }
 
@@ -168,11 +169,6 @@ button,
 input:not([type="checkbox"]):not([type="radio"]),
 textarea {
     padding: 3px 6px;
-}
-input:not([type="checkbox"]):not([type="radio"]):focus,
-textarea:focus {
-  outline: -webkit-focus-ring-color auto 3px;
-  outline-offset: -2px;
 }
 button,
 input[type="button"] {

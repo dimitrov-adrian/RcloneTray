@@ -1,6 +1,13 @@
 /* darwin styles */
-html {
-  font: small-caption;
+body {
+  color: #333333;
+}
+.dark body {
+  color: #dddddd;
+}
+
+.dark a {
+  color: Highlight;
 }
 
 select {
@@ -12,17 +19,17 @@ section {
   border-radius: 5px;
 }
 
-/* Buttons */
-button,
-input[type="button"] {
-  -webkit-appearance: button;
-  padding-left: 1em;
-  padding-right: 1em;
+.dark input:not([type="checkbox"]):not([type="radio"]),
+.dark textarea {
+  color: ButtonText;
+  background-color: #ffffff10;
+  border: 1px solid #ffffff20;
 }
 
 /* Tabs */
 .tab-buttons {
-  border-top: 1px solid ThreeDFace;
+  background: #00000010;
+  border-top: 1px solid #d1d1d1;
   justify-content: center;
 }
 .tab-buttons > * {
@@ -36,12 +43,19 @@ input[type="button"] {
   color: ButtonFace;
 }
 .tab-buttons > .active {
-    background: WindowFrame
+  background: WindowFrame
 }
 .tab-content {
-  background: ThreeDHighlight;
-  border-top: 1px solid ThreeDFace;
-  border-bottom: 1px solid ThreeDFace;
+  border-top: 1px solid #d1d1d1;
+  border-bottom: 1px solid #d1d1d1;
+}
+
+.dark .tab-buttons {
+  border-top: 1px solid #ffffff20;
+}
+.dark .tab-content {
+  border-top: 1px solid #ffffff20;
+  border-bottom: 1px solid #ffffff20;
 }
 
 /* Hacks */

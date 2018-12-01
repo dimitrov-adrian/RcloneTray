@@ -1,13 +1,9 @@
 /* win32 stles */
-html {
-  font: small-caption;
-}
 
 /* Input, Textarea, Select */
 input:not([type="checkbox"]):not([type="radio"]),
 select,
 textarea {
-  -webkit-appearance: none;
   border-radius: 0;
   border: 2px solid WindowFrame;
   background: Window;
@@ -24,41 +20,30 @@ select:focus,
 button:focus,
 button:active,
 textarea:focus {
-    border-color: #0078d4;
-    outline: none;
-    box-shadow: none;
+  border-color: #0078d4;
+  outline: none;
+  box-shadow: none;
 }
 
 /* Tabs */
 .tabs {
   margin: 1rem;
-  border: 1px solid ThreeDFace;
 }
-.tab-buttons {
-  background: rgba(0,0,0,.12);
-  border-bottom: 1px solid ThreeDFace;
-}
-.tab-buttons > * {
-  padding: .4em 2em;
-  border-right: 1px solid ThreeDFace;
-}
-.tab-buttons > :hover,
-.tab-buttons > .active {
-  background: rgba(0,0,0,.2);
-  background: ThreeDFace;
+.tab-buttons > :not(.active):hover {
+  outline: 1px solid ThreeDFace;
 }
 .tab-buttons > .active {
-  background: Window;
-  margin-bottom: -1px;
+  background: #0078d4;
+  color: Window;
 }
 .tab-content {
+  border: 1px solid ThreeDFace;
   background: Window;
 }
-
 
 /* Hacks */
 #preferences .tabs {
-  margin: 0;
+  margin: 1rem 0 0 0;
   border-left: 0;
   border-right: 0;
 }
