@@ -192,7 +192,7 @@ window.getTheFormData = function (form) {
  */
 window.$main.loadStyles = function () {
   document.write('<link rel="stylesheet" href="' + window.$main.app.path + '/src/ui/styles/ui.css" />')
-  document.write('<link rel="stylesheet" href="' + window.$main.app.path + '/src/ui/styles/ui-linux.css" />')
+  document.write('<link rel="stylesheet" href="' + window.$main.app.path + '/src/ui/styles/ui-' + process.platform + '.css" />')
   if (remoteElectron.systemPreferences.isDarkMode()) {
     document.documentElement.classList.add('dark')
   }
