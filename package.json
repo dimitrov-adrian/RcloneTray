@@ -67,8 +67,7 @@
         "linux": {
             "target": [
                 "AppImage",
-                "deb",
-                "rpm"
+                "deb"
             ],
             "publish": [
                 "github"
@@ -100,7 +99,7 @@
         "ini": "^1.3.5"
     },
     "devDependencies": {
-        "electron": "4.0.0-beta.7",
+        "electron": "4.0.0-beta.8",
         "electron-builder": "*",
         "electron-reload": "^1.3.0",
         "standard": "*"

@@ -17,7 +17,6 @@ html {
   background: rgba(0,0,0,0);
   user-select: none;
   text-rendering: optimizeSpeed;
-  /* font: caption; */
   font: small-caption;
 }
 :dir(rtl) html {
