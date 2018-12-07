@@ -21,12 +21,12 @@ Only 64bit binaries are provided in distributions.
 Supported operation systems:
 * Windows 7/8/10 (x64)
 * macOS 10.10 and later
-
-There is some general problems with linux supports, so until fix them, can't say it is supported.
+* GNU/Linux (x64), DE with tray icons support
 
 To get mount function working, you need to install extra packages:
 * Windows - http://www.secfs.net/winfsp/download/
 * macOS - https://osxfuse.github.io/
+* Linux - fuse
 
 
 ## FAQ

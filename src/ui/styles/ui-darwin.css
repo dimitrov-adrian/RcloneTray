@@ -3,13 +3,6 @@
 body {
   color: #333333;
 }
-.dark body {
-  color: #dddddd;
-}
-
-.dark a {
-  color: Highlight;
-}
 
 select {
   margin-top: 3px;
@@ -20,11 +13,21 @@ section {
   border-radius: 5px;
 }
 
-.dark input:not([type="checkbox"]):not([type="radio"]),
-.dark textarea {
-  color: ButtonText;
-  background-color: #ffffff10;
-  border: 1px solid #ffffff20;
+button {
+  color: #333333;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background-color: #fcfcfc;
+  border: 1px solid #ddd;
+  border-color: #c2c0c2 #c2c0c2 #a19fa1;
+  box-shadow: 0 1px 1px rgba(0,0,0,.06);
+}
+
+input:not([type="checkbox"]):not([type="radio"]),
+textarea {
+  color: #333333;
+  background-color: #ffffff;
+  border: 1px solid #00000030;
 }
 
 input:not([type="checkbox"]):not([type="radio"]):focus,
@@ -35,7 +38,7 @@ textarea:focus {
 
 /* Tabs */
 .tab-buttons {
-  background: #00000010;
+  background: #00000012;
   border-top: 1px solid #d1d1d1;
   justify-content: center;
 }
@@ -43,26 +46,16 @@ textarea:focus {
   border-radius: 6px;
   margin: .5rem;
 }
-.tab-buttons > :hover,
-.tab-buttons > .active {
+.tab-buttons > :hover {
   background: rgba(0,0,0,.2);
-  background: ThreeDFace;
-  color: ButtonFace;
 }
 .tab-buttons > .active {
-  background: WindowFrame
+  background: rgba(0,0,0,.38);
+  color: #ffffff;
 }
 .tab-content {
   border-top: 1px solid #d1d1d1;
   border-bottom: 1px solid #d1d1d1;
-}
-
-.dark .tab-buttons {
-  border-top: 1px solid #ffffff20;
-}
-.dark .tab-content {
-  border-top: 1px solid #ffffff20;
-  border-bottom: 1px solid #ffffff20;
 }
 
 /* Hacks */

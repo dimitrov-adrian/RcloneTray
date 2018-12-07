@@ -23,7 +23,6 @@ if (['win32', 'linux', 'darwin'].indexOf(process.platform) === -1) {
 // win32 workaround for poor rendering.
 if (process.platform === 'win32') {
   app.disableHardwareAcceleration()
-  app.commandLine.appendSwitch('ignore-gpu-blacklist')
 }
 
 // Do not allow multiple instances.

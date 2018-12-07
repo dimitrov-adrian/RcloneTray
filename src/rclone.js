@@ -1,6 +1,7 @@
 'use strict'
 
 const { exec, execSync, spawn } = require('child_process')
+const os = require('os')
 const path = require('path')
 const fs = require('fs')
 const chokidar = require('chokidar')
@@ -283,6 +284,14 @@ class BookmarkProcessManager {
       delete BookmarkProcessRegistry[id]
       fireRcloneUpdateActions()
     })
+  }
+
+  /**
+   * Get the process
+   * @returns {childProcess}
+   */
+  getProcess () {
+    return BookmarkProcessRegistry[this.id].process
   }
 
   /**
@@ -861,6 +870,25 @@ const getBookmarkRemoteWithRoot = function (bookmark) {
 }
 
 /**
+ * Free directory that we use for mountpoints
+ * @param {String} directoryPath
+ * @returns {Boolean}
+ */
+const freeMountpointDirectory = function (directoryPath) {
+  if (fs.existsSync(directoryPath)) {
+    fs.readdir(directoryPath, function (err, files) {
+      if (err) {
+        throw err
+      }
+      if (!files.length) {
+        fs.rmdirSync(directoryPath)
+      }
+    })
+  }
+  return true
+}
+
+/**
  * On windows find free drive letter.
  * @returns {string}
  */
@@ -908,14 +936,18 @@ const mount = function (bookmark) {
   if (process.platform === 'win32') {
     mountpoint = win32GetFreeLetter()
   } else if (process.platform === 'linux') {
-    mountpoint = path.join('/', 'media', `${bookmark.type}.${bookmark.$name}`)
+    mountpoint = path.join(os.homedir(), `mount.${bookmark.type}.${bookmark.$name}`)
   } else {
     mountpoint = path.join('/', 'Volumes', `${bookmark.type}.${bookmark.$name}`)
   }
 
   // Check if destination mountpoint is already used.
-  if (!mountpoint || fs.existsSync(mountpoint)) {
+  const mountpointDirectoryExists = fs.existsSync(mountpoint)
+  if (!mountpoint || (mountpointDirectoryExists && fs.readdirSync(mountpoint).length > 0)) {
     throw Error(`Destination mountpoint "${mountpoint}" is not free.`)
+  }
+  if (process.platform === 'linux' && !mountpointDirectoryExists) {
+    fs.mkdirSync(mountpoint)
   }
 
   proc.create([
@@ -929,6 +961,22 @@ const mount = function (bookmark) {
     '-vv'
   ])
   proc.set('mountpoint', mountpoint)
+
+  if (process.platform === 'linux') {
+    proc.getProcess().on('close', function () {
+      freeMountpointDirectory(mountpoint)
+      if (fs.existsSync(mountpoint)) {
+        fs.readdir(mountpoint, function (err, files) {
+          if (err) {
+            throw err
+          }
+          if (!files.length) {
+            fs.rmdir(mountpoint, function () { })
+          }
+        })
+      }
+    })
+  }
 
   fireRcloneUpdateActions()
 }

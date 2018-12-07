@@ -24,9 +24,9 @@ const cache = {
   rclone_cache_directories: 10,
   rclone_sync_enable: true,
   rclone_sync_autoupload_delay: 5,
-  rclone_ncdu_enable: true,
-  rclone_serving_http_enable: true,
-  rclone_serving_ftp_enable: true,
+  rclone_ncdu_enable: false,
+  rclone_serving_http_enable: false,
+  rclone_serving_ftp_enable: false,
   rclone_serving_restic_enable: false,
   rclone_serving_webdav_enable: false,
   rclone_serving_username: '',
@@ -101,7 +101,6 @@ const getAll = function () {
  */
 const updateFile = function () {
   try {
-    console.log('Update settings file: ' + settingsFile)
     let jsonContent = JSON.stringify(cache)
     fs.writeFileSync(settingsFile, jsonContent)
   } catch (err) {

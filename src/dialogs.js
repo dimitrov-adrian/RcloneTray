@@ -1,7 +1,7 @@
 'use strict'
 
 const path = require('path')
-const { shell, app, BrowserWindow, Menu, Notification, dialog, systemPreferences } = require('electron')
+const { shell, app, BrowserWindow, Menu, Notification, dialog } = require('electron')
 const electronContextMenu = require('electron-context-menu')
 const isDev = require('electron-is-dev')
 const settings = require('./settings')
@@ -10,9 +10,11 @@ const settings = require('./settings')
  * Set the background color
  * @private
  */
-const backgroundColor = process.platform === 'win32'
-  ? '#ffffff'
-  : systemPreferences.isDarkMode() ? '#3a3937' : '#ececec'
+const backgroundColor = process.platform === 'darwin'
+  ? '#ececec'
+  : process.platform === 'win32'
+    ? '#ffffff'
+    : '#dddddd'
 
 /**
  * Dialog names that should be opened with single instances
@@ -59,7 +61,9 @@ const createNewDialog = function (dialogName, options, props) {
       preload: path.join(__dirname, 'dialogs-preload.js'),
       devTools: isDev,
       defaultEncoding: 'UTF-8',
+      contextIsolation: false,
       nodeIntegration: false,
+      webviewTag: false,
       sandbox: true
     }
   }, options)
@@ -159,7 +163,7 @@ const addBookmark = function () {
   createNewDialog('AddBookmark', {
     $singleId: 1,
     width: 600,
-    height: 460
+    height: 100
   })
 }
 

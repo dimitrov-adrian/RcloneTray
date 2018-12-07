@@ -40,10 +40,3 @@ textarea:focus {
   border: 1px solid ThreeDFace;
   background: Window;
 }
-
-/* Hacks */
-#preferences .tabs {
-  margin: 1rem 0 0 0;
-  border-left: 0;
-  border-right: 0;
-}

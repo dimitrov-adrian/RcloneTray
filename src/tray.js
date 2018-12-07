@@ -389,7 +389,7 @@ const init = function () {
   } else if (process.platform === 'linux') {
     // Using bigger images fixes the problem with blurry icon in some DE.
     icons.default = path.join(__dirname, 'ui', 'icons', 'icon.png')
-    icons.connected = path.join(__dirname, 'ui', 'icons', 'icon-connected@4x.png')
+    icons.connected = path.join(__dirname, 'ui', 'icons', 'icon-connected.png')
   } else {
     icons.default = path.join(__dirname, 'ui', 'icons', 'iconTemplate.png')
     icons.connected = path.join(__dirname, 'ui', 'icons', 'icon-connectedTemplate.png')
@@ -397,9 +397,6 @@ const init = function () {
 
   // Add system tray icon.
   trayIndicator = new Tray(icons.default)
-
-  // Initialize the tray menu, at least attach quit, about and preferences.
-  init()
 }
 
 // Exports.

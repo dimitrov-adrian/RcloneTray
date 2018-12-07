@@ -2,6 +2,7 @@
 
 const remote = require('electron').remote
 const remoteElectron = remote.require('electron')
+const currentWindow = remote.getCurrentWindow()
 
 window.$main = {
   app: {
@@ -44,7 +45,7 @@ window.popupContextMenu = function (menuTemplate) {
  * @returns {{}}
  */
 window.$main.getProps = function () {
-  return remote.getCurrentWindow().$props
+  return currentWindow.$props
 }
 
 /**
@@ -54,7 +55,7 @@ window.$main.getProps = function () {
  */
 window.messageBox = function (message) {
   return remoteElectron.dialog.showMessageBox(
-    remote.getCurrentWindow(), {
+    currentWindow, {
       message: message
     })
 }
@@ -66,7 +67,7 @@ window.messageBox = function (message) {
  */
 window.confirm = function (message) {
   let choice = remoteElectron.dialog.showMessageBox(
-    remote.getCurrentWindow(), {
+    currentWindow, {
       buttons: ['Yes', 'No'],
       message: message
     })
@@ -79,7 +80,7 @@ window.confirm = function (message) {
  */
 window.errorBox = function (message) {
   remoteElectron.dialog.showMessageBox(
-    remote.getCurrentWindow(), {
+    currentWindow, {
       message: message.toString()
     })
 }
@@ -107,7 +108,7 @@ window.resizeToContent = function () {
   }
 
   if (process.platform === 'darwin') {
-    remote.getCurrentWindow().setSizeAsync(window.outerWidth, newHeight)
+    currentWindow.setSizeAsync(window.outerWidth, newHeight)
   } else {
     window.resizeTo(window.outerWidth, newHeight)
   }
@@ -120,7 +121,7 @@ window.addEventListener('load', window.resizeToContent)
  * @param {callback} callback
  */
 window.selectDirectory = function (defaultDirectory, callback) {
-  remoteElectron.dialog.showOpenDialog(remote.getCurrentWindow(), {
+  remoteElectron.dialog.showOpenDialog(currentWindow, {
     title: 'Select Directory',
     defaultPath: defaultDirectory || remote.app.getPath('home'),
     properties: [
@@ -136,7 +137,7 @@ window.selectDirectory = function (defaultDirectory, callback) {
  * @param {callback} callback
  */
 window.selectFile = function (defaultFile, callback) {
-  remoteElectron.dialog.showOpenDialog(remote.getCurrentWindow(), {
+  remoteElectron.dialog.showOpenDialog(currentWindow, {
     title: 'Select File',
     defaultPath: defaultFile || remote.app.getPath('home'),
     properties: [
@@ -193,9 +194,6 @@ window.getTheFormData = function (form) {
 window.$main.loadStyles = function () {
   document.write('<link rel="stylesheet" href="' + window.$main.app.path + '/src/ui/styles/ui.css" />')
   document.write('<link rel="stylesheet" href="' + window.$main.app.path + '/src/ui/styles/ui-' + process.platform + '.css" />')
-  if (remoteElectron.systemPreferences.isDarkMode()) {
-    document.documentElement.classList.add('dark')
-  }
 }
 
 /**
