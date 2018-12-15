@@ -2,7 +2,7 @@
     "name": "rclonetray",
     "productName": "RcloneTray",
     "title": "RcloneTray",
-    "version": "1.0.0-alpha.181207",
+    "version": "1.0.0-beta.181215",
     "releaseType": "prerelease",
     "description": "Simple Rclone bookmark manager GUI that stays in the system tray.",
     "repository": {
@@ -62,7 +62,8 @@
             "extraResources": [
                 "rclone/darwin/*",
                 "rclone/LICENSE"
-            ]
+            ],
+            "darkModeSupport": false
         },
         "linux": {
             "target": [
@@ -100,7 +101,7 @@
     },
     "devDependencies": {
         "electron": "4.0.0-beta.8",
-        "electron-builder": "^20.38.2",
+        "electron-builder": "^20.38.3",
         "electron-reload": "^1.4.0",
         "standard": "*"
     }

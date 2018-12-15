@@ -49,6 +49,12 @@ const RcloneBinaryBundled = app.isPackaged
   : path.join(app.getAppPath(), 'rclone', process.platform, RcloneBinaryName)
 
 /**
+ * System's temp directory
+ * @private
+ */
+const tempDir = app.getPath('temp')
+
+/**
  * Rclone settings cache
  * @private
  */
@@ -120,8 +126,9 @@ const prepareRcloneCommand = function (command) {
  */
 const appendCustomRcloneCommandArgs = function (commandArray, bookmarkName) {
   // @private
+  const verboseCommandStrPattern = new RegExp(/^-v+\b/)
   const filterCustomArgsVerbose = function (arg) {
-    if (arg.match(/^-v+\b/)) {
+    if (verboseCommandStrPattern.test(arg)) {
       return false
     }
   }
@@ -205,7 +212,7 @@ const doCommandInTerminal = function (command) {
     spawn('/usr/bin/osascript', ['-e', `tell application "Terminal" to do script "${command}" activate`])
   } else if (process.platform === 'linux') {
     // Linux terminal
-    let tempCmdWrapper = path.join(app.getPath('temp'), 'rclonetray-linux-cmd-wrapper.sh')
+    let tempCmdWrapper = path.join(tempDir, 'rclonetray-linux-cmd-wrapper.sh')
     const data = new Uint8Array(Buffer.from(command))
     fs.writeFile(tempCmdWrapper, data, function (err) {
       if (err) {
@@ -276,7 +283,7 @@ class BookmarkProcessManager {
           dialogs.notification(`Uploading to ${BookmarkProcessRegistry[id].bookmarkName} is finished`)
         } else if (BookmarkProcessRegistry[id].processName === 'mount') {
           dialogs.notification(`Unmounted ${BookmarkProcessRegistry[id].bookmarkName}`)
-        } else if (BookmarkProcessRegistry[id].processName.match(/^serve_/)) {
+        } else if (BookmarkProcessRegistry[id].processName.startsWith('serve_')) {
           let servingProtocolName = getAvailableServeProtocols()[BookmarkProcessRegistry[id].data.protocol]
           dialogs.notification(`${servingProtocolName} server for ${BookmarkProcessRegistry[id].bookmarkName} is stopped`)
         }
@@ -385,33 +392,33 @@ class BookmarkProcessManager {
     }
 
     // Just refresh when:
-    if (lineInfo.message.match(/rclone.*finishing/i)) {
+    if (/rclone.*finishing/i.test(lineInfo.message)) {
       fireRcloneUpdateActions()
       return
     }
 
     // Catch errors in the output, so need to kill the process and refresh
-    if (lineInfo.message.match(/(Error while|Failed to|Fatal Error|coudn't connect)/i)) {
+    if (/(Error while|Failed to|Fatal Error|coudn't connect)/i.test(lineInfo.message)) {
       dialogs.notification(lineInfo.message)
       BookmarkProcessRegistry[this.id].process.kill()
       fireRcloneUpdateActions()
       return
     }
 
+    // When remote is mounted.
+    if (/Mounting on "/.test(lineInfo.message)) {
+      dialogs.notification(`Mounted ${this.bookmarkName}`)
+      fireRcloneUpdateActions()
+      this.set('OK', true)
+      return
+    }
+
     // When serving address is already binded.
-    let addressInUse = lineInfo.message.match(/Opening listener.*address already in use/)
+    let addressInUse = lineInfo.message.match(/Opening listener.*address already in use/i)
     if (addressInUse) {
       dialogs.notification(addressInUse[0])
       BookmarkProcessRegistry[this.id].process.kill()
       fireRcloneUpdateActions()
-      return
-    }
-
-    // When remote is mounted.
-    if (lineInfo.message.match('Mounting on "')) {
-      dialogs.notification(`Mounted ${this.bookmarkName}`)
-      fireRcloneUpdateActions()
-      this.set('OK', true)
       return
     }
 
@@ -784,7 +791,7 @@ const addBookmark = function (type, bookmarkName, values) {
   let configFile = getConfigFile()
 
   return new Promise(function (resolve, reject) {
-    if (!bookmarkName.match(/^([a-zA-Z0-9\-_]{1,32})$/)) {
+    if (!/^([a-zA-Z0-9\-_]{1,32})$/.test(bookmarkName)) {
       reject(Error(`Invalid name.\nName should be 1-32 chars long, and should contain only letters, gidits - and _`))
       return
     }
@@ -1303,21 +1310,24 @@ const init = function () {
 
   // Update bookmarks cache.
   updateBookmarksCache()
+}
 
-  // Force killing all processes if the app is going to quit.
-  app.on('before-quit', function (event) {
-    if (BookmarkProcessManager.getActiveProcessesCount() < 1) {
-      return
-    }
+/**
+ * Prepare app to quit, show dialog if there is running processes
+ * @param {Event} event
+ */
+const prepareQuit = function (event) {
+  if (BookmarkProcessManager.getActiveProcessesCount() < 1) {
+    return
+  }
 
-    if (!dialogs.confirmExit()) {
-      event.preventDefault()
-      return
-    }
+  if (!dialogs.confirmExit()) {
+    event.preventDefault()
+    return
+  }
 
-    // Kill all active proccesses before quit.
-    BookmarkProcessManager.killAll()
-  })
+  // Kill all active proccesses before quit.
+  BookmarkProcessManager.killAll()
 }
 
 // Exports.
@@ -1361,5 +1371,7 @@ module.exports = {
 
   onUpdate,
 
-  init
+  init,
+
+  prepareQuit
 }

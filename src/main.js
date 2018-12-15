@@ -9,13 +9,17 @@ const tray = require('./tray')
 
 // Error handler
 process.on('uncaughtException', function (error) {
-  console.error('ERROR', 'Uncaught Exception', error)
   if (dialogs.uncaughtException(error)) {
     app.exit()
   }
 })
 
-// Check the OS
+// Check arch.
+if (process.arch !== 'x64') {
+  throw Error('The application can started on 64bit platforms only.')
+}
+
+// Check the OS.
 if (['win32', 'linux', 'darwin'].indexOf(process.platform) === -1) {
   throw Error('Unsupported platform')
 }
@@ -74,6 +78,9 @@ app.on('ready', function () {
     app.dock.hide()
   }
 })
+
+// Prepare app to quit.
+app.on('before-quit', rclone.prepareQuit)
 
 // Should not quit when all windows are closed,
 // because the application is staying as system tray indicator.

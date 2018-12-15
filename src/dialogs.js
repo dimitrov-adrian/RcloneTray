@@ -219,8 +219,7 @@ const uncaughtException = function (detail) {
     return choice === 0
   } else {
     // This message will be shown on very early stage before most of the app is loaded.
-    console.error(detail)
-    dialog.showErrorBox('Error', 'Unexpected runtime error. RcloneTray cannot starts.')
+    dialog.showErrorBox('Unexpected runtime error. RcloneTray cannot starts.', (detail || '').toString())
     app.focus()
     return true
   }
@@ -235,20 +234,8 @@ const confirmExit = function () {
     type: 'warning',
     buttons: ['Yes', 'No'],
     title: 'Quit RcloneTray',
-    message: 'Are you sure you want to quit? There is active processes that will be terminated.'
-  })
-  return choice === 0
-}
-
-/**
- * Show confirm exit dialog.
- * @returns {boolean}
- */
-const brokenUpdates = function () {
-  let choice = dialog.showMessageBox(null, {
-    type: 'warning',
-    buttons: ['OK'],
-    message: 'There is a problem while doing update check. The problem is not critical and do not affect normal work of the app, but the update notification will not be displayed.'
+    message: 'Are you sure you want to quit?',
+    detail: 'There is active processes that will be terminated.'
   })
   return choice === 0
 }
@@ -372,7 +359,6 @@ module.exports = {
   errorMultiInstance,
   uncaughtException,
   confirmExit,
-  brokenUpdates,
   missingRclone,
   notification
 }
