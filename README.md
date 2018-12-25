@@ -1,7 +1,3 @@
-
-> The app is under development. It's possible to have breaking changes until first public version. Using the app is at your own risk.
-
-
 # <img src="https://raw.githubusercontent.com/dimitrov-adrian/RcloneTray/master/src/ui/icons/source-icon-color.png" width="48px" align="center" alt="RcloneTray Icon" /> RcloneTray
 
 [![Build Status](https://travis-ci.org/dimitrov-adrian/RcloneTray.svg?branch=master)](https://travis-ci.org/dimitrov-adrian/rclonetray)
@@ -31,10 +27,8 @@ To get mount function working, you need to install extra packages:
 
 ## FAQ
 
-**The application bundle comes with Rclone version XXX, but I want to use version YYY?**
-
-No problem, you need just to uncheck the option "Use bundled Rclone" and then RcloneTray will
-use the system installed Rclone
+**The application bundle comes with Rclone version XXX, but I want to use version YYY installed on my system**
+Go "Preferences" and from "Rclone" tab, uncheck the option "Use bundled Rclone".
 
 
 ## Downloads
@@ -55,8 +49,6 @@ $ cd RcloneTray
 $ npm install
 $ npm start
 ```
-
-For easier developing the app is started with more verbose output, inspector in the menu and node console.
 
 
 ## License

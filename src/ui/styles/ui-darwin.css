@@ -38,8 +38,8 @@ textarea:focus {
 
 /* Tabs */
 .tab-buttons {
-  background: #00000012;
-  border-top: 1px solid #d1d1d1;
+  background: #00000018;
+  border-top: 1px solid #d0d0d0;
   justify-content: center;
 }
 .tab-buttons > * {
@@ -54,8 +54,8 @@ textarea:focus {
   color: #ffffff;
 }
 .tab-content {
-  border-top: 1px solid #d1d1d1;
-  border-bottom: 1px solid #d1d1d1;
+  border-top: 1px solid #d0d0d0;
+  border-bottom: 1px solid #d0d0d0;
 }
 
 /* Hacks */
