@@ -49,7 +49,7 @@
             $Label: 'Config',
             $Type: 'file',
             $RequireRestart: true,
-            Help: 'Changing this option require restart.',
+            Help: 'Changing this option requires restart.',
             Provider: '',
             Default: $main.rclone.getConfigFile(),
             Value: '',
@@ -65,7 +65,7 @@
             $Label: 'Use bundled Rclone',
             $Type: 'boolean',
             $RequireRestart: true,
-            Help: 'Use the Rclone binary that is bundled with the app, otherwise installed system wide version will be used (if not found, then you will receive and error).',
+            Help: 'Use the rclone binary that is bundled with the app, otherwise installed system-wide version will be used (if not found, then you will receive an error).',
             Provider: '',
             Default: true,
             Value: $main.settings.get('rclone_use_bundled'),
@@ -94,7 +94,7 @@
             Name: 'custom_args',
             $Label: 'Custom Rclone setting args.',
             $Type: 'text',
-            Help: 'Space or new-line separated rclone command arguments to be appended to all commands.\nCheck more at https://rclone.org/docs/',
+            Help: 'Space or newline separated rclone command arguments to be appended to all commands.\nCheck more at https://rclone.org/docs/',
             Value: $main.settings.get('custom_args'),
             ShortOpt: '',
             Hide: 0,
@@ -171,7 +171,7 @@
             Value: $main.settings.get('rclone_serving_ftp_enable')
           },
           {
-            $Label: 'Enable Restic',
+            $Label: 'Enable restic',
             $Type: 'boolean',
             Name: 'rclone_serving_restic_enable',
             Value: $main.settings.get('rclone_serving_restic_enable')
