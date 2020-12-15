@@ -1,89 +1,56 @@
-'use strict'
+import bindings from './bindings.js'
+import { errorDialog, reportErrorDialog } from './components/messages.js'
+import { startDaemon as rclone } from './rcloned.js'
+import appInfo from './utils/app-info.js'
+import singleInstanceLock from './utils/single-instance.js'
 
-const path = require('path')
-const { app } = require('electron')
-const isDev = require('electron-is-dev')
-const dialogs = require('./dialogs')
-const rclone = require('./rclone')
-const tray = require('./tray')
+const isDev = process.env.ENV === 'dev'
 
-// Error handler
-process.on('uncaughtException', function (error) {
-  if (dialogs.uncaughtException(error)) {
-    app.exit()
-  }
-})
-
-// Check arch.
-if (process.arch !== 'x64') {
-  throw Error('The application can started on 64bit platforms only.')
+console.debug = function (...args) {
+    console.log('🐛', ...args)
 }
 
-// Check the OS.
-if (['win32', 'linux', 'darwin'].indexOf(process.platform) === -1) {
-  throw Error('Unsupported platform')
+// Check the OS and arch.
+if (process.arch !== 'x64' || ['win32', 'linux', 'darwin'].indexOf(process.platform) === -1) {
+    throw Error('Unsupported platform. RcloneTray requires 64bit platform (macOS, Windows or Linux)')
 }
 
-// win32 workaround for poor rendering.
-if (process.platform === 'win32') {
-  app.disableHardwareAcceleration()
+// Check for yode.
+if (!process.versions.yode) {
+    console.error('App must be run under Yode engine.')
+    process.exit()
 }
 
-// Do not allow multiple instances.
-if (!app.requestSingleInstanceLock()) {
-  if (isDev) {
-    console.log('There is already started RcloneTray instance.')
-  }
-  app.focus()
-  dialogs.errorMultiInstance()
-  app.exit()
-}
-
-// For debugging purposes.
-if (isDev) {
-  // Export interact from console
-  require('inspector').open()
-  // load electron-reload
-  try {
-    require('electron-reload')(__dirname, {
-      electron: path.join(__dirname, '..', 'node_modules', '.bin', 'electron')
+if (!isDev) {
+    process.setUncaughtExceptionCaptureCallback((error) => {
+        reportErrorDialog('Unexpected error', error)
     })
-  } catch (err) { }
-
-  // @TODO Remove before release
-  global.$main = {
-    app: app,
-    __dirname: __dirname,
-    require: require
-  }
 }
 
-// Focus the app if second instance is going to starts.
-app.on('second-instance', app.focus)
+// Main
+;(async () => {
+    if (!isDev) {
+        try {
+            await singleInstanceLock(appInfo.appId)
+        } catch (error) {
+            if (error.toString() === 'ALREADY_RUNNING') {
+                errorDialog(appInfo.name, 'There is already running instance of RcloneTray, cannot start twice.')
+            } else {
+                reportErrorDialog('Unexpected error', error)
+            }
+            process.exit()
+        }
+    }
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on('ready', function () {
-  // Initialize the tray.
-  tray.init()
+    try {
+        const proc = await rclone()
+        if (isDev) {
+            process.once('SIGUSR2', () => proc && proc.kill('SIGHUP'))
+        }
+    } catch (error) {
+        errorDialog('Error', error.toString())
+        process.exit()
+    }
 
-  // Initialize Rclone.
-  rclone.init()
-  rclone.onUpdate(tray.refresh)
-
-  // Only on macOS there is app.dock.
-  if (process.platform === 'darwin') {
-    // Hide the app from dock and taskbar.
-    app.dock.hide()
-  }
-})
-
-// Prepare app to quit.
-app.on('before-quit', rclone.prepareQuit)
-
-// Should not quit when all windows are closed,
-// because the application is staying as system tray indicator.
-app.on('window-all-closed', function (event) {
-  event.preventDefault()
-})
+    bindings.emit('app/ready')
+})()

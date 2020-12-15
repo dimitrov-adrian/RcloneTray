@@ -1,0 +1,24 @@
+{
+    "folders": [
+        {
+            "path": "."
+        }
+    ],
+    "settings": {
+        "javascript.preferences.importModuleSpecifierEnding": "js",
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "extensions": {
+        "recommendations": ["esbenp.prettier-vscode"]
+    },
+    "launch": {
+        "configurations": [
+            {
+                "command": "npm start",
+                "name": "Run npm start",
+                "request": "launch",
+                "type": "node-terminal"
+            }
+        ]
+    }
+}
