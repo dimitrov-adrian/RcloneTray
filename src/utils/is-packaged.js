@@ -1,8 +1,7 @@
-import path from 'path'
-
-const isPacked = ['yode', 'qode', 'node'].indexOf(path.basename(process.argv0, '.exe').toLowerCase()) === -1
+import { basename } from 'node:path';
+const isPacked = ['yode', 'qode', 'node'].indexOf(basename(process.title).toLowerCase()) === -1;
 
 /**
- * @type {Boolean}
+ * @type {boolean}
  */
-export default isPacked
+export default isPacked;

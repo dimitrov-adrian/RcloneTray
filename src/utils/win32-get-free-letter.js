@@ -1,4 +1,4 @@
-import { execSync } from 'child_process'
+import { execSync } from 'node:child_process';
 
 /**
  * On windows find free drive letter.
@@ -6,8 +6,9 @@ import { execSync } from 'child_process'
  */
 export default function win32GetFreeLetter() {
     if (process.platform !== 'win32') {
-        return null
+        return null;
     }
+
     // First letters are reserved, floppy, system drives etc.
     const allLetters = [
         'E',
@@ -32,25 +33,25 @@ export default function win32GetFreeLetter() {
         'X',
         'Y',
         'Z',
-    ]
+    ];
 
     const usedDriveLetters = execSync('wmic logicaldisk get name')
         .toString()
         .split(/\n/)
         .map((line) => {
-            let letter = line.trim().match(/^([A-Z]):/)
+            const letter = line.trim().match(/^([A-Z]):/);
             if (letter) {
-                return letter[1]
+                return letter[1];
             }
-            return null
+            return null;
         })
-        .filter((letter) => !!letter)
+        .filter((letter) => !!letter);
 
-    const freeLetter = allLetters.find((letter) => usedDriveLetters.indexOf(letter) === -1)
+    const freeLetter = allLetters.find((letter) => usedDriveLetters.indexOf(letter) === -1);
 
     if (!freeLetter) {
-        return null
+        return null;
     }
 
-    return freeLetter + ':'
+    return freeLetter + ':';
 }

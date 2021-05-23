@@ -1,30 +1,42 @@
-const store = new Map()
-
-export class Ref {
-    constructor() {
-        this.$index = Symbol()
-        Object.freeze(this)
-    }
-    set value(value) {
-        store.set(this.$index, value)
-        return value
-    }
-    get value() {
-        return store.get(this.$index)
-    }
-    unref() {
-        return store.delete(this.$index)
-    }
-}
+/**
+ * @type {Map<string|Symbol, any>}
+ */
+const store = new Map();
 
 /**
  *
- * @param {any} initialValue
- * @returns {
- *  value: initialValue,
- *  unref,
- * }
+ * @returns {Ref}
  */
-export default function ref() {
-    return new Ref()
+export function ref() {
+    return new Ref();
+}
+
+export default ref;
+
+export class Ref {
+    constructor() {
+        this.id = Symbol();
+        Object.freeze(this);
+    }
+
+    /**
+     * @param {*} value
+     */
+    set value(value) {
+        store.set(this.id, value);
+    }
+
+    /**
+     * @returns {*}
+     */
+    get value() {
+        return store.get(this.id);
+    }
+
+    /**
+     * @returns {boolean}
+     */
+    unref() {
+        return store.delete(this.id);
+    }
 }

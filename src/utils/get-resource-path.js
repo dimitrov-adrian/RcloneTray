@@ -1,19 +1,16 @@
-import path from 'path'
-import isPackaged from './is-packaged.js'
+import path from 'node:path';
+import isPackaged from './is-packaged.js';
 
 /**
  * Get path to unpacked resource, because when compiled with yackage and yode,
  * the resource files goes to <root>/res/
- * @param  {...String} args
- * @returns {String}
+ * @param  {...string} args
+ * @returns {string}
  */
 export default function getResourcePath(...args) {
-    let resourcePath
-    if (isPackaged) {
-        resourcePath = path.join('..', 'res', ...args)
-    } else {
-        resourcePath = path.join(...args)
-    }
-    resourcePath = path.resolve(resourcePath)
-    return resourcePath
+    return isPackaged
+        ? // Yode
+          path.join(process.execPath, '..', 'res', ...args)
+        : // Node
+          path.resolve(path.join(...args));
 }

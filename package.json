@@ -1,18 +1,18 @@
 {
     "name": "rclonetray",
     "displayName": "RcloneTray",
-    "version": "2.0.0-alpha",
+    "version": "2.0.0-beta",
     "author": "Adrian Dimitrov <dimitrov.adrian@gmail.com>",
     "homepage": "https://github.com/dimitrov-adrian/RcloneTray",
     "license": "MIT",
     "bugs": {
         "url": "https://github.com/dimitrov-adrian/RcloneTray/issues"
     },
-    "releaseUpdateURI": "https://api.github.com/repos/dimitrov-adrian/RcloneTray/releases/latest",
+    "publishedMetaInfo": "https://api.github.com/repos/dimitrov-adrian/RcloneTray/releases/latest",
     "build": {
         "appId": "com.github.dimitrov-adrian.rclonetray",
         "productName": "RcloneTray",
-        "unpack": "+(*.node|*.html|*.png|*.gif|*.jpg|./node_modules/node-notifier/vendor/**|./rclone/**)",
+        "unpack": "**/{vendor/**,*.node,*.node,*.html,*.png,*.gif,*.jpg,*.exe}",
         "copyright": "Copyright (c) 2020 Adrian Dimitrov"
     },
     "private": true,
@@ -24,48 +24,46 @@
     "cpu": [
         "x64"
     ],
+    "engines": {
+        "yode": ">=14.0.0"
+    },
+    "main": "bundle.cjs",
     "type": "module",
-    "main": "src/main.js",
     "scripts": {
-        "postinstall": "npm run install:rclone",
-        "start": "yode src/main.js",
-        "dev": "ENV=dev RCLONE_PORT=11555 nodemon --inspect --exec yode src/main.js",
-        "dist": "yackage dist dist --cache-dir yode",
-        "build": "yackage build out",
-        "install:rclone": "rclone-fetcher",
-        "build:icons": "svg-app-icon --include icns --include ico --destination build < icons/rclone-logo.svg"
+        "start": "yode src/index.js",
+        "dist": "rollup -c && yackage dist out/dist",
+        "build": "rollup -c && yackage build out/build",
+        "rebuild:icons": "svg-app-icon --include icns --include ico --destination build < icons/rclone-logo.svg"
     },
     "nodemonConfig": {
-        "verbose": true,
-        "ignore": [
-            "package.json",
-            "build/*",
-            "node_modules/*",
-            ".*/*",
-            "test/*"
+        "watch": [
+            "src/*"
         ],
-        "delay": "2000"
-    },
-    "engines": {
-        "node": ">=14.0.0",
-        "yode": "^0.1.3"
+        "delay": "1000",
+        "exec": "npm start"
     },
     "dependencies": {
         "@directus/format-title": "*",
-        "chokidar": "^3.4.3",
-        "conf": "^7.1.2",
+        "chokidar": "^3.5.1",
+        "conf": "^10.0.1",
+        "easy-auto-launch": "^6.0.0",
         "fetch-yode": "^1.0.1",
-        "gui": "^0.9.2",
+        "gui": "^0.9.6",
         "node-fetch": "^2.6.1",
-        "node-notifier": "^9.0.0",
-        "opener": "^1.5.2",
-        "auto-launch": "^5.0.5",
-        "semver": "^7.3.4"
+        "open": "^8.0.9",
+        "parse-duration": "^1.0.0",
+        "semver": "^7.3.5"
     },
     "devDependencies": {
-        "rclone-fetcher": "file:packages/rclone-fetcher",
-        "nodemon": "^2.0.6",
-        "yackage": "^0.3.1",
-        "svg-app-icon": "^1.1.0"
+        "@rollup/plugin-commonjs": "^19.0.0",
+        "eslint": "^7.26.0",
+        "eslint-config-prettier": "^8.3.0",
+        "eslint-plugin-editorconfig": "^3.0.2",
+        "eslint-plugin-import": "^2.23.2",
+        "eslint-plugin-prettier": "^3.4.0",
+        "prettier": "^2.3.0",
+        "rollup": "^2.48.0",
+        "svg-app-icon": "^1.1.0",
+        "yackage": "^0.3.1"
     }
 }

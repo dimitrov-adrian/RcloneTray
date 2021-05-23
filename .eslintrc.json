@@ -1,0 +1,35 @@
+{
+    "env": {
+        "es6": true,
+        "node": true
+    },
+    "parserOptions": {
+        "sourceType": "module",
+        "allowImportExportEverywhere": true,
+        "ecmaVersion": 2020
+    },
+    "ignorePatterns": ["**/dist/**", "***/out/***", "**/build/**", "**/node_modules/**"],
+    "plugins": ["editorconfig", "prettier", "import"],
+    "extends": [
+        "plugin:editorconfig/all",
+        "prettier",
+        "eslint:recommended",
+        "plugin:import/errors",
+        "plugin:import/warnings"
+    ],
+    "rules": {
+        "yoda": "warn",
+        "no-var": "error",
+        "no-unreachable": "warn",
+        "no-unused-expressions": "warn",
+        "no-underscore-dangle": "error",
+        "no-unused-vars": ["warn", { "argsIgnorePattern": "next" }],
+        "camelcase": ["error", { "properties": "never" }],
+        "import/no-unresolved": "error",
+        "import/named": "error",
+        "import/namespace": "error",
+        "import/default": "error",
+        "import/export": "error",
+        "prettier/prettier": "error"
+    }
+}

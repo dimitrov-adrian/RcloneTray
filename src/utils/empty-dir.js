@@ -1,34 +1,44 @@
-import { existsSync, mkdirSync, promises as fsp } from 'fs'
+import { existsSync, mkdirSync, promises as fsp } from 'node:fs';
 
+/**
+ * @param {string} path
+ * @returns {Promise<boolean>}
+ */
 export async function isEmptyDirectory(path) {
     if (!existsSync(path)) {
-        return true
+        return true;
     }
     try {
-        const iterator = await fsp.opendir(path)
-        const { value, fail } = await iterator[Symbol.asyncIterator]().next()
-        await iterator.close()
-        return !fail
+        const iterator = await fsp.opendir(path);
+        // @ts-ignore
+        const { value, fail } = await iterator[Symbol.asyncIterator]().next();
+        await iterator.close();
+        return !fail;
     } catch (error) {
-        return false
+        return false;
     }
 }
 
+/**
+ * @param {string} path
+ * @returns {Promise<boolean>}
+ */
 export async function getEmptyDirectory(path) {
     if (!existsSync(path)) {
         try {
-            mkdirSync(path, { recursive: true })
-            return true
+            mkdirSync(path, { recursive: true });
+            return true;
         } catch (error) {
-            return false
+            return false;
         }
     }
     try {
-        const iterator = await fsp.opendir(path)
-        const { value, fail } = await iterator[Symbol.asyncIterator]().next()
-        await iterator.close()
-        return !fail
+        const iterator = await fsp.opendir(path);
+        // @ts-ignore
+        const { value, fail } = await iterator[Symbol.asyncIterator]().next();
+        await iterator.close();
+        return !fail;
     } catch (error) {
-        return false
+        return false;
     }
 }

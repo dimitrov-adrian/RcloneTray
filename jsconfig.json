@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "baseUrl": "./",
+        "noLib": false,
+        "skipLibCheck": true,
+        "checkJs": true,
+        "module": "esnext",
+        "target": "es2020",
+        "allowSyntheticDefaultImports": true,
+        "moduleResolution": "node",
+        "alwaysStrict": true,
+        "forceConsistentCasingInFileNames": true
+    },
+    "exclude": ["node_modules", "/vendor/**", "/dist/**", "/out/**"]
+}

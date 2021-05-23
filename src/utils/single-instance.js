@@ -1,52 +1,51 @@
-import crypto from 'crypto'
-import fs from 'fs'
-import net from 'net'
-import os from 'os'
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import net from 'node:net';
+import os from 'node:os';
 
 /**
- *
- * @param {*} socketPath
- * @param {*} resolve
- * @param {*} reject
+ * @param {string} socketPath
+ * @param {(value: any) => void} resolve
+ * @param {(reason?: string) => void} reject
  */
 function createInstanceSock(socketPath, resolve, reject) {
-    const sock = net.createServer()
+    const sock = net.createServer();
 
     sock.listen(socketPath, () => {
         process.on('exit', () => {
             if (fs.existsSync(socketPath)) {
-                fs.unlinkSync(socketPath)
+                fs.unlinkSync(socketPath);
             }
-        })
-        resolve(socketPath)
-    })
+        });
+        resolve(socketPath);
+    });
 
     sock.on('error', () => {
-        reject('CANNOT_INSTANTINATE')
-    })
+        reject('CANNOT_INSTANTINATE');
+    });
 }
 
 /**
- *
- * @param {*} socketPath
- * @param {*} resolve
- * @param {*} reject
+ * @param {string} socketPath
+ * @param {(value: any) => void} resolve
+ * @param {(reason?: string) => void} reject
  */
 function connectToInstance(socketPath, resolve, reject) {
-    const socketServer = net.createConnection(socketPath)
+    const socketServer = net.createConnection(socketPath);
 
     socketServer.on('connect', () => {
-        reject('ALREADY_RUNNING')
-    })
+        reject('ALREADY_RUNNING');
+    });
 
     socketServer.on('error', (err) => {
-        fs.unlinkSync(socketPath)
-        resolve(socketPath)
-    })
+        fs.unlinkSync(socketPath);
+        resolve(socketPath);
+    });
 }
 
 /**
- * @returns {Promise}
+ * @param {string} id
+ * @returns {Promise<string>}
  */
 export default function singleInstanceLock(id) {
     // Calculate hash depending on version, runtime, user... So we won't
@@ -57,23 +56,23 @@ export default function singleInstanceLock(id) {
         .update(os.userInfo().username.toString())
         .digest('base64')
         .replace(/(\+|=|\/)/g, '')
-        .substr(0, 8)
+        .substr(0, 8);
 
     // Socket filename.
     const socketName =
         `${id}-${hash}`
             .toString()
             .toLowerCase()
-            .replace(/[^a-z0-9-.]/g, '') + '.sock'
+            .replace(/[^a-z0-9-.]/g, '') + '.sock';
 
     // Socket filepath.
-    const socketPath = process.platform === 'win32' ? `\\\\.\\pipe\\${socketName}` : `${os.tmpdir()}/${socketName}`
+    const socketPath = process.platform === 'win32' ? `\\\\.\\pipe\\${socketName}` : `${os.tmpdir()}/${socketName}`;
 
     return new Promise(function (resolve, reject) {
         if (fs.existsSync(socketPath)) {
-            connectToInstance(socketPath, () => createInstanceSock(socketPath, resolve, reject), reject)
+            connectToInstance(socketPath, () => createInstanceSock(socketPath, resolve, reject), reject);
         } else {
-            createInstanceSock(socketPath, resolve, reject)
+            createInstanceSock(socketPath, resolve, reject);
         }
-    })
+    });
 }

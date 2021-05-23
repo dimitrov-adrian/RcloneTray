@@ -1,23 +1,44 @@
 {
     "folders": [
         {
-            "path": "."
+            "path": "./"
         }
     ],
     "settings": {
         "javascript.preferences.importModuleSpecifierEnding": "js",
-        "editor.defaultFormatter": "esbenp.prettier-vscode"
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.suggest.showEvents": true,
+        "editor.formatOnSave": true,
+        "editor.formatOnType": true,
+        "javascript.preferences.importModuleSpecifier": "relative",
+        "files.exclude": {
+            ".idea": true,
+            "**/._*": true,
+            "**/node_modules/**": true
+        }
     },
     "extensions": {
-        "recommendations": ["esbenp.prettier-vscode"]
+        "recommendations": [
+            "esbenp.prettier-vscode",
+            "eg2.vscode-npm-script",
+            "PKief.material-icon-theme",
+            "stylelint.vscode-stylelint",
+            "esbenp.prettier-vscode",
+            "codezombiech.gitignore",
+            "IronGeek.vscode-env",
+            "EditorConfig.EditorConfig"
+        ]
     },
     "launch": {
         "configurations": [
             {
                 "command": "npm start",
-                "name": "Run npm start",
+                "name": "Default start",
                 "request": "launch",
-                "type": "node-terminal"
+                "type": "node-terminal",
+                "skipFiles": ["<node_internals>/**"],
+                "outputCapture": "std",
+                "autoAttachChildProcesses": true
             }
         ]
     }
