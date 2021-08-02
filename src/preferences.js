@@ -7,12 +7,7 @@ import { promptError } from './utils/prompt.js';
 import autoLaunch, { autoLaunchError } from './services/auto-launch.js';
 import packageJson from './utils/package-json.js';
 import { openFileEditor } from './utils/open-file-editor.js';
-import { getSystemConfigFile } from './services/rclone.js';
-
-export function openRcloneConfigFile() {
-    const configFile = config.get('rclone_config_file') || getSystemConfigFile();
-    openFileEditor(configFile);
-}
+import { getConfigFile, getDefaultMountPoint } from './services/rclone.js';
 
 /**
  * @type {import('./utils/gui-form-builder.js').FieldDefinitionGroup[]}
@@ -23,6 +18,7 @@ const preferencesDefinition = [
         enableScroll: true,
         fields: [
             {
+                // The context menus on linux seems to not supports custom icons.
                 Name: 'show_type',
                 ...(process.platform === 'linux'
                     ? {
@@ -84,7 +80,6 @@ const preferencesDefinition = [
                 Type: 'bool',
                 Name: 'show_config_refresh',
             },
-            // macOS doesn't need this because it supports templates.
             {
                 Type: 'string',
                 Name: 'tray_icon_theme',
@@ -102,15 +97,9 @@ const preferencesDefinition = [
                         Value: 'color',
                     },
                 ],
+                // macOS doesn't need this because it supports templates.
                 Hide: process.platform === 'darwin',
-                Readonly: process.platform === 'darwin',
             },
-        ],
-    },
-    {
-        label: 'Advanced',
-        enableScroll: true,
-        fields: [
             {
                 Type: 'bool',
                 Name: 'enable_ncdu',
@@ -123,6 +112,12 @@ const preferencesDefinition = [
                 Title: 'Enable DLNA serve',
                 Default: false,
             },
+        ],
+    },
+    {
+        label: 'Advanced',
+        enableScroll: true,
+        fields: [
             {
                 Type: 'Duration',
                 Name: 'push_on_change_delay',
@@ -135,15 +130,18 @@ const preferencesDefinition = [
                 Help: 'Path to Rclone config file, leave empty to use default rclone.conf.\n\nChanging this option requires restart.',
             },
             {
-                Type: 'bool',
-                Name: 'rclone_config_pass',
-                Help: 'Ask for config password on startup',
-                Default: false,
-            },
-            {
                 Name: 'use_system_rclone',
                 Type: 'bool',
                 Help: 'Use system wide Rclone executable (it should be available in the system paths). Leave unchecked to use bundled Rclone within the RcloneTray.\n\nChanging this option requires restart.',
+            },
+            {
+                Name: 'mount_pattern',
+                Type: 'string',
+                Help:
+                    'Path pattern when mounting. Use %s token for bookmark name or leave empty for defaults:\n' +
+                    getDefaultMountPoint('ExampleBookmark'),
+                // On windows this has no meaning as it only supports mount by letters like C: D: ... etc.
+                Hide: process.platform === 'win32',
             },
         ],
     },
@@ -199,14 +197,8 @@ const preferencesDefinition = [
     },
 ];
 
-/**
- * @returns {import('./utils/gui-form-builder.js').FieldDefinitionGroup[]}
- */
-function preferenceDefinitionWithValues() {
-    return preferencesDefinition.map((group) => ({
-        ...group,
-        fields: assignFieldsValues(group.fields, config.store),
-    }));
+export function openRcloneConfigFile() {
+    openFileEditor(getConfigFile());
 }
 
 export default async function createPreferencesWindow() {
@@ -220,7 +212,7 @@ export default async function createPreferencesWindow() {
     win.value.setMaximizable(false);
     win.value.setContentSize({ width: 540, height: 520 });
     win.value.setContentSizeConstraints({ width: 520, height: 480 }, { width: 860, height: 800 });
-    win.value.setTitle(`${packageJson.displayName} Preferences`);
+    win.value.setTitle(`${packageJson.build.productName} Preferences`);
 
     const contentView = gui.Container.create();
     contentView.setStyle({ flex: 1, flexDirection: 'column', padding: 10 });
@@ -249,31 +241,38 @@ export default async function createPreferencesWindow() {
     actionButtonSave.onClick = (self) => saveAction({ self, form: preferencesTabs });
     actionButtonsWrapper.addChildView(actionButtonSave);
 
-    win.value.setVisible(true);
     win.value.activate();
 
-    autoLaunchInit(autoLaunchButton);
+    autoLaunchInitValue(autoLaunchButton);
 
     return win.value;
 }
 
 /**
+ * @returns {import('./utils/gui-form-builder.js').FieldDefinitionGroup[]}
+ */
+function preferenceDefinitionWithValues() {
+    return preferencesDefinition.map((group) => ({
+        ...group,
+        fields: assignFieldsValues(group.fields, config.store),
+    }));
+}
+
+/**
  * @param {gui.Button} button
  */
-function autoLaunchInit(button) {
-    autoLaunch
-        .isEnabled()
-        .then((currentState) => {
-            if (!button) return;
-            button.setEnabled(true);
-            button.setChecked(currentState);
-        })
-        .catch((error) => {
-            console.warn(error.toString());
-            if (button) {
-                autoLaunchError(button.getWindow());
-            }
-        });
+async function autoLaunchInitValue(button) {
+    try {
+        const currentState = await autoLaunch.isEnabled();
+        if (!button) return;
+        button.setEnabled(true);
+        button.setChecked(currentState);
+    } catch (error) {
+        console.warn(error.toString());
+        if (button) {
+            autoLaunchError(button.getWindow());
+        }
+    }
 }
 
 /**

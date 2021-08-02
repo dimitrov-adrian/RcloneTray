@@ -1,4 +1,4 @@
-import { basename } from 'node:path';
+import { basename } from 'path';
 const isPacked = ['yode', 'qode', 'node'].indexOf(basename(process.title).toLowerCase()) === -1;
 
 /**

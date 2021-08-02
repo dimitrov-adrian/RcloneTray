@@ -1,4 +1,4 @@
-import { spawn } from 'node:child_process';
+import { spawn } from 'child_process';
 
 /**
  * Run command in OS terminal application

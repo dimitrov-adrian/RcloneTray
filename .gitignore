@@ -6,4 +6,4 @@
 /dist/
 /vendor/rclone
 /rclonetray-*.tgz
-/main.packed.cjs
+/bundle.cjs

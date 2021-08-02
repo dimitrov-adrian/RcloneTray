@@ -1,6 +1,7 @@
 import gui from 'gui';
 import parse from 'parse-duration';
-import { formatTitle, sanitizeSizeSuffix } from './formats.js';
+import { debounce } from './debounce.js';
+import { formatTitle, sanitizeSizeSuffix } from './formatter.js';
 
 /**
  * @typedef {{
@@ -19,6 +20,7 @@ import { formatTitle, sanitizeSizeSuffix } from './formats.js';
  *  Title?: string,
  *  OnChange?: CallableFunction,
  *  Readonly?: boolean,
+ *  Disable?: boolean,
  *  Enums?: import('../services/rclone.js').RcloneProviderOptionOptionsItem[],
  *  FileDialog?: 'file' | 'files' | 'folder',
  *  FileDialogFilter?: FileDialogFilter[],
@@ -59,17 +61,12 @@ export function assignFieldsValues(fields, values) {
 }
 
 /**
- * @param {gui.Scroll} view
+ * @param {gui.Container} view
  */
 function scrollRedraw(view) {
-    // const isSmaller = view.getParent().getBounds().height < view.getPreferredSize().height;
-    // view.getContentView().setScrollbarPolicy('never', isSmaller ? 'automatic' : 'never');
-    // if (isSmaller) {
-    //     view.getContentView().setStyle({
-    //         width: view.getContentView().getContentSize().width,
-    //         height: view.getPreferredSize().height,
-    //     });
-    // }
+    const isSmaller = view.getParent().getBounds().height < view.getPreferredSize().height;
+    // @ts-ignore
+    view.getParent().setScrollbarPolicy('never', isSmaller ? 'automatic' : 'never');
 }
 
 /**
@@ -81,22 +78,26 @@ export function createForm(fieldsDefinition, enableScroll) {
     const container = gui.Container.create();
     container.setStyle({ flexDirection: 'column', padding: 10 });
 
-    const fields = Object.values(fieldsDefinition).map((fieldDefinition) => createFormField(fieldDefinition));
+    const fields = Object.values(fieldsDefinition)
+        .filter((fieldsDefinition) => !fieldsDefinition.Disable)
+        .map((fieldDefinition) => createFormField(fieldDefinition));
 
     fields.forEach((field) => container.addChildView(field.container));
 
     if (enableScroll) {
         const thescroll = gui.Scroll.create();
         thescroll.setContentView(container);
+        thescroll.setContentSize(container.getPreferredSize());
+
         if (process.platform !== 'win32') {
             thescroll.setOverlayScrollbar(true);
         }
-        thescroll.setContentSize(container.getPreferredSize());
 
-        if (process.platform === 'darwin') {
-            // macOS have different behaviour when have connected mouse
-            container.onDraw = scrollRedraw;
-        }
+        // if (process.platform === 'darwin') {
+        // macOS have different behaviour when have connected mouse
+        container.onDraw = debounce(scrollRedraw);
+        scrollRedraw(container);
+        // }
 
         return {
             container: thescroll,
@@ -207,7 +208,7 @@ export function createFormField(fieldDefinition) {
         });
         const hintLabelField = gui.Label.createWithAttributedText(hintAttributedLabel);
         hintLabelField.setAlign('start');
-        hintLabelField.setStyle({ width: 240, marginTop: 4, marginBottom: 3 });
+        hintLabelField.setStyle({ width: 280, marginTop: 4, marginBottom: 3 });
         fieldContainer.addChildView(hintLabelField);
     }
 

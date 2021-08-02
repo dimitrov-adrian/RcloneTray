@@ -1,12 +1,11 @@
 import gui from 'gui';
+import open from 'open';
 import { winRef } from './utils/gui-winref.js';
 import { assignFieldsValues, createForm, createTabbedForm } from './utils/gui-form-builder.js';
 import { promptError, promptYesNo } from './utils/prompt.js';
 import { miscImages } from './services/images.js';
 import packageJson from './utils/package-json.js';
-import { getBookmarkConfig, getProvider } from './services/rclone.js';
 import * as rclone from './services/rclone.js';
-import { createWebViewWindow } from './webview.js';
 
 /**
  * @param {string} bookmarkName
@@ -14,7 +13,7 @@ import { createWebViewWindow } from './webview.js';
  * @param {gui.Window=} parentWindow
  */
 export async function createClonedBookmarkWindow(bookmarkName, providerConfig, parentWindow) {
-    const config = await getBookmarkConfig(bookmarkName);
+    const config = await rclone.getBookmark(bookmarkName);
     if (!providerConfig) {
         promptError({
             title: `Clone bookmark ${bookmarkName}`,
@@ -43,8 +42,8 @@ export async function createClonedBookmarkWindow(bookmarkName, providerConfig, p
  * @param {gui.Window=} parentWindow
  */
 export async function createBookmarkWindowByName(bookmarkName, parentWindow) {
-    const config = await getBookmarkConfig(bookmarkName);
-    const providerConfig = await getProvider(config.type);
+    const config = await rclone.getBookmark(bookmarkName);
+    const providerConfig = await rclone.getProvider(config.type);
     if (!providerConfig) {
         promptError({
             title: `Edit bookmark ${config.type}`,
@@ -81,7 +80,7 @@ export default function createBookmarkWindow(isNew, { name, type, providerConfig
 
     if (win.value) return win.value;
 
-    win.value = gui.Window.create({ showTrafficLights: true });
+    win.value = gui.Window.create({});
     win.value.setResizable(true);
     win.value.setMaximizable(false);
     process.platform !== 'darwin' && win.value.setIcon(miscImages.rcloneColor);
@@ -100,7 +99,7 @@ export default function createBookmarkWindow(isNew, { name, type, providerConfig
     if (isNew) {
         setWindowCreateTitle('New');
     } else {
-        win.value.setTitle(`Edit ${name} - ${packageJson.displayName}`);
+        win.value.setTitle(`Edit ${name} - ${packageJson.build.productName}`);
     }
 
     const contentView = gui.Container.create();
@@ -134,7 +133,7 @@ export default function createBookmarkWindow(isNew, { name, type, providerConfig
 
     const propertyForm = createTabbedForm([
         {
-            label: 'General',
+            label: 'Basic',
             enableScroll: true,
             fields: assignFieldsValues(
                 providerConfig.Options.filter((a) => !a.Advanced && !a.Hide),
@@ -150,26 +149,38 @@ export default function createBookmarkWindow(isNew, { name, type, providerConfig
             ),
         },
         {
-            label: 'Misc',
+            label: 'Local',
             enableScroll: true,
             fields: assignFieldsValues(
                 [
+                    {
+                        Type: 'string',
+                        Name: 'rclonetray_bucket',
+                        Title: 'Bucket',
+                        Disable: rclone.BUCKET_REQUIRED_PROVIDERS.indexOf(type) === -1,
+                    },
+                    {
+                        Type: 'string',
+                        Name: 'rclonetray_remote_home',
+                        Title: 'Remote Home',
+                        Help: 'Use directory as a root or home on remote and avoid access outside it, or leave empty to use root.',
+                    },
                     {
                         Type: 'bool',
                         Name: 'rclonetray_automount',
                         Title: 'Mount on start',
                     },
                     {
-                        Type: 'bool',
-                        Name: 'rclonetray_pullonstart',
-                        Title: 'Pull on start',
-                    },
-                    {
                         Type: 'string',
                         FileDialog: 'folder',
                         Name: 'rclonetray_local_directory',
                         Title: 'Sync Directory',
-                        Help: 'Local directory to use when sync',
+                        Help: 'Local directory to use when doing pull/push',
+                    },
+                    {
+                        Type: 'bool',
+                        Name: 'rclonetray_pullonstart',
+                        Title: 'Pull on start',
                     },
                 ],
                 values || {}
@@ -217,13 +228,12 @@ export default function createBookmarkWindow(isNew, { name, type, providerConfig
     }
     actionButtonsWrapper.addChildView(actionButtonSave);
 
-    win.value.setVisible(true);
     win.value.activate();
 
     return win.value;
 
     function providerDocsAction() {
-        createWebViewWindow('https://rclone.org/' + type + '/', providerConfig.Description, win.value);
+        open('https://rclone.org/' + type);
     }
 
     function setWindowCreateTitle(name) {
@@ -265,22 +275,24 @@ async function deleteAction({ name, self }) {
             message: `Are you sure you want to delete ${name} bookmark?`,
             parentWindow: self.getWindow(),
         },
-        async (result) => {
-            if (!result) return;
-            try {
-                await rclone.deleteBookmark(name);
-                if (self.getWindow()) {
-                    self.getWindow().close();
-                }
-            } catch (error) {
-                promptError({
-                    title: `Failed to delete bookmark - ${name}`,
-                    message: error,
-                    parentWindow: self.getWindow(),
-                });
-            }
-        }
+        doDelete
     );
+
+    async function doDelete(result) {
+        if (!result) return;
+        try {
+            await rclone.deleteBookmark(name);
+            if (self.getWindow()) {
+                self.getWindow().close();
+            }
+        } catch (error) {
+            promptError({
+                title: `Failed to delete bookmark - ${name}`,
+                message: error,
+                parentWindow: self.getWindow(),
+            });
+        }
+    }
 }
 
 /**

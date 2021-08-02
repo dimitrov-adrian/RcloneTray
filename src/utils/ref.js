@@ -4,6 +4,13 @@
 const store = new Map();
 
 /**
+ * @param {(item: any) => void} callbackfn
+ */
+export function forEach(callbackfn) {
+    return store.forEach(callbackfn);
+}
+
+/**
  *
  * @returns {Ref}
  */

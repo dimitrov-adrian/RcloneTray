@@ -1,9 +1,9 @@
-import { spawnSync } from 'node:child_process';
+import { spawnSync } from 'child_process';
 
 /**
  * Check if specific command exists and returns path
  * @param {string} command
- * @returns {string}
+ * @returns {string|null}
  */
 export default function which(command) {
     try {

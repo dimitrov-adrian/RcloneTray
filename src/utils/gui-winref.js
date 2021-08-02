@@ -18,6 +18,22 @@ export function winRef(staticId) {
     return new WinRef(staticId);
 }
 
+/**
+ * @param {(item: gui.Window) => void} callbackfn
+ */
+export function forEach(callbackfn) {
+    return store.forEach(callbackfn);
+}
+
+/**
+ * @returns {gui.Window?}
+ */
+export function findActive() {
+    for (const w of store.entries()) {
+        if (w[1].isActive()) return w[1];
+    }
+}
+
 export default winRef;
 
 export class WinRef {

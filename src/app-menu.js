@@ -1,28 +1,42 @@
 import gui from 'gui';
+import packageJson from './utils/package-json.js';
 import createAboutWindow, { openHomepage, openLicense, openRcloneHomepage, reportIssue } from './about.js';
 import { appQuit } from './app-quit.js';
 import createBookmarkWizardWindow from './bookmark-wizard.js';
 import createPreferencesWindow from './preferences.js';
-import packageJson from './utils/package-json.js';
+import { findActive } from './utils/gui-winref.js';
 
 const appMenu = gui.MenuBar.create([
     {
-        label: 'File',
         submenu: [
             {
-                label: 'Homepage',
-                onClick: openHomepage,
+                label: 'About',
+                accelerator: 'CmdOrCtrl+A',
+                onClick: createAboutWindow,
             },
+            { type: 'separator' },
             {
-                label: 'Rclone Homepage',
-                onClick: openRcloneHomepage,
+                label: 'New Bookmark',
+                onClick: createBookmarkWizardWindow,
+                accelerator: 'CmdOrCtrl+N',
+            },
+            { type: 'separator' },
+            {
+                label: 'Preferences',
+                onClick: createPreferencesWindow,
+                accelerator: 'CmdOrCtrl+P',
             },
             { type: 'separator' },
             { role: 'hide' },
             { role: 'hide-others' },
+            {
+                label: `Close Window`,
+                accelerator: 'CmdOrCtrl+W',
+                onClick: () => findActive()?.close(),
+            },
             { type: 'separator' },
             {
-                label: `Quit ${packageJson.name}`,
+                label: `Quit ${packageJson.build.productName}`,
                 accelerator: 'CmdOrCtrl+Q',
                 onClick: appQuit,
             },
@@ -43,29 +57,16 @@ const appMenu = gui.MenuBar.create([
     {
         label: 'Window',
         role: 'window',
-        submenu: [
-            { type: 'separator' },
-            {
-                label: 'New Bookmark',
-                onClick: createBookmarkWizardWindow,
-                accelerator: 'CmdOrCtrl+N',
-            },
-            {
-                label: 'Preferences',
-                onClick: createPreferencesWindow,
-                accelerator: 'CmdOrCtrl+P',
-            },
-            {
-                label: 'About',
-                accelerator: 'CmdOrCtrl+A',
-                onClick: createAboutWindow,
-            },
-        ],
+        submenu: [{ type: 'separator' }],
     },
     {
         label: 'Help',
         role: 'help',
         submenu: [
+            {
+                label: 'RcloneTray Homepage',
+                onClick: openHomepage,
+            },
             {
                 label: 'Report issue',
                 onClick: reportIssue,
@@ -73,6 +74,11 @@ const appMenu = gui.MenuBar.create([
             {
                 label: 'View License',
                 onClick: openLicense,
+            },
+            { type: 'separator' },
+            {
+                label: 'Rclone Homepage',
+                onClick: openRcloneHomepage,
             },
         ],
     },

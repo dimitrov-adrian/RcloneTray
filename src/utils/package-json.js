@@ -1,5 +1,5 @@
-import { resolve } from 'node:path';
-import { readFileSync } from 'node:fs';
+import { resolve } from 'path';
+import { readFileSync } from 'fs';
 import isPacked from './is-packaged.js';
 
 /**

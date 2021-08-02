@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, promises as fsp } from 'node:fs';
+import { existsSync, mkdirSync, promises as fsp } from 'fs';
 
 /**
  * @param {string} path

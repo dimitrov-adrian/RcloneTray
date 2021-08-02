@@ -1,4 +1,4 @@
-import net from 'node:net';
+import net from 'net';
 
 /**
  * @param {(value: any) => void} success
@@ -15,6 +15,10 @@ export function findRandomPort(success, fail) {
     });
 }
 
+/**
+ * Locate random free network port
+ * @returns {Promise<number, Error>}
+ */
 export default function randomPort() {
     return new Promise(findRandomPort);
 }

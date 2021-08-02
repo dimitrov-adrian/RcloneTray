@@ -27,6 +27,7 @@ export const trayIcons = {
  * @type {object}
  */
 export const providerIcons = {
+    _unknown: gui.Image.createFromPath(getResourcePath('icons', 'providers', '_cloud-provider-template@3x.png')),
     acd: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'acd@3x.png')),
     alias: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'alias@3x.png')),
     azureblob: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'azureblob@3x.png')),

@@ -1,10 +1,9 @@
-import { homedir } from 'node:os';
+import { homedir } from 'os';
 import gui from 'gui';
 import open from 'open';
 import { helpTextFont } from './gui-form-builder.js';
 import packageJson from './package-json.js';
 import ref from './ref.js';
-import winRef from './gui-winref.js';
 
 // @TODO    Promiseify the prompt functions
 //          it's not possible right now as libyue has some
@@ -145,7 +144,9 @@ export function promptErrorReporting({ title, message, parentWindow }, resolve) 
                 '&body=' +
                 encodeURIComponent(plainTextReport);
             open(link);
-            resolve(true);
+            if (resolve) {
+                resolve(true);
+            }
         }
     };
     process.platform === 'darwin' && gui.app.activate(true);
@@ -178,24 +179,20 @@ export function promptInput(options) {
 
     let isSuccess = false;
     let invalidAttempts = 0;
+    const maxHeight = options.helpText ? 140 : 100;
+
     win.value = gui.Window.create({
         frame: process.platform !== 'darwin' && !options.required,
         transparent: false,
         showTrafficLights: !options.required,
     });
-
-    const maxHeight = options.helpText ? 140 : 100;
     win.value.setAlwaysOnTop(true);
     win.value.setContentSize({ width: 340, height: maxHeight });
     win.value.setContentSizeConstraints({ width: 340, height: maxHeight }, { width: 460, height: maxHeight });
-    win.value.setTitle(`${options.label || ''} - ${packageJson.displayName || packageJson.name}`);
+    win.value.setTitle(`${options.label || ''} - ${packageJson.build.productName || packageJson.name}`);
     win.value.setResizable(true);
     win.value.setMaximizable(false);
     win.value.setMinimizable(false);
-    win.value.center();
-    win.value.setVisible(true);
-    win.value.activate();
-
     win.value.onClose = (self) => {
         win.unref();
         if (!isSuccess && options.reject) {
@@ -211,16 +208,7 @@ export function promptInput(options) {
         options.parentWindow.addChildWindow(win.value);
     }
 
-    const contentView = (() => {
-        if (process.platform === 'darwin') {
-            const contentView = gui.Vibrant.create();
-            contentView.setMaterial('appearance-based');
-            contentView.setBlendingMode('behind-window');
-            return contentView;
-        } else {
-            return gui.Container.create();
-        }
-    })();
+    const contentView = createContentView();
     contentView.setStyle({
         paddingTop: process.platform !== 'darwin' ? 10 : 32,
         paddingLeft: 20,
@@ -242,7 +230,6 @@ export function promptInput(options) {
     fieldWrapper.addChildView(inputField);
     inputField.focus();
     inputField.onActivate = resolveAction;
-    win.value.onFocus = () => inputField.focus();
 
     const resolveButton = gui.Button.create(options.buttonText || 'OK');
     resolveButton.setStyle({ flex: 0, marginLeft: 10 });
@@ -259,6 +246,10 @@ export function promptInput(options) {
         contentView.addChildView(providerDescription);
     }
 
+    win.value.onFocus = () => inputField.focus();
+    win.value.center();
+    win.value.setVisible(true);
+    win.value.activate();
     return win.value;
 
     function resolveAction() {
@@ -285,5 +276,16 @@ export function promptInput(options) {
         } else if (win) {
             win.unref();
         }
+    }
+}
+
+function createContentView() {
+    if (process.platform === 'darwin') {
+        const contentView = gui.Vibrant.create();
+        contentView.setMaterial('appearance-based');
+        contentView.setBlendingMode('behind-window');
+        return contentView;
+    } else {
+        return gui.Container.create();
     }
 }

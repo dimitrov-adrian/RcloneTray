@@ -1,19 +1,22 @@
 {
     "name": "rclonetray",
     "displayName": "RcloneTray",
-    "version": "2.0.0-beta",
+    "version": "2.0.0-beta2",
     "author": "Adrian Dimitrov <dimitrov.adrian@gmail.com>",
     "homepage": "https://github.com/dimitrov-adrian/RcloneTray",
     "license": "MIT",
     "bugs": {
         "url": "https://github.com/dimitrov-adrian/RcloneTray/issues"
     },
-    "publishedMetaInfo": "https://api.github.com/repos/dimitrov-adrian/RcloneTray/releases/latest",
     "build": {
         "appId": "com.github.dimitrov-adrian.rclonetray",
         "productName": "RcloneTray",
         "unpack": "**/{vendor/**,*.node,*.node,*.html,*.png,*.gif,*.jpg,*.exe}",
         "copyright": "Copyright (c) 2020 Adrian Dimitrov"
+    },
+    "RcloneTray": {
+        "releaseInfo": "https://api.github.com/repos/dimitrov-adrian/RcloneTray/releases/latest",
+        "licenseFile": "https://raw.githubusercontent.com/dimitrov-adrian/RcloneTray/v2/LICENSE.dist.txt"
     },
     "private": true,
     "os": [
@@ -25,7 +28,7 @@
         "x64"
     ],
     "engines": {
-        "yode": ">=14.0.0"
+        "yode": ">=16.0.0"
     },
     "main": "bundle.cjs",
     "type": "module",
@@ -33,7 +36,8 @@
         "start": "yode src/index.js",
         "dist": "rollup -c && yackage dist out/dist",
         "build": "rollup -c && yackage build out/build",
-        "rebuild:icons": "svg-app-icon --include icns --include ico --destination build < icons/rclone-logo.svg"
+        "rebuild:icons": "svg-app-icon --include icns --include ico --destination build < icons/rclone-logo.svg",
+        "optimize:provider-icons": "pngquant --force --strip --skip-if-larger --ext .png -v icons/providers/*.png"
     },
     "nodemonConfig": {
         "watch": [
@@ -44,26 +48,28 @@
     },
     "dependencies": {
         "@directus/format-title": "*",
-        "chokidar": "^3.5.1",
+        "abort-controller": "^3.0.0",
+        "chokidar": "^3.5.2",
         "conf": "^10.0.1",
         "easy-auto-launch": "^6.0.0",
-        "fetch-yode": "^1.0.1",
-        "gui": "^0.9.6",
+        "fetch-yode": "^1.0.2",
+        "gui": "^0.9.7",
         "node-fetch": "^2.6.1",
-        "open": "^8.0.9",
+        "open": "^8.2.1",
         "parse-duration": "^1.0.0",
         "semver": "^7.3.5"
     },
     "devDependencies": {
-        "@rollup/plugin-commonjs": "^19.0.0",
-        "eslint": "^7.26.0",
+        "@rollup/plugin-commonjs": "^20.0.0",
+        "eslint": "7.32.0",
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-editorconfig": "^3.0.2",
-        "eslint-plugin-import": "^2.23.2",
+        "eslint-plugin-import": "^2.23.4",
         "eslint-plugin-prettier": "^3.4.0",
-        "prettier": "^2.3.0",
-        "rollup": "^2.48.0",
+        "pngquant-bin": "^6.0.0",
+        "prettier": "^2.3.2",
+        "rollup": "^2.55.1",
         "svg-app-icon": "^1.1.0",
-        "yackage": "^0.3.1"
+        "yackage": "*"
     }
 }

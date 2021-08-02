@@ -6,7 +6,7 @@ import { promptError } from '../utils/prompt.js';
  * Autolaunch service
  */
 export const autoLaunch = new AutoLaunch({
-    name: packageJson.displayName,
+    name: packageJson.build.productName,
     path: process.execPath,
     isHidden: false,
     mac: false,
@@ -20,7 +20,7 @@ export default autoLaunch;
 export function autoLaunchError(parentWindow) {
     promptError({
         title: `Auto launch error`,
-        message: `${packageJson.displayName} cannot access system auto launch service`,
+        message: `${packageJson.build.productName} cannot access system auto launch service`,
         parentWindow,
     });
 }

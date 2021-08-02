@@ -1,7 +1,7 @@
-import crypto from 'node:crypto';
-import fs from 'node:fs';
-import net from 'node:net';
-import os from 'node:os';
+import crypto from 'crypto';
+import fs from 'fs';
+import net from 'net';
+import os from 'os';
 
 /**
  * @param {string} socketPath

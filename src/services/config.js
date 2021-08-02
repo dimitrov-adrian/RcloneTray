@@ -26,6 +26,7 @@ const config = new Conf({
                 AllowOther: false,
             },
         },
+        mount_pattern: '',
         show_type: 'icon',
         show_host: true,
         show_status: true,
@@ -37,7 +38,6 @@ const config = new Conf({
         enable_ncdu: true,
         enable_dlna_serve: true,
         push_on_change_delay: 2000,
-        rclone_config_pass: false,
         use_system_rclone: false,
     },
 });

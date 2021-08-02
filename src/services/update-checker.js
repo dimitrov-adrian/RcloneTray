@@ -7,6 +7,7 @@ import packageJson from '../utils/package-json.js';
  *  hasUpdate: boolean,
  *  date: Date,
  *  version: string,
+ *  current: string,
  *  url: string,
  *  size: number,
  *  label: string,
@@ -18,16 +19,19 @@ import packageJson from '../utils/package-json.js';
  * @returns {Promise<UpdateInfo>}
  */
 export async function getLatestRelaseInfo() {
-    const content = await fetch(packageJson.publishedMetaInfo);
+    const content = await fetch(packageJson.RcloneTray.releaseInfo);
     const info = await content.json();
     const asset = info.assets.find(findBundleForPlatformFunction);
 
     if (!asset) null;
 
+    const currentVer = semver.clean(packageJson.version);
+    const remoteVer = semver.clean(info.tag_name);
     return {
-        hasUpdate: true || semver.gt(semver.clean(info.name), semver.clean(packageJson.version)),
+        hasUpdate: semver.gt(remoteVer, currentVer),
         date: new Date(asset.updated_at),
-        version: info.name,
+        version: remoteVer,
+        current: currentVer,
         url: asset.browser_download_url,
         size: asset.size,
         label: asset.label,

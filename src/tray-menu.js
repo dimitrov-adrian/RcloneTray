@@ -10,6 +10,7 @@ import createPreferencesWindow, { openRcloneConfigFile } from './preferences.js'
 import createAboutWindow from './about.js';
 import { createBookmarkWindowByName } from './bookmark-edit.js';
 import { appQuit } from './app-quit.js';
+import open from 'open';
 
 /** @type {{ value: gui.Tray, unref: CallableFunction }} */
 const trayIcon = ref();
@@ -38,6 +39,7 @@ export const updateMenu = debounce(async () => {
                 mounted: mounted.mountPoints.map((item) => item.Fs),
                 inSync,
                 connected,
+                dlna: rclone.getDLNAServings(),
             });
 
             return;
@@ -46,7 +48,7 @@ export const updateMenu = debounce(async () => {
         }
     }
 
-    setMenu([], { mounted: [], inSync: [], connected: false });
+    setMenu([], { mounted: [], inSync: [], dlna: [], connected: false });
 });
 
 /**
@@ -55,22 +57,23 @@ export const updateMenu = debounce(async () => {
 export function createTrayMenu() {
     if (trayIcon.value) return;
     trayIcon.value = gui.Tray.createWithImage(getTrayIcon());
-    setMenu([], { mounted: [], inSync: [], connected: false });
+    setMenu([], { mounted: [], inSync: [], dlna: [], connected: false });
 }
 
 /**
  * Set tray menu content
  * @param {object} bookmarks
- * @param {{mounted: string[], inSync: string[], connected: boolean}} state
+ * @param {{mounted: string[], inSync: string[], dlna: string[], connected: boolean}} state
  */
 async function setMenu(bookmarks, state) {
-    const hasConnectedBookmark = state.inSync.length + state.mounted.length > 0;
+    const hasConnectedBookmark = state.inSync.length + state.dlna.length + state.mounted.length > 0;
 
     const bookmarksMenus = Object.keys(bookmarks)
         .map((bookmarkName) =>
             buildBookmarkMenu(bookmarkName, bookmarks[bookmarkName], {
                 mounted: state.mounted.indexOf(bookmarkName) !== -1,
                 inSync: state.inSync.indexOf(bookmarkName) !== -1,
+                dlna: state.dlna.indexOf(bookmarkName) !== -1,
             })
         )
         .sort(bookmarkSortByFunction(config.store.bookmarks_order))
@@ -127,7 +130,7 @@ async function setMenu(bookmarks, state) {
     );
 
     menuStructure.push({
-        label: `Quit ${packageJson.displayName}`,
+        label: `Quit ${packageJson.build.productName}`,
         accelerator: 'CmdOrCtrl+Q',
         onClick: appQuit,
     });
@@ -139,19 +142,17 @@ async function setMenu(bookmarks, state) {
 /**
  * Create bookmark item menu content
  * @param {string} bookmarkName
- * @param {object} bookmark
- * @param {{mounted: boolean, inSync: boolean}} state
+ * @param {object} bookmarkConfig
+ * @param {{mounted: boolean, inSync: boolean, dlna: boolean}} state
  * @returns {object}
  */
-function buildBookmarkMenu(bookmarkName, bookmark, state) {
-    const isSyncing = state.inSync;
-    const isMounted = state.mounted;
-    const isConnected = isMounted || isSyncing;
+function buildBookmarkMenu(bookmarkName, bookmarkConfig, state) {
+    const isConnected = state.mounted || state.dlna || state.inSync;
     const showMenuType = process.platform === 'linux' && config.store.show_type ? 'text' : config.store.show_type;
 
     const bookmarkMenu = {
         _meta: {
-            type: bookmark.type,
+            type: bookmarkConfig.type,
             name: bookmarkName,
             isConnected: isConnected,
         },
@@ -160,18 +161,18 @@ function buildBookmarkMenu(bookmarkName, bookmark, state) {
         submenu: [],
     };
 
-    if (bookmark.host && config.store.show_host) {
+    if (bookmarkConfig.host && config.store.show_host) {
         if (showMenuType === 'text') {
-            bookmarkMenu.label = bookmarkMenu.label + ' - ' + bookmark.type + '://' + bookmark.host;
+            bookmarkMenu.label = bookmarkMenu.label + ' - ' + bookmarkConfig.type + '://' + bookmarkConfig.host;
         } else {
-            bookmarkMenu.label = bookmarkMenu.label + ' - ' + bookmark.host;
+            bookmarkMenu.label = bookmarkMenu.label + ' - ' + bookmarkConfig.host;
         }
     } else if (showMenuType === 'text') {
-        bookmarkMenu.label = bookmark.type + '://' + bookmarkMenu.label;
+        bookmarkMenu.label = bookmarkConfig.type + '://' + bookmarkMenu.label;
     }
 
     if (showMenuType === 'icon') {
-        bookmarkMenu.image = providerIcons[bookmark.type];
+        bookmarkMenu.image = providerIcons[bookmarkConfig.type] || providerIcons._unknown;
     }
 
     if (config.store.show_status) {
@@ -181,15 +182,15 @@ function buildBookmarkMenu(bookmarkName, bookmark, state) {
     bookmarkMenu.submenu.push({
         label: 'Mount',
         type: 'checkbox',
-        checked: !!isMounted,
-        enabled: !isMounted,
+        checked: !!state.mounted,
+        enabled: !state.mounted,
         onClick: (menuItem) => {
             menuItem.setChecked(false);
-            unhandledSafeAsync(rclone.mount(bookmarkName));
+            rclone.mount(bookmarkName, bookmarkConfig);
         },
     });
 
-    if (isMounted) {
+    if (state.mounted) {
         bookmarkMenu.submenu.push(
             {
                 label: 'Unmount',
@@ -204,18 +205,18 @@ function buildBookmarkMenu(bookmarkName, bookmark, state) {
 
     bookmarkMenu.submenu.push({ type: 'separator' });
 
-    if (bookmark.rclonetray_local_directory) {
+    if (bookmarkConfig.rclonetray_local_directory) {
         bookmarkMenu.submenu.push(
             {
                 type: 'label',
                 label: 'Pull',
-                onClick: () => rclone.pull(bookmarkName),
+                onClick: () => rclone.pull(bookmarkName, bookmarkConfig),
                 enabled: !state.inSync,
             },
             {
                 type: 'label',
                 label: 'Push',
-                onClick: () => rclone.push(bookmarkName),
+                onClick: () => rclone.push(bookmarkName, bookmarkConfig),
                 enabled: !state.inSync,
             },
             {
@@ -224,15 +225,15 @@ function buildBookmarkMenu(bookmarkName, bookmark, state) {
                 checked: !!state.inSync,
                 onClick: () => {
                     if (state.inSync) {
-                        rclone.pushOnChange(bookmarkName).close();
+                        rclone.pushOnChange(bookmarkName, bookmarkConfig).close();
                     } else {
-                        rclone.pushOnChange(bookmarkName);
+                        rclone.pushOnChange(bookmarkName, bookmarkConfig);
                     }
                 },
             },
             {
                 label: `Open Local in ${fileExplorerAppName}`,
-                onClick: () => rclone.openLocal(bookmarkName),
+                onClick: () => open('file://' + bookmarkConfig.rclonetray_local_directory),
             },
             { type: 'separator' }
         );
@@ -244,7 +245,7 @@ function buildBookmarkMenu(bookmarkName, bookmark, state) {
             { type: 'separator' },
             {
                 label: 'Console Browser',
-                onClick: () => rclone.openNCDU(bookmarkName),
+                onClick: () => rclone.openNCDU(bookmarkName, bookmarkConfig),
             }
         );
     }
@@ -255,7 +256,17 @@ function buildBookmarkMenu(bookmarkName, bookmark, state) {
             { type: 'separator' },
             {
                 label: 'Serve DLNA',
-                // onClick: () => rclone.startBookmarkDLNA(bookmarkName),
+                type: 'checkbox',
+                checked: state.dlna,
+                onClick: (menuItem) => {
+                    if (!rclone.isBookmarkDLNAStarted(bookmarkName)) {
+                        menuItem.setChecked(true);
+                        rclone.bookmarkStartDLNA(bookmarkName, bookmarkConfig);
+                    } else {
+                        menuItem.setChecked(false);
+                        rclone.bookmarkStopDLNA(bookmarkName);
+                    }
+                },
             }
         );
     }
@@ -272,8 +283,13 @@ function buildBookmarkMenu(bookmarkName, bookmark, state) {
     return bookmarkMenu;
 }
 
-function unhandledSafeAsync(asyncFunction) {
-    asyncFunction.catch((error) => {});
+/**
+ * @param {Promise<any>} asyncFunction
+ */
+async function unhandledSafeAsync(asyncFunction) {
+    try {
+        await asyncFunction;
+    } catch (error) {}
 }
 
 /**
@@ -294,10 +310,10 @@ function getTrayIcon(state) {
 function bookmarkSortByFunction(field) {
     return (a, b) => {
         if (field === 'type') {
-            if (a._meta.bookmark.type === b._meta.bookmark.type) return 0;
-            return a._meta.bookmark.type > b._meta.bookmark.type ? -1 : 1;
+            if (a._meta.type === b._meta.type) return 0;
+            return a._meta.type > b._meta.type ? 1 : -1;
         } else if (field === 'name') {
-            return a._meta.name > b._meta.name ? -1 : 1;
+            return a._meta.name > b._meta.name ? 1 : -1;
         } else {
             return 0;
         }

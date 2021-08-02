@@ -1,4 +1,4 @@
-import crypto from 'node:crypto';
+import crypto from 'crypto';
 import gui from 'gui';
 import open from 'open';
 import { winRef } from './utils/gui-winref.js';
@@ -21,7 +21,7 @@ export function createWebViewWindow(uri, title, parentWindow) {
     win.value.setResizable(true);
     win.value.setMaximizable(false);
     win.value.setMinimizable(false);
-    win.value.setTitle(title || packageJson.displayName);
+    win.value.setTitle(title || packageJson.build.productName);
     process.platform !== 'darwin' && win.value.setIcon(miscImages.rcloneColor);
     if (parentWindow) {
         const parentBounds = parentWindow.getBounds();
@@ -49,9 +49,9 @@ export function createWebViewWindow(uri, title, parentWindow) {
     webview.setStyle({ flex: 1 });
     webview.onFailNavigation = (self) => self.loadHTML('Failed to load document.', 'default');
     webview.onStartNavigation = (self, url) => {
-        if (url === uri) return;
-        self.getWindow().close();
+        if (!url || url === uri) return;
         open(url);
+        self.getWindow().close();
     };
     webview.loadURL(uri);
     contentView.addChildView(webview);

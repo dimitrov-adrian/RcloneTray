@@ -1,4 +1,4 @@
-import path from 'node:path';
+import path from 'path';
 import isPackaged from './is-packaged.js';
 
 /**

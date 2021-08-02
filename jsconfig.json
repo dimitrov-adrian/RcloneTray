@@ -11,5 +11,5 @@
         "alwaysStrict": true,
         "forceConsistentCasingInFileNames": true
     },
-    "exclude": ["node_modules", "/vendor/**", "/dist/**", "/out/**"]
+    "exclude": ["node_modules/", "/vendor/**", "/dist/**", "/out/**"]
 }
