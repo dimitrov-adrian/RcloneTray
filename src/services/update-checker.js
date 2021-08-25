@@ -1,6 +1,6 @@
 import fetch from 'node-fetch';
 import semver from 'semver';
-import packageJson from '../utils/package-json.js';
+import { packageJson } from '../utils/package.js';
 
 /**
  * @typedef {{
@@ -19,11 +19,13 @@ import packageJson from '../utils/package-json.js';
  * @returns {Promise<UpdateInfo>}
  */
 export async function getLatestRelaseInfo() {
-    const content = await fetch(packageJson.RcloneTray.releaseInfo);
+    const content = await fetch(packageJson.config.RcloneTray.releaseInfo);
     const info = await content.json();
     const asset = info.assets.find(findBundleForPlatformFunction);
 
-    if (!asset) null;
+    if (!asset) {
+        return;
+    }
 
     const currentVer = semver.clean(packageJson.version);
     const remoteVer = semver.clean(info.tag_name);

@@ -1,10 +1,10 @@
 import Conf from 'conf';
-import packageJson from '../utils/package-json.js';
+import { packageJson } from '../utils/package.js';
 
 /**
  * Configuration handler instance
  */
-const config = new Conf({
+export const config = new Conf({
     projectVersion: packageJson.version,
     projectName: packageJson.build.appId,
     projectSuffix: '',
@@ -41,5 +41,3 @@ const config = new Conf({
         use_system_rclone: false,
     },
 });
-
-export default config;

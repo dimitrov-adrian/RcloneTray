@@ -18,8 +18,6 @@ export function ref() {
     return new Ref();
 }
 
-export default ref;
-
 export class Ref {
     constructor() {
         this.id = Symbol();

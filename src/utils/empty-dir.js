@@ -5,15 +5,14 @@ import { existsSync, mkdirSync, promises as fsp } from 'fs';
  * @returns {Promise<boolean>}
  */
 export async function isEmptyDirectory(path) {
-    if (!existsSync(path)) {
-        return true;
-    }
     try {
         const iterator = await fsp.opendir(path);
-        // @ts-ignore
-        const { value, fail } = await iterator[Symbol.asyncIterator]().next();
-        await iterator.close();
-        return !fail;
+        const { done } = await iterator[Symbol.asyncIterator]().next();
+        if (!done) {
+            iterator.close();
+            return false;
+        }
+        return true;
     } catch (error) {
         return false;
     }
@@ -23,7 +22,7 @@ export async function isEmptyDirectory(path) {
  * @param {string} path
  * @returns {Promise<boolean>}
  */
-export async function getEmptyDirectory(path) {
+export async function ensureEmptyDirectory(path) {
     if (!existsSync(path)) {
         try {
             mkdirSync(path, { recursive: true });
@@ -32,13 +31,6 @@ export async function getEmptyDirectory(path) {
             return false;
         }
     }
-    try {
-        const iterator = await fsp.opendir(path);
-        // @ts-ignore
-        const { value, fail } = await iterator[Symbol.asyncIterator]().next();
-        await iterator.close();
-        return !fail;
-    } catch (error) {
-        return false;
-    }
+
+    return isEmptyDirectory(path);
 }

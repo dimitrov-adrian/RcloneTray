@@ -1,12 +1,12 @@
 import gui from 'gui';
-import packageJson from './utils/package-json.js';
-import createAboutWindow, { openHomepage, openLicense, openRcloneHomepage, reportIssue } from './about.js';
+import { packageJson } from './utils/package.js';
+import { createAboutWindow, openHomepage, openLicense, openRcloneHomepage, reportIssue } from './about.js';
 import { appQuit } from './app-quit.js';
-import createBookmarkWizardWindow from './bookmark-wizard.js';
-import createPreferencesWindow from './preferences.js';
-import { findActive } from './utils/gui-winref.js';
+import { createBookmarkWizardWindow } from './bookmark-wizard.js';
+import { createPreferencesWindow } from './preferences.js';
+import { closeActive } from './utils/gui-winref.js';
 
-const appMenu = gui.MenuBar.create([
+export const appMenu = gui.MenuBar.create([
     {
         submenu: [
             {
@@ -32,7 +32,7 @@ const appMenu = gui.MenuBar.create([
             {
                 label: `Close Window`,
                 accelerator: 'CmdOrCtrl+W',
-                onClick: () => findActive()?.close(),
+                onClick: closeActive,
             },
             { type: 'separator' },
             {
@@ -83,5 +83,3 @@ const appMenu = gui.MenuBar.create([
         ],
     },
 ]);
-
-export default appMenu;

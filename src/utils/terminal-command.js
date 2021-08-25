@@ -4,12 +4,12 @@ import { spawn } from 'child_process';
  * Run command in OS terminal application
  * @param {string[]} command
  */
-export default function execInOSTerminal(command) {
+export function execInOSTerminal(command) {
     const enquotedCommand = command.map(optionEnquote);
     if (process.platform === 'darwin') {
         spawn('/usr/bin/osascript', [
             '-e',
-            `tell application "Terminal" to do script "${enquotedCommand.join(' ').replace(/\"/g, '\\"')}" activate`,
+            `tell application "Terminal" to do script "${enquotedCommand.join(' ').replace(/"/g, '\\"')}" activate`,
         ]).unref();
     } else if (process.platform === 'linux') {
         spawn('x-terminal-emulator', ['-e', ...enquotedCommand]).unref();

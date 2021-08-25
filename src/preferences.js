@@ -1,11 +1,11 @@
 import gui from 'gui';
-import config from './services/config.js';
+import { config } from './services/config.js';
 import { winRef } from './utils/gui-winref.js';
 import { assignFieldsValues, createTabbedForm } from './utils/gui-form-builder.js';
 import { miscImages } from './services/images.js';
 import { promptError } from './utils/prompt.js';
-import autoLaunch, { autoLaunchError } from './services/auto-launch.js';
-import packageJson from './utils/package-json.js';
+import { autoLaunch, autoLaunchError } from './services/auto-launch.js';
+import { packageJson } from './utils/package.js';
 import { openFileEditor } from './utils/open-file-editor.js';
 import { getConfigFile, getDefaultMountPoint } from './services/rclone.js';
 
@@ -201,13 +201,15 @@ export function openRcloneConfigFile() {
     openFileEditor(getConfigFile());
 }
 
-export default async function createPreferencesWindow() {
+export async function createPreferencesWindow() {
     const win = winRef('preferences');
 
     if (win.value) return win.value;
 
     win.value = gui.Window.create({});
-    process.platform !== 'darwin' && win.value.setIcon(miscImages.rcloneColor);
+    if (process.platform !== 'darwin') {
+        win.value.setIcon(miscImages.rcloneColor);
+    }
     win.value.setResizable(true);
     win.value.setMaximizable(false);
     win.value.setContentSize({ width: 540, height: 520 });

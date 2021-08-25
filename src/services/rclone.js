@@ -8,13 +8,12 @@ import fetch from 'node-fetch';
 import semver from 'semver';
 import open from 'open';
 import AbortController from 'abort-controller';
-import config from './config.js';
-import { getEmptyDirectory } from '../utils/empty-dir.js';
-import getResourcePath from '../utils/get-resource-path.js';
-import isPacked from '../utils/is-packaged.js';
-import randomPort from '../utils/random-port.js';
+import { config } from './config.js';
+import { ensureEmptyDirectory } from '../utils/empty-dir.js';
+import { randomPort } from '../utils/random-port.js';
 import { emitLines } from '../utils/stream-readline.js';
-import execInOSTerminal from '../utils/terminal-command.js';
+import { execInOSTerminal } from '../utils/terminal-command.js';
+import { getResourcePath, getSubcommand } from '../utils/package.js';
 
 /**
  * @typedef {{
@@ -74,7 +73,7 @@ export const RCLONE_MIN_VERSION = '1.51.0';
  * Unsupported remote types definition
  * @type {string[]}
  */
-export const UNSUPPORTED_PROVIDERS = ['memory', 'http', 'compress', 'cache', 'union', 'chunker'];
+export const UNSUPPORTED_PROVIDERS = ['memory', 'http', 'compress', 'cache', 'union', 'chunker', 'local'];
 
 /**
  * Remote types that requires bucket in order to works (usually those that cannot work with root only)
@@ -83,26 +82,20 @@ export const UNSUPPORTED_PROVIDERS = ['memory', 'http', 'compress', 'cache', 'un
 export const BUCKET_REQUIRED_PROVIDERS = ['b2', 'swift', 's3', 'gsc', 'hubic'];
 
 /**
- * Location to bundled rclone binary
- * @type {string}
- */
-const rcloneBinaryBundled = getResourcePath(
-    'vendor',
-    'rclone',
-    process.platform === 'win32' ? 'rclone.exe' : 'rclone.' + process.platform
-);
-
-/**
  * System's rclone binary name
  * @type {string}
  */
-const rcloneBinarySystem = process.platform === 'win32' ? 'rclone.exe' : 'rclone';
+const rcloneBinaryFilename = process.platform === 'win32' ? 'rclone.exe' : 'rclone';
 
 /**
  * In charge rclone binary
  * @type {string}
  */
-const rcloneBinary = config.get('use_system_rclone') ? rcloneBinarySystem : rcloneBinaryBundled;
+const rcloneBinary = process.env.RCLONETRAY_RCLONE_PATH
+    ? process.env.RCLONETRAY_RCLONE_PATH
+    : config.get('use_system_rclone')
+    ? rcloneBinaryFilename
+    : getResourcePath('vendor', 'rclone', rcloneBinaryFilename);
 
 /**
  * Service event emitter
@@ -135,15 +128,6 @@ const daemonState = {
     pushOnChangeWatchers: new Map(),
     servingDLNA: new Map(),
 };
-
-/**
- * @TODO export as separate module
- * ask-pass command path
- * @type {string}
- */
-const askPassCommand = isPacked
-    ? process.argv[0] + '  ask-pass' // call self with argument
-    : process.argv.slice(0, 2).join(' ') + ' ask-pass'; // call two first args
 
 // Clear mountpoint directory
 eventEmitter.on('bookmark:unmounted', async (bookmarkName, mountpoint) => {
@@ -180,10 +164,13 @@ export function getVersion() {
     try {
         const result = spawnSync(rcloneBinary, ['version'], {
             env: {
-                RCLONE_CONFIG: 'win32' ? 'NUL' : '/dev/null',
+                RCLONE_CONFIG: process.platform === 'win32' ? 'NUL' : '/dev/null',
             },
         });
-        return semver.clean(result.output.toString().trim().split(/\r?\n/).shift().split(/\s+/).pop());
+
+        if (result.output) {
+            return semver.clean(result.output.toString().trim().split(/\r?\n/).shift().split(/\s+/).pop());
+        }
     } catch (error) {
         console.warn(error.toString());
         config.set('use_system_rclone', false);
@@ -240,9 +227,13 @@ export async function startRcloneDaemon() {
 
     daemonState.server = '127.0.0.1:' + port;
 
-    const args = ['rcd']; // '--no-console', '--use-mmap'];
+    const args = [
+        'rcd',
+        // '--no-console',
+        // '--use-mmap'
+    ];
 
-    daemonState.auth = (Math.random() * Date.now()).toString(16);
+    daemonState.auth = 'rclonetray:' + (Math.random() * Date.now() * process.pid).toString(24);
 
     const proc = spawn(rcloneBinary, args, {
         detached: false,
@@ -250,26 +241,26 @@ export async function startRcloneDaemon() {
         windowsHide: true,
         stdio: 'pipe',
         env: {
-            // RCLONE_USE_JSON_LOG: 'true',
             RCLONE_USE_JSON_LOG: 'false',
             RCLONE_AUTO_CONFIRM: 'false',
             RCLONE_CONFIG: getConfigFile(),
             RCLONE_PASSWORD: 'false',
-            RCLONE_PASSWORD_COMMAND: askPassCommand,
+            RCLONE_PASSWORD_COMMAND: getSubcommand('ask-pass-config'),
             RCLONE_RC_SERVER_WRITE_TIMEOUT: '8760h0m0s',
             RCLONE_RC_SERVER_READ_TIMEOUT: '8760h0m0s',
             RCLONE_RC_WEB_GUI: 'false',
             RCLONE_RC_ADDR: daemonState.server,
             RCLONE_RC_NO_AUTH: 'false',
             RCLONE_RC_USER: 'rclonetray',
-            RCLONE_RC_PASS: daemonState.auth,
+            RCLONE_RC_PASS: daemonState.auth.split(':')[1],
             RCLONE_LOG_FORMAT: '',
+            RCLONE_SFTP_ASK_PASSWORD: getSubcommand('ask-pass-remote'),
         },
     });
 
-    proc.once('close', _rcloneCloseHandler);
-    proc.stdout.on('data', _rcloneStdoutHandler.bind(proc));
-    proc.stderr.on('line', _rcloneStderrHandler.bind(proc));
+    proc.once('close', rcloneCloseHandler);
+    proc.stdout.on('data', rcloneStdoutHandler.bind(proc));
+    proc.stderr.on('line', rcloneStderrHandler.bind(proc));
     proc.stderr.setEncoding('utf8');
 
     emitLines(proc.stderr);
@@ -278,7 +269,7 @@ export async function startRcloneDaemon() {
     return daemonState;
 }
 
-function _rcloneCloseHandler() {
+function rcloneCloseHandler() {
     if (!daemonState.connected) return;
     daemonState.connected = false;
     daemonState.pushOnChangeWatchers.forEach((watcher) => watcher.close());
@@ -289,7 +280,7 @@ function _rcloneCloseHandler() {
  * @this {import('child_process').ChildProcess}
  * @param {string} data
  */
-function _rcloneStdoutHandler(data) {
+function rcloneStdoutHandler(data) {
     if (data.toString() === 'Remote config') {
         eventEmitter.emit('config');
     }
@@ -300,7 +291,7 @@ function _rcloneStdoutHandler(data) {
  * @this {import('child_process').ChildProcess}
  * @param {string} data
  */
-function _rcloneStderrHandler(data) {
+function rcloneStderrHandler(data) {
     console.debug('>>>', daemonState.connected, this.signalCode, this.exitCode, '>>', data);
 
     if (!daemonState.connected) {
@@ -368,7 +359,7 @@ export async function remoteCommand(command, payload, abortSignal) {
         throw Error('Rclone daemon not started');
     }
 
-    const authHeader = 'Basic ' + Buffer.from(`rclonetray:${daemonState.auth}`).toString('base64');
+    const authHeader = 'Basic ' + Buffer.from(daemonState.auth).toString('base64');
     console.log('RC|=>', command);
 
     try {
@@ -473,7 +464,11 @@ export function getBookmark(bookmarkName) {
  * @returns {Promise<Record<string, RcloneBookmarkConfig>, Error>}
  */
 export function getBookmarks() {
-    return remoteCommand('config/dump');
+    return remoteCommand('config/dump').then((result) => {
+        return Object.fromEntries(
+            Object.entries(result).filter(([, info]) => !UNSUPPORTED_PROVIDERS.includes(info.type))
+        );
+    });
 }
 
 /**
@@ -507,7 +502,9 @@ export async function push(bookmarkName, bookmarkConfig) {
             srcFs: bookmarkConfig.rclonetray_local_directory,
             dstFs: getBookmarkFs(bookmarkName, bookmarkConfig),
         });
-    } catch (error) {}
+    } catch (error) {
+        eventEmitter.emit('error', 'Push: ' + bookmarkName, error);
+    }
 }
 
 /**
@@ -524,16 +521,14 @@ export async function pull(bookmarkName, bookmarkConfig) {
             dstFs: bookmarkConfig.rclonetray_local_directory,
         });
     } catch (error) {
-        {
-        }
+        eventEmitter.emit('error', 'Pull: ' + bookmarkName, error);
     }
 }
 
 /**
  * @param {string} bookmarkName
- * @param {RcloneBookmarkConfig} bookmarkConfig
  */
-export function getPushOnChangeState(bookmarkName, bookmarkConfig) {
+export function getPushOnChangeState(bookmarkName) {
     if (daemonState.pushOnChangeWatchers.has(bookmarkName)) {
         return daemonState.pushOnChangeWatchers.get(bookmarkName);
     }
@@ -731,7 +726,7 @@ export async function mountWithProc(bookmarkName, bookmarkConfig) {
     const abort = new AbortController();
 
     return remoteCommand('core/command', asrc, abort.signal)
-        .catch((error) => {
+        .catch(() => {
             return true;
         })
         .finally(() => {
@@ -824,7 +819,7 @@ export function getDefaultMountPoint(bookmarkName) {
  */
 function getMountpointPattern(bookmarkName) {
     if (config.get('mount_pattern')) {
-        if (/\%s/.test(config.get('mount_pattern'))) {
+        if (/%s/.test(config.get('mount_pattern'))) {
             return config.get('mount_pattern').toString().replace('%s', bookmarkName);
         }
         return config.get('mount_pattern').toString() + '-' + bookmarkName;
@@ -843,7 +838,7 @@ async function prepareMountpoint(bookmarkName, i) {
     }
 
     const mountpoint = getMountpointPattern(bookmarkName) + (i ? '_' + i : '');
-    if (!(await getEmptyDirectory(mountpoint))) {
+    if (!(await ensureEmptyDirectory(mountpoint))) {
         return prepareMountpoint(bookmarkName, i ? i + 1 : 1);
     }
 

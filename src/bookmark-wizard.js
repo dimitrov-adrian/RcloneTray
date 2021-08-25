@@ -4,11 +4,11 @@ import * as rclone from './services/rclone.js';
 import { winRef } from './utils/gui-winref.js';
 import { helpTextFont } from './utils/gui-form-builder.js';
 import { formatTitle } from './utils/formatter.js';
-import packageJson from './utils/package-json.js';
+import { packageJson } from './utils/package.js';
 import { promptError } from './utils/prompt.js';
-import createBookmarkWindow from './bookmark-edit.js';
+import { createBookmarkWindow } from './bookmark-edit.js';
 
-export default async function createBookmarkWizardWindow() {
+export async function createBookmarkWizardWindow() {
     const win = winRef('createwizard');
 
     if (win.value) return win.value;
@@ -17,7 +17,9 @@ export default async function createBookmarkWizardWindow() {
     win.value.setResizable(false);
     win.value.setMaximizable(false);
     win.value.setTitle(`Create new bookmark - ${packageJson.build.productName}`);
-    process.platform !== 'darwin' && win.value.setIcon(miscImages.rcloneColor);
+    if (process.platform !== 'darwin') {
+        win.value.setIcon(miscImages.rcloneColor);
+    }
     win.value.setContentSize({ width: 400, height: 160 });
 
     const contentView = gui.Container.create();
@@ -82,7 +84,7 @@ function updateProviderInfoFromSelection({ providers, providerIcon, providerDesc
     const selected = providers[picker.getSelectedItemIndex()];
     const providerDescriptionText = gui.AttributedText.create(selected.Description, { font: helpTextFont });
     providerDescription.setAttributedText(providerDescriptionText);
-    providerIcon.setImage(providerIcons[selected.Prefix] || providerIcons._unknown);
+    providerIcon.setImage(providerIcons[selected.Prefix] || providerIcons.$unknown);
     picker.getWindow().setTitle(`Create new ${selected.Name} bookmark`);
 }
 

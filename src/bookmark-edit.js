@@ -4,7 +4,7 @@ import { winRef } from './utils/gui-winref.js';
 import { assignFieldsValues, createForm, createTabbedForm } from './utils/gui-form-builder.js';
 import { promptError, promptYesNo } from './utils/prompt.js';
 import { miscImages } from './services/images.js';
-import packageJson from './utils/package-json.js';
+import { packageJson } from './utils/package.js';
 import * as rclone from './services/rclone.js';
 
 /**
@@ -75,7 +75,7 @@ export async function createBookmarkWindowByName(bookmarkName, parentWindow) {
  * @actions {{create, delete, cloneDialog }}
  * @param {gui.Window=} parentWindow
  */
-export default function createBookmarkWindow(isNew, { name, type, providerConfig, values }, parentWindow) {
+export function createBookmarkWindow(isNew, { name, type, providerConfig, values }, parentWindow) {
     const win = winRef(`edit-bookrmark-${name}-${isNew}`);
 
     if (win.value) return win.value;
@@ -83,7 +83,9 @@ export default function createBookmarkWindow(isNew, { name, type, providerConfig
     win.value = gui.Window.create({});
     win.value.setResizable(true);
     win.value.setMaximizable(false);
-    process.platform !== 'darwin' && win.value.setIcon(miscImages.rcloneColor);
+    if (process.platform !== 'darwin') {
+        win.value.setIcon(miscImages.rcloneColor);
+    }
     win.value.setContentSizeConstraints({ width: 520, height: 560 }, { width: 860, height: 1080 });
     if (parentWindow) {
         win.value.setBounds({

@@ -250,17 +250,7 @@ function createField(fieldDefinition) {
             field.setText(fieldDefinition.Value.toString());
         }
 
-        const optionHelpLabel = gui.Label.create('\0');
-        optionHelpLabel.setStyle({ width: 340, marginTop: 4, marginBottom: 3 });
-
-        field.onTextChange = () => {
-            if (fieldDefinition.OnChange) {
-                fieldDefinition.OnChange(field.getText());
-            }
-            updateHelp();
-        };
-
-        function updateHelp() {
+        const updateHelp = () => {
             const item = fieldDefinition.Examples.find((i) => i.Value == field.getText());
             if (item) {
                 optionHelpLabel.setVisible(true);
@@ -272,7 +262,17 @@ function createField(fieldDefinition) {
             } else {
                 optionHelpLabel.setVisible(false);
             }
-        }
+        };
+
+        const optionHelpLabel = gui.Label.create('\0');
+        optionHelpLabel.setStyle({ width: 340, marginTop: 4, marginBottom: 3 });
+
+        field.onTextChange = () => {
+            if (fieldDefinition.OnChange) {
+                fieldDefinition.OnChange(field.getText());
+            }
+            updateHelp();
+        };
 
         updateHelp();
         wrapper.addChildView(field);
@@ -289,10 +289,8 @@ function createField(fieldDefinition) {
                 field.selectItemAt(index);
             }
         });
-        if (fieldDefinition.OnChange) {
-            field.onSelectionChange = () => fieldDefinition.OnChange(getValue(), field.getSelectedItemIndex());
-        }
-        function getValue() {
+
+        const getValue = () => {
             const v = fieldDefinition.Enums[field.getSelectedItemIndex()].Value;
             if (fieldDefinition.Type === 'int') {
                 return parseInt(v.toString());
@@ -300,7 +298,12 @@ function createField(fieldDefinition) {
                 return !!v.toString();
             }
             return v;
+        };
+
+        if (fieldDefinition.OnChange) {
+            field.onSelectionChange = () => fieldDefinition.OnChange(getValue(), field.getSelectedItemIndex());
         }
+
         return [field, getValue];
     }
 
@@ -318,7 +321,7 @@ function createField(fieldDefinition) {
         const browseButton = gui.Button.create('Browse');
         wrapper.addChildView(browseButton);
         browseButton.setStyle({ flex: 1, flexGrow: 0, marginLeft: 10 });
-        browseButton.onClick = _fileDialogSetter.bind(null, fieldDefinition, textField, browseButton);
+        browseButton.onClick = fileDialogSetter.bind(null, fieldDefinition, textField, browseButton);
         if (fieldDefinition.OnChange) {
             textField.onTextChange = () => fieldDefinition.OnChange(textField.getText());
         }
@@ -450,7 +453,7 @@ function createField(fieldDefinition) {
  * @param {gui.Entry} textField
  * @param {gui.Button} browseButton
  */
-function _fileDialogSetter(fieldDefinition, textField, browseButton) {
+function fileDialogSetter(fieldDefinition, textField, browseButton) {
     const fileDialog = gui.FileOpenDialog.create();
     fileDialog.setTitle(formatTitle(fieldDefinition.Name));
 

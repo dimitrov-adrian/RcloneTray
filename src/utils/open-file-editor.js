@@ -1,5 +1,5 @@
 import { spawn } from 'child_process';
-import which from './which.js';
+import { which } from './which.js';
 
 // https://www.npmjs.com/package/env-editor
 // seems to not works on my tests or at least on macOS

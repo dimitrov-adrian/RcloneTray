@@ -2,7 +2,7 @@ import crypto from 'crypto';
 import gui from 'gui';
 import open from 'open';
 import { winRef } from './utils/gui-winref.js';
-import packageJson from './utils/package-json.js';
+import { packageJson } from './utils/package.js';
 import { miscImages } from './services/images.js';
 
 /**
@@ -22,7 +22,9 @@ export function createWebViewWindow(uri, title, parentWindow) {
     win.value.setMaximizable(false);
     win.value.setMinimizable(false);
     win.value.setTitle(title || packageJson.build.productName);
-    process.platform !== 'darwin' && win.value.setIcon(miscImages.rcloneColor);
+    if (process.platform !== 'darwin') {
+        win.value.setIcon(miscImages.rcloneColor);
+    }
     if (parentWindow) {
         const parentBounds = parentWindow.getBounds();
         win.value.setBounds({

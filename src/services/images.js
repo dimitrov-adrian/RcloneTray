@@ -1,5 +1,5 @@
 import gui from 'gui';
-import getResourcePath from '../utils/get-resource-path.js';
+import { getResourcePath } from '../utils/package.js';
 
 /**
  * Some miscelaneous images
@@ -27,12 +27,13 @@ export const trayIcons = {
  * @type {object}
  */
 export const providerIcons = {
-    _unknown: gui.Image.createFromPath(getResourcePath('icons', 'providers', '_cloud-provider-template@3x.png')),
+    $unknown: gui.Image.createFromPath(getResourcePath('icons', 'providers', '_cloud-provider-template@3x.png')),
     acd: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'acd@3x.png')),
     alias: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'alias@3x.png')),
     azureblob: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'azureblob@3x.png')),
     b2: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'b2@3x.png')),
     box: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'box@3x.png')),
+    crypt: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'crypt@3x.png')),
     drive: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'drive@3x.png')),
     dropbox: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'dropbox@3x.png')),
     fichier: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'fichier@3x.png')),
@@ -59,8 +60,8 @@ export const providerIcons = {
     sugarsync: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'sugarsync@3x.png')),
     swift: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'swift@3x.png')),
     tardigrade: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'tardigrade@3x.png')),
+    uptobox: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'uptobox@3x.png')),
     webdav: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'webdav@3x.png')),
     yandex: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'yandex@3x.png')),
     zoho: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'zoho@3x.png')),
-    crypt: gui.Image.createFromPath(getResourcePath('icons', 'providers', 'crypt@3x.png')),
 };

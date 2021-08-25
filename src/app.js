@@ -1,16 +1,15 @@
 import gui from 'gui';
 import './utils/gc.js';
-import packageJson from './utils/package-json.js';
-import notify from './utils/gui-notification.js';
+import { packageJson } from './utils/package.js';
+import { sendNotification } from './utils/gui-notification.js';
 import * as rclone from './services/rclone.js';
-import singleInstanceLock from './utils/single-instance.js';
-import config from './services/config.js';
+import { singleInstanceLock } from './utils/single-instance.js';
+import { config } from './services/config.js';
 import { promptError, promptErrorReporting } from './utils/prompt.js';
 import { createTrayMenu, updateMenu } from './tray-menu.js';
-import appMenu from './app-menu.js';
-import notification from './utils/gui-notification.js';
+import { appMenu } from './app-menu.js';
 
-export default async function app() {
+export async function app() {
     process.setUncaughtExceptionCaptureCallback((error) => {
         console.warn('[UNEXPECTED_ERROR]', error);
         promptErrorReporting({ title: 'Unexpected error', message: error });
@@ -76,12 +75,12 @@ export default async function app() {
         try {
             const bookmarks = await rclone.getBookmarks();
 
-            Object.entries(bookmarks).forEach(([bookmarkName, bookmarkConfig]) => {
+            Object.entries(bookmarks).forEach(([, bookmarkConfig]) => {
                 if (bookmarkConfig.rclonetray_automount !== 'true') return;
                 // rclone.mount(bookmarkName, bookmarkConfig)
             });
 
-            Object.entries(bookmarks).forEach(([bookmarkName, bookmarkConfig]) => {
+            Object.entries(bookmarks).forEach(([, bookmarkConfig]) => {
                 if (bookmarkConfig.rclonetray_pullonstart !== 'true') return;
                 if (!bookmarkConfig.rclonetray_local_directory) return;
                 // rclone.pull(bookmarkName, bookmarkConfig)
@@ -100,12 +99,12 @@ export default async function app() {
 
     rclone.on('bookmark:mounted', (bookmarkName) => {
         updateMenu();
-        notification(`Mounted ${bookmarkName}`);
+        sendNotification(`Mounted ${bookmarkName}`);
     });
 
     rclone.on('bookmark:unmounted', (bookmarkName) => {
         updateMenu();
-        notification(`Unmounted ${bookmarkName}`);
+        sendNotification(`Unmounted ${bookmarkName}`);
     });
 
     rclone.on('bookmark:dlna:start', () => updateMenu());
@@ -113,7 +112,7 @@ export default async function app() {
 
     rclone.on('error', (error) => {
         const message = error.error.toString() + (error.reason ? '\n' + error.reason.toString() : '');
-        notify(message);
+        sendNotification(message);
         console.log('!!!RCLONE_ERROR!!!', message);
     });
 
@@ -134,8 +133,4 @@ export default async function app() {
         gui.app.setApplicationMenu(appMenu);
         gui.app.setActivationPolicy('accessory');
     }
-
-    // Run gc every 5 minutes.
-    // @ts-ignore
-    setInterval(process.gc.bind(null), 5 * 60 * 1000);
 }

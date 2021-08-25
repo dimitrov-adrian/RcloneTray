@@ -1,22 +1,17 @@
 {
     "env": {
         "es6": true,
-        "node": true
+        "node": true,
+        "commonjs": true
     },
     "parserOptions": {
         "sourceType": "module",
         "allowImportExportEverywhere": true,
         "ecmaVersion": 2020
     },
-    "ignorePatterns": ["**/dist/**", "***/out/***", "**/build/**", "**/node_modules/**"],
+    "ignorePatterns": ["node_modules", "/out", "/vendor"],
     "plugins": ["editorconfig", "prettier", "import"],
-    "extends": [
-        "plugin:editorconfig/all",
-        "prettier",
-        "eslint:recommended",
-        "plugin:import/errors",
-        "plugin:import/warnings"
-    ],
+    "extends": ["prettier", "eslint:recommended", "plugin:import/errors", "plugin:import/warnings"],
     "rules": {
         "yoda": "warn",
         "no-var": "error",

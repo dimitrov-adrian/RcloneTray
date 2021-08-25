@@ -1,6 +1,6 @@
 import gui from 'gui';
 import open from 'open';
-import { packageJson } from './utils/package-json.js';
+import { packageJson } from './utils/package.js';
 import { winRef } from './utils/gui-winref.js';
 import { miscImages } from './services/images.js';
 import { getLatestRelaseInfo } from './services/update-checker.js';
@@ -10,7 +10,7 @@ import { createWebViewWindow } from './webview.js';
 /**
  * @returns {Promise<gui.Window>}
  */
-export default async function createAboutWindow() {
+export async function createAboutWindow() {
     const win = winRef('about');
 
     if (win.value) return win.value;
@@ -22,7 +22,9 @@ export default async function createAboutWindow() {
     win.value.setHasShadow(true);
     win.value.setTitle(`About ${packageJson.build.productName}`);
     win.value.setContentSize({ width: 540, height: 380 });
-    process.platform !== 'darwin' && win.value.setIcon(miscImages.rcloneColor);
+    if (process.platform !== 'darwin') {
+        win.value.setIcon(miscImages.rcloneColor);
+    }
 
     const contentView = createContentView();
     win.value.setContentView(contentView);
@@ -102,7 +104,7 @@ export function openRcloneHomepage() {
  */
 export function openLicense(initiatorButton) {
     createWebViewWindow(
-        packageJson.RcloneTray.licenseFile,
+        packageJson.config.RcloneTray.licenseFile,
         packageJson.build.productName + ' LICENSE',
         // Cause on windows, the inner window goes within by size in parent window.
         initiatorButton && process.platform !== 'win32' ? initiatorButton.getWindow() : null

@@ -1,24 +1,33 @@
 {
     "name": "rclonetray",
     "displayName": "RcloneTray",
-    "version": "2.0.0-beta2",
-    "author": "Adrian Dimitrov <dimitrov.adrian@gmail.com>",
+    "version": "2.0.0-beta.3",
+    "author": "Adrian Dimitrov <dimitrov.adrian+gh@gmail.com>",
     "homepage": "https://github.com/dimitrov-adrian/RcloneTray",
     "license": "MIT",
     "bugs": {
         "url": "https://github.com/dimitrov-adrian/RcloneTray/issues"
     },
+    "config": {
+        "rcloneDownloadURL": {
+            "darwin_x64": "https://downloads.rclone.org/v1.56.0/rclone-v1.56.0-osx-amd64.zip",
+            "darwin_arm64": "https://downloads.rclone.org/v1.56.0/rclone-v1.56.0-osx-arm64.zip",
+            "linux_x64": "https://downloads.rclone.org/v1.56.0/rclone-v1.56.0-linux-amd64.zip",
+            "win32_x64": "https://downloads.rclone.org/v1.56.0/rclone-v1.56.0-windows-amd64.zip"
+        },
+        "RcloneTray": {
+            "releaseInfo": "https://api.github.com/repos/dimitrov-adrian/RcloneTray/releases/latest",
+            "licenseFile": "https://raw.githubusercontent.com/dimitrov-adrian/RcloneTray/v2/LICENSE.dist.txt"
+        }
+    },
     "build": {
         "appId": "com.github.dimitrov-adrian.rclonetray",
         "productName": "RcloneTray",
-        "unpack": "**/{vendor/**,*.node,*.node,*.html,*.png,*.gif,*.jpg,*.exe}",
-        "copyright": "Copyright (c) 2020 Adrian Dimitrov"
+        "unpack": "**/{vendor/rclone/**,*.node,*.html,*.png,*.gif,*.jpg,*.exe}",
+        "copyright": "Copyright (c) 2020 Adrian Dimitrov",
+        "minify": true,
+        "extraInfoPlist": "<key>LSUIElement</key><true/>"
     },
-    "RcloneTray": {
-        "releaseInfo": "https://api.github.com/repos/dimitrov-adrian/RcloneTray/releases/latest",
-        "licenseFile": "https://raw.githubusercontent.com/dimitrov-adrian/RcloneTray/v2/LICENSE.dist.txt"
-    },
-    "private": true,
     "os": [
         "darwin",
         "linux",
@@ -28,27 +37,35 @@
         "x64"
     ],
     "engines": {
-        "yode": ">=16.0.0"
+        "node": ">=16.0.0"
     },
-    "main": "bundle.cjs",
+    "files": [
+        "/icons",
+        "/scripts",
+        "/vendor/index.cjs"
+    ],
+    "main": "vendor/index.cjs",
     "type": "module",
     "scripts": {
-        "start": "yode src/index.js",
-        "dist": "rollup -c && yackage dist out/dist",
-        "build": "rollup -c && yackage build out/build",
-        "rebuild:icons": "svg-app-icon --include icns --include ico --destination build < icons/rclone-logo.svg",
-        "optimize:provider-icons": "pngquant --force --strip --skip-if-larger --ext .png -v icons/providers/*.png"
-    },
-    "nodemonConfig": {
-        "watch": [
-            "src/*"
-        ],
-        "delay": "1000",
-        "exec": "npm start"
+        "dist:mac": "       npm run _prepack     && yackage dist --arch=x64 --platform=darwin out/dist/darwin",
+        "dist:linux": "     npm run _prepack     && yackage dist --arch=x64 --platform=linux out/dist/linux",
+        "dist:win": "       npm run _prepack     && yackage dist --arch=x64 --platform=win32 out/dist/win32",
+        "build:mac": "      npm run _prepack     && yackage build --arch=x64 --platform=darwin out/build/darwin",
+        "build:linux": "    npm run _prepack     && yackage build --arch=x64 --platform=linux out/build/linux",
+        "build:win": "      npm run _prepack     && yackage build --arch=x64 --platform=win32 out/build/win32",
+        "build": "npm run build:mac",
+        "dev": "yode --inspect src",
+        "install-rclone-binary": "node scripts/install-rclone-binary.cjs",
+        "generate-app-icons": "svg-app-icon --include icns --include ico --destination build < icons/rclone-logo.svg",
+        "optimize-provider-icons": "pngquant --force --strip --skip-if-larger --ext .png -v icons/providers/*.png",
+        "generate-app-main": "rollup -c",
+        "_prepack": "npm run generate-app-main",
+        "postinstall": "npm run install-rclone-binary"
     },
     "dependencies": {
-        "@directus/format-title": "*",
+        "@directus/format-title": "latest",
         "abort-controller": "^3.0.0",
+        "adm-zip": "^0.5.5",
         "chokidar": "^3.5.2",
         "conf": "^10.0.1",
         "easy-auto-launch": "^6.0.0",
@@ -60,16 +77,15 @@
         "semver": "^7.3.5"
     },
     "devDependencies": {
-        "@rollup/plugin-commonjs": "^20.0.0",
-        "eslint": "7.32.0",
+        "eslint": "^7.32.0",
         "eslint-config-prettier": "^8.3.0",
         "eslint-plugin-editorconfig": "^3.0.2",
-        "eslint-plugin-import": "^2.23.4",
-        "eslint-plugin-prettier": "^3.4.0",
+        "eslint-plugin-import": "^2.24.1",
+        "eslint-plugin-prettier": "^3.4.1",
         "pngquant-bin": "^6.0.0",
         "prettier": "^2.3.2",
-        "rollup": "^2.55.1",
         "svg-app-icon": "^1.1.0",
-        "yackage": "*"
+        "yackage": "^0.4.0",
+        "rollup": "^2.56.3"
     }
 }

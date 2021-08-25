@@ -1,13 +1,18 @@
 import { promptInput } from './utils/prompt.js';
 
 /**
+ * @param {{
+ *  title?: string,
+ *  button?: string,
+ *  help?: string,
+ * }} _
  * @returns {import('gui').Window}
  */
-export default function askPass() {
+export function askPass({ title, button, help }) {
     return promptInput({
-        buttonText: 'Unlock',
-        helpText: 'Rclone config file is encrypted, need to enter password to unlock.',
-        label: 'Config Password',
+        buttonText: button || 'Authenticate',
+        helpText: help || 'Password is required',
+        label: title || 'Password is required',
         required: true,
         type: 'password',
         resolve: (password) => {

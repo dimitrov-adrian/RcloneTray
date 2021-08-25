@@ -5,7 +5,7 @@ import { spawnSync } from 'child_process';
  * @param {string} command
  * @returns {string|null}
  */
-export default function which(command) {
+export function which(command) {
     try {
         return spawnSync(process.platform === 'win32' ? 'where' : 'which', [command], {
             stdio: ['ignore', 'pipe', 'ignore'],

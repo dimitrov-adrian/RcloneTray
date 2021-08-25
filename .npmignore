@@ -1,6 +1,0 @@
-*
-!/bundle.cjs
-!/vendor/**
-!/icons/**
-!/build/*
-.DS_Store

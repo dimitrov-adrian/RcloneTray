@@ -5,12 +5,12 @@
         }
     ],
     "settings": {
-        "javascript.preferences.importModuleSpecifierEnding": "js",
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.suggest.showEvents": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.formatOnSave": true,
         "editor.formatOnType": true,
         "javascript.preferences.importModuleSpecifier": "relative",
+        "javascript.preferences.importModuleSpecifierEnding": "js",
         "files.exclude": {
             ".idea": true,
             "**/._*": true,
@@ -20,20 +20,25 @@
     "extensions": {
         "recommendations": [
             "esbenp.prettier-vscode",
-            "eg2.vscode-npm-script",
-            "PKief.material-icon-theme",
-            "stylelint.vscode-stylelint",
-            "esbenp.prettier-vscode",
-            "codezombiech.gitignore",
             "IronGeek.vscode-env",
+            "dbaeumer.vscode-eslint",
+            "stylelint.vscode-stylelint",
+            "codezombiech.gitignore",
             "EditorConfig.EditorConfig"
         ]
     },
     "launch": {
         "configurations": [
             {
-                "command": "npm start",
-                "name": "Default start",
+                "name": "Attach",
+                "port": 9229,
+                "request": "attach",
+                "skipFiles": ["<node_internals>/**"],
+                "type": "pwa-node"
+            },
+            {
+                "command": "npm run dev",
+                "name": "RUN Dev",
                 "request": "launch",
                 "type": "node-terminal",
                 "skipFiles": ["<node_internals>/**"],

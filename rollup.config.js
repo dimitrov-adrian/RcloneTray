@@ -1,21 +1,12 @@
-import commonjs from '@rollup/plugin-commonjs';
+import { main } from './package.json';
 
-export default [
-    {
-        input: 'src/index.js',
-        output: {
-            file: 'bundle.cjs',
-            format: 'cjs',
-            indent: false,
-            strict: false,
-            inlineDynamicImports: true,
-        },
-
-        plugins: [
-            commonjs({
-                sourceMap: false,
-                ignoreGlobal: true,
-            }),
-        ],
+export default {
+    input: 'src/index.js',
+    output: {
+        file: main,
+        format: 'cjs',
+        indent: false,
+        inlineDynamicImports: true,
+        compact: true,
     },
-];
+};

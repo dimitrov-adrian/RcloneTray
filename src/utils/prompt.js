@@ -2,8 +2,8 @@ import { homedir } from 'os';
 import gui from 'gui';
 import open from 'open';
 import { helpTextFont } from './gui-form-builder.js';
-import packageJson from './package-json.js';
-import ref from './ref.js';
+import { packageJson } from './package.js';
+import { ref } from './ref.js';
 
 // @TODO    Promiseify the prompt functions
 //          it's not possible right now as libyue has some
@@ -24,15 +24,19 @@ export function promptError({ title, message, parentWindow }, resolve) {
     win.value = gui.MessageBox.create();
     win.value.setType('error');
     win.value.setText(title);
-    message && win.value.setInformativeText(message.toString());
+    if (message) {
+        win.value.setInformativeText(message.toString());
+    }
     win.value.addButton('OK', 1);
-    win.value.onResponse = (self, result) => {
+    win.value.onResponse = () => {
         win.unref();
         if (resolve) {
             resolve(true);
         }
     };
-    process.platform === 'darwin' && gui.app.activate(true);
+    if (process.platform === 'darwin') {
+        gui.app.activate(true);
+    }
     if (parentWindow) {
         win.value.showForWindow(parentWindow);
     } else if (process.platform === 'darwin') {
@@ -56,7 +60,9 @@ export function promptInfo({ title, message, parentWindow }, resolve) {
     win.value = gui.MessageBox.create();
     win.value.setType('none');
     win.value.setText(title);
-    message && win.value.setInformativeText(message.toString());
+    if (message) {
+        win.value.setInformativeText(message.toString());
+    }
     win.value.addButton('OK', 1);
     win.value.onResponse = (self, result) => {
         win.unref();
@@ -64,7 +70,9 @@ export function promptInfo({ title, message, parentWindow }, resolve) {
             resolve(result === 1);
         }
     };
-    process.platform === 'darwin' && gui.app.activate(true);
+    if (process.platform === 'darwin') {
+        gui.app.activate(true);
+    }
     if (parentWindow) {
         win.value.showForWindow(parentWindow);
     } else if (process.platform === 'darwin') {
@@ -90,7 +98,9 @@ export function promptYesNo({ title, message, parentWindow }, resolve) {
     win.value.setDefaultResponse(0);
     win.value.setCancelResponse(0);
     win.value.setText(title);
-    message && win.value.setInformativeText(message.toString());
+    if (message) {
+        win.value.setInformativeText(message.toString());
+    }
     win.value.addButton('Yes', 1);
     win.value.addButton('No', 0);
     win.value.onResponse = (self, result) => {
@@ -99,7 +109,9 @@ export function promptYesNo({ title, message, parentWindow }, resolve) {
             resolve(result === 1);
         }
     };
-    process.platform === 'darwin' && gui.app.activate(true);
+    if (process.platform === 'darwin') {
+        gui.app.activate(true);
+    }
     if (parentWindow) {
         win.value.showForWindow(parentWindow);
     } else if (process.platform === 'darwin') {
@@ -125,7 +137,9 @@ export function promptErrorReporting({ title, message, parentWindow }, resolve) 
     win.value.setText(title);
     win.value.addButton('Report Error', 1);
     win.value.addButton('Ignore', 2);
-    message && win.value.setInformativeText(message.toString());
+    if (message) {
+        win.value.setInformativeText(message.toString());
+    }
 
     const plainTextReport =
         typeof message === 'string'
@@ -149,7 +163,9 @@ export function promptErrorReporting({ title, message, parentWindow }, resolve) 
             }
         }
     };
-    process.platform === 'darwin' && gui.app.activate(true);
+    if (process.platform === 'darwin') {
+        gui.app.activate(true);
+    }
     if (parentWindow) {
         win.value.showForWindow(parentWindow);
     } else if (process.platform === 'darwin') {
@@ -193,7 +209,7 @@ export function promptInput(options) {
     win.value.setResizable(true);
     win.value.setMaximizable(false);
     win.value.setMinimizable(false);
-    win.value.onClose = (self) => {
+    win.value.onClose = () => {
         win.unref();
         if (!isSuccess && options.reject) {
             options.reject();

@@ -34,7 +34,12 @@ export function findActive() {
     }
 }
 
-export default winRef;
+export function closeActive() {
+    const active = findActive();
+    if (active) {
+        active.close();
+    }
+}
 
 export class WinRef {
     /**

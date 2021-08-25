@@ -1,13 +1,13 @@
 import gui from 'gui';
-import config from './services/config.js';
+import { config } from './services/config.js';
 import * as rclone from './services/rclone.js';
 import { ref } from './utils/ref.js';
 import { providerIcons, trayIcons } from './services/images.js';
-import packageJson from './utils/package-json.js';
+import { packageJson } from './utils/package.js';
 import { debounce } from './utils/debounce.js';
-import createBookmarkWizardWindow from './bookmark-wizard.js';
-import createPreferencesWindow, { openRcloneConfigFile } from './preferences.js';
-import createAboutWindow from './about.js';
+import { createBookmarkWizardWindow } from './bookmark-wizard.js';
+import { createPreferencesWindow, openRcloneConfigFile } from './preferences.js';
+import { createAboutWindow } from './about.js';
 import { createBookmarkWindowByName } from './bookmark-edit.js';
 import { appQuit } from './app-quit.js';
 import open from 'open';
@@ -151,7 +151,7 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, state) {
     const showMenuType = process.platform === 'linux' && config.store.show_type ? 'text' : config.store.show_type;
 
     const bookmarkMenu = {
-        _meta: {
+        $meta: {
             type: bookmarkConfig.type,
             name: bookmarkName,
             isConnected: isConnected,
@@ -172,7 +172,7 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, state) {
     }
 
     if (showMenuType === 'icon') {
-        bookmarkMenu.image = providerIcons[bookmarkConfig.type] || providerIcons._unknown;
+        bookmarkMenu.image = providerIcons[bookmarkConfig.type] || providerIcons.$unknown;
     }
 
     if (config.store.show_status) {
@@ -284,15 +284,6 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, state) {
 }
 
 /**
- * @param {Promise<any>} asyncFunction
- */
-async function unhandledSafeAsync(asyncFunction) {
-    try {
-        await asyncFunction;
-    } catch (error) {}
-}
-
-/**
  * @param {boolean=} state
  */
 function getTrayIcon(state) {
@@ -310,10 +301,10 @@ function getTrayIcon(state) {
 function bookmarkSortByFunction(field) {
     return (a, b) => {
         if (field === 'type') {
-            if (a._meta.type === b._meta.type) return 0;
-            return a._meta.type > b._meta.type ? 1 : -1;
+            if (a.$meta.type === b.$meta.type) return 0;
+            return a.$meta.type > b.$meta.type ? 1 : -1;
         } else if (field === 'name') {
-            return a._meta.name > b._meta.name ? 1 : -1;
+            return a.$meta.name > b.$meta.name ? 1 : -1;
         } else {
             return 0;
         }
@@ -327,5 +318,5 @@ function bookmarkSortByFunction(field) {
  * @return 1|-1|0
  */
 function bookmarkSortConnectedFirstFunction(a, b) {
-    return a._meta.isConnected > b._meta.isConnected ? -1 : 0;
+    return a.$meta.isConnected > b.$meta.isConnected ? -1 : 0;
 }

@@ -1,9 +1,13 @@
 .DS_Store
+Thumbs.db
 ._*
-.idea
-/node_modules/
-/out/
-/dist/
-/vendor/rclone
-/rclonetray-*.tgz
-/bundle.cjs
+
+node_modules
+
+/out
+/vendor
+/*.tgz
+/*.zip
+
+# Breaks when testing between platforms and environments
+/package-lock.json

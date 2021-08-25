@@ -19,6 +19,6 @@ export function findRandomPort(success, fail) {
  * Locate random free network port
  * @returns {Promise<number, Error>}
  */
-export default function randomPort() {
+export function randomPort() {
     return new Promise(findRandomPort);
 }

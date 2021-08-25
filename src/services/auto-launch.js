@@ -1,5 +1,5 @@
 import AutoLaunch from 'easy-auto-launch';
-import packageJson from '../utils/package-json.js';
+import { packageJson } from '../utils/package.js';
 import { promptError } from '../utils/prompt.js';
 
 /**
@@ -11,8 +11,6 @@ export const autoLaunch = new AutoLaunch({
     isHidden: false,
     mac: false,
 });
-
-export default autoLaunch;
 
 /**
  * @param {import('gui').Window=} parentWindow
