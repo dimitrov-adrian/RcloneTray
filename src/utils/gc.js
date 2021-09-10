@@ -1,22 +1,28 @@
-// Author: @zcbenz
-// Copied from https://github.com/yue/wey/blob/master/lib/util/gc.js
+/**
+ * @file https://github.com/yue/wey/blob/master/lib/util/gc.js
+ * @author: zcbenz
+ */
+
+// @ts-nocheck
+import process from 'node:process';
 import gui from 'gui';
 
-// API to hint garbage collection.
-let gcTimer = null;
-// @ts-ignore
-process.gc = (immediate = false, level = 1) => {
-    if (gcTimer) clearTimeout(gcTimer);
-    if (!immediate) {
-        // gc after action can cause lagging.
-        // @ts-ignore
-        gcTimer = setTimeout(process.gc.bind(null, true, level), 5 * 1000);
-        return;
-    }
-    // @ts-ignore
-    gui.memoryPressureNotification(level);
-};
+let gcInterval = null;
 
-// Run gc every 5 minutes.
-// @ts-ignore
-setInterval(process.gc.bind(null), 5 * 60 * 1000);
+export function runGC() {
+    if (gcInterval) return;
+    let gcTimer = null;
+    process.gc = function (immediate = false, level = 1) {
+        if (gcTimer) clearTimeout(gcTimer);
+        if (!immediate) {
+            // Run gc after action can cause lagging.
+            gcTimer = setTimeout(process.gc.bind(null, true, level), 5 * 1000);
+            return;
+        }
+
+        gui.memoryPressureNotification(level);
+    };
+
+    // Run gc every 5 minutes.
+    gcInterval = setInterval(process.gc.bind(null), 5 * 60 * 1000);
+}

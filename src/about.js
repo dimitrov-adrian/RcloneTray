@@ -1,3 +1,4 @@
+import process from 'node:process';
 import gui from 'gui';
 import open from 'open';
 import { packageJson } from './utils/package.js';
@@ -6,11 +7,12 @@ import { miscImages } from './services/images.js';
 import { getLatestRelaseInfo } from './services/update-checker.js';
 import { promptYesNo } from './utils/prompt.js';
 import { createWebViewWindow } from './webview.js';
+import logger from './services/logger.js';
 
 /**
- * @returns {Promise<gui.Window>}
+ * @returns {gui.Window}
  */
-export async function createAboutWindow() {
+export function createAboutWindow() {
     const win = winRef('about');
 
     if (win.value) return win.value;
@@ -132,13 +134,14 @@ export function reportIssue({ title, message }) {
  * @param {gui.Window=} parentWindow
  */
 export async function checkForUpdate(parentWindow) {
-    /** @type {import('./services/update-checker.js').UpdateInfo|null}  */
-    const updateResult = await getLatestRelaseInfo().catch((error) => {
-        console.warn('Cannot check for new release', error.toString());
-        return null;
-    });
-
-    if (!updateResult || !updateResult.hasUpdate) return;
+    let updateResult;
+    try {
+        updateResult = await getLatestRelaseInfo();
+        if (!updateResult.hasUpdate) return;
+    } catch (error) {
+        logger.warn('Cannot check for new release', error.toString());
+        return;
+    }
 
     promptYesNo(
         {
@@ -156,7 +159,7 @@ function createContentView() {
         contentView.setMaterial('appearance-based');
         contentView.setBlendingMode('behind-window');
         return contentView;
-    } else {
-        return gui.Container.create();
     }
+
+    return gui.Container.create();
 }

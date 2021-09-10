@@ -1,7 +1,3 @@
-import fetch from 'node-fetch';
-import semver from 'semver';
-import { packageJson } from '../utils/package.js';
-
 /**
  * @typedef {{
  *  hasUpdate: boolean,
@@ -12,23 +8,30 @@ import { packageJson } from '../utils/package.js';
  *  size: number,
  *  label: string,
  *  name: string,
- * }} UpdateInfo
+ * }} UpdateCheckResult
  */
 
+import process from 'node:process';
+import fetch from 'node-fetch';
+import semver from 'semver';
+import { packageJson } from '../utils/package.js';
+
 /**
- * @returns {Promise<UpdateInfo>}
+ * @throws {Error}
+ * @returns {Promise<UpdateCheckResult>}
  */
 export async function getLatestRelaseInfo() {
     const content = await fetch(packageJson.config.RcloneTray.releaseInfo);
     const info = await content.json();
-    const asset = info.assets.find(findBundleForPlatformFunction);
+    const asset = info.assets.find((url) => findBundleForPlatformFunction(url, process.platform));
 
     if (!asset) {
-        return;
+        throw new Error('No update for current platform');
     }
 
     const currentVer = semver.clean(packageJson.version);
     const remoteVer = semver.clean(info.tag_name);
+
     return {
         hasUpdate: semver.gt(remoteVer, currentVer),
         date: new Date(asset.updated_at),
@@ -43,10 +46,11 @@ export async function getLatestRelaseInfo() {
 
 /**
  * @param {{name: string}} bundleUrl
+ * @param {string} platform
  */
-function findBundleForPlatformFunction(bundleUrl) {
-    if (process.platform === 'darwin') return bundleUrl.name.endsWith('.dmg');
-    if (process.platform === 'win32') return bundleUrl.name.endsWith('.exe');
-    if (process.platform === 'linux') return bundleUrl.name.endsWith('.AppImage');
+function findBundleForPlatformFunction(bundleUrl, platform) {
+    if (platform === 'darwin') return bundleUrl.name.endsWith('.dmg');
+    if (platform === 'win32') return bundleUrl.name.endsWith('.exe');
+    if (platform === 'linux') return bundleUrl.name.endsWith('.AppImage');
     return false;
 }

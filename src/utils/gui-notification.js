@@ -1,5 +1,5 @@
+import { title } from 'node:process';
 import gui from 'gui';
-import { title } from 'process';
 import { packageJson } from './package.js';
 
 /**
@@ -11,5 +11,6 @@ export function sendNotification(message) {
     if (message) {
         notification.setBody(message);
     }
+
     notification.show();
 }

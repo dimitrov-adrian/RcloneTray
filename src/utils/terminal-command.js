@@ -1,11 +1,12 @@
-import { spawn } from 'child_process';
+import process from 'node:process';
+import { spawn } from 'node:child_process';
 
 /**
  * Run command in OS terminal application
  * @param {string[]} command
  */
 export function execInOSTerminal(command) {
-    const enquotedCommand = command.map(optionEnquote);
+    const enquotedCommand = command.map((i) => optionEnquote(i));
     if (process.platform === 'darwin') {
         spawn('/usr/bin/osascript', [
             '-e',
@@ -22,5 +23,5 @@ export function execInOSTerminal(command) {
  * @param {string} option
  */
 function optionEnquote(option) {
-    return option.substr(0, 2) !== '--' ? JSON.stringify(option) : option;
+    return option.slice(0, 2) === '--' ? option : JSON.stringify(option);
 }

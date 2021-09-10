@@ -1,8 +1,3 @@
-import gui from 'gui';
-import parse from 'parse-duration';
-import { debounce } from './debounce.js';
-import { formatTitle, sanitizeSizeSuffix } from './formatter.js';
-
 /**
  * @typedef {{
  *  container: gui.Tab|gui.Container|gui.View,
@@ -18,12 +13,12 @@ import { formatTitle, sanitizeSizeSuffix } from './formatter.js';
  *
  * @typedef {{
  *  Title?: string,
- *  OnChange?: CallableFunction,
  *  Readonly?: boolean,
  *  Disable?: boolean,
  *  Enums?: import('../services/rclone.js').RcloneProviderOptionOptionsItem[],
  *  FileDialog?: 'file' | 'files' | 'folder',
  *  FileDialogFilter?: FileDialogFilter[],
+ *  onChange?: CallableFunction,
  * } & import('../services/rclone.js').RcloneProviderOption} FieldDefinition
  *
  * @typedef {{
@@ -35,37 +30,38 @@ import { formatTitle, sanitizeSizeSuffix } from './formatter.js';
  * @typedef {() => import('../services/rclone.js').RcloneProviderOptionValue} FieldValueCallback
  */
 
+import process from 'node:process';
+import gui from 'gui';
+import parse from 'parse-duration';
+import debounce from 'debounce';
+import objectPath from 'object-path';
+import { formatTitle, sanitizeSizeSuffix } from './formatter.js';
+
 /**
  * @type {gui.Font}
  */
 export const helpTextFont = gui.Font.create('', 10, 'normal', 'normal');
 
 /**
- * @param {object} objectTree
- * @param {string} path
- * @returns {*=}
- */
-function deepValue(objectTree, path) {
-    return path.split('.').reduce((a, v) => a[v], objectTree);
-}
-
-/**
+ * Populate field definition list with values by value object
+ * (simply do some kind of merging between objects)
  * @param {FieldDefinition[]} fields
  * @param {{}} values
  */
 export function assignFieldsValues(fields, values) {
     return fields.map((field) => ({
         ...field,
-        Value: values[field.Name] || deepValue(values, field.Name) || field.Value || field.Default || null,
+        Value: values[field.Name] || objectPath.get(values, field.Name) || field.Value || field.Default || null,
     }));
 }
 
 /**
+ * Libyue, fix wrong scrollbar appearances
  * @param {gui.Container} view
  */
 function scrollRedraw(view) {
     const isSmaller = view.getParent().getBounds().height < view.getPreferredSize().height;
-    // @ts-ignore
+    // @ts-ignore setScrollbarPolicy always exists
     view.getParent().setScrollbarPolicy('never', isSmaller ? 'automatic' : 'never');
 }
 
@@ -82,7 +78,9 @@ export function createForm(fieldsDefinition, enableScroll) {
         .filter((fieldsDefinition) => !fieldsDefinition.Disable)
         .map((fieldDefinition) => createFormField(fieldDefinition));
 
-    fields.forEach((field) => container.addChildView(field.container));
+    for (const field of fields) {
+        container.addChildView(field.container);
+    }
 
     if (enableScroll) {
         const thescroll = gui.Scroll.create();
@@ -93,11 +91,8 @@ export function createForm(fieldsDefinition, enableScroll) {
             thescroll.setOverlayScrollbar(true);
         }
 
-        // if (process.platform === 'darwin') {
-        // macOS have different behaviour when have connected mouse
         container.onDraw = debounce(scrollRedraw);
         scrollRedraw(container);
-        // }
 
         return {
             container: thescroll,
@@ -242,16 +237,18 @@ function createField(fieldDefinition) {
         for (const option of fieldDefinition.Examples) {
             field.addItem(option.Value.toString());
         }
+
         if (fieldDefinition.Value) {
-            const selected = fieldDefinition.Examples.find((item) => item.Value == field.getText());
+            const selected = fieldDefinition.Examples.find((item) => item.Value === field.getText());
             if (!selected) {
                 field.addItem(fieldDefinition.Value.toString());
             }
+
             field.setText(fieldDefinition.Value.toString());
         }
 
         const updateHelp = () => {
-            const item = fieldDefinition.Examples.find((i) => i.Value == field.getText());
+            const item = fieldDefinition.Examples.find((i) => i.Value === field.getText());
             if (item) {
                 optionHelpLabel.setVisible(true);
                 const optionHelpText = gui.AttributedText.create(item.Help, {
@@ -268,9 +265,10 @@ function createField(fieldDefinition) {
         optionHelpLabel.setStyle({ width: 340, marginTop: 4, marginBottom: 3 });
 
         field.onTextChange = () => {
-            if (fieldDefinition.OnChange) {
-                fieldDefinition.OnChange(field.getText());
+            if (fieldDefinition.onChange) {
+                fieldDefinition.onChange(field.getText());
             }
+
             updateHelp();
         };
 
@@ -283,25 +281,28 @@ function createField(fieldDefinition) {
 
     if (fieldDefinition.Enums) {
         const field = gui.Picker.create();
-        fieldDefinition.Enums.forEach((item, index) => {
+        for (const [index, item] of fieldDefinition.Enums.entries()) {
             field.addItem((item.Name || item.Value || '').toString());
             if (fieldDefinition.Value === item.Value) {
                 field.selectItemAt(index);
             }
-        });
+        }
 
         const getValue = () => {
             const v = fieldDefinition.Enums[field.getSelectedItemIndex()].Value;
             if (fieldDefinition.Type === 'int') {
-                return parseInt(v.toString());
-            } else if (fieldDefinition.Type === 'bool') {
-                return !!v.toString();
+                return Number.parseInt(v.toString(), 10);
             }
+
+            if (fieldDefinition.Type === 'bool') {
+                return Boolean(v.toString());
+            }
+
             return v;
         };
 
-        if (fieldDefinition.OnChange) {
-            field.onSelectionChange = () => fieldDefinition.OnChange(getValue(), field.getSelectedItemIndex());
+        if (fieldDefinition.onChange) {
+            field.onSelectionChange = () => fieldDefinition.onChange(getValue(), field.getSelectedItemIndex());
         }
 
         return [field, getValue];
@@ -316,14 +317,15 @@ function createField(fieldDefinition) {
         if (fieldDefinition.Value) {
             textField.setText(fieldDefinition.Value.toString());
         }
+
         wrapper.addChildView(textField);
 
         const browseButton = gui.Button.create('Browse');
         wrapper.addChildView(browseButton);
         browseButton.setStyle({ flex: 1, flexGrow: 0, marginLeft: 10 });
         browseButton.onClick = fileDialogSetter.bind(null, fieldDefinition, textField, browseButton);
-        if (fieldDefinition.OnChange) {
-            textField.onTextChange = () => fieldDefinition.OnChange(textField.getText());
+        if (fieldDefinition.onChange) {
+            textField.onTextChange = () => fieldDefinition.onChange(textField.getText());
         }
 
         return [wrapper, () => textField.getText()];
@@ -332,21 +334,25 @@ function createField(fieldDefinition) {
     if (fieldDefinition.Type === 'bool') {
         const field = gui.Button.create({ type: 'checkbox' });
         if (process.platform === 'win32') {
-            // bug in libyue, it need height in windows
+            // Bug in libyue, it need height in windows
             field.setStyle({ height: 20 });
         }
+
         if (fieldDefinition.Value === true || fieldDefinition.Value === 'true') {
             field.setChecked(true);
         }
-        if (fieldDefinition.OnChange) {
-            field.onClick = () => fieldDefinition.OnChange(field.isChecked());
+
+        if (fieldDefinition.onChange) {
+            field.onClick = () => fieldDefinition.onChange(field.isChecked());
         }
+
         return [
             field,
             () => {
                 if (fieldDefinition.Required && !field.isChecked()) {
-                    throw Error(fieldDefinition.Name + ' is required');
+                    throw new Error(fieldDefinition.Name + ' is required');
                 }
+
                 return field.isChecked();
             },
         ];
@@ -357,9 +363,11 @@ function createField(fieldDefinition) {
         if (fieldDefinition.Value) {
             field.setText(fieldDefinition.Value.toString());
         }
-        if (fieldDefinition.OnChange) {
-            field.onTextChange = () => fieldDefinition.OnChange(field.getText());
+
+        if (fieldDefinition.onChange) {
+            field.onTextChange = () => fieldDefinition.onChange(field.getText());
         }
+
         return [field, () => field.getText()];
     }
 
@@ -368,19 +376,23 @@ function createField(fieldDefinition) {
         if (fieldDefinition.Value) {
             field.setText(fieldDefinition.Value.toString());
         }
-        if (fieldDefinition.OnChange) {
-            field.onTextChange = () => fieldDefinition.OnChange(field.getText());
+
+        if (fieldDefinition.onChange) {
+            field.onTextChange = () => fieldDefinition.onChange(field.getText());
         }
+
         return [
             field,
             () => {
-                const v = parseInt(field.getText().trim());
-                if (field.getText() && isNaN(v)) {
-                    throw Error(fieldDefinition.Name + ' is not a number');
+                const v = Number.parseInt(field.getText().trim(), 10);
+                if (field.getText() && Number.isNaN(v)) {
+                    throw new Error(fieldDefinition.Name + ' is not a number');
                 }
+
                 if (fieldDefinition.Required && !field.getText()) {
-                    throw Error(fieldDefinition.Name + ' is required');
+                    throw new Error(fieldDefinition.Name + ' is required');
                 }
+
                 return v || 0;
             },
         ];
@@ -393,12 +405,14 @@ function createField(fieldDefinition) {
             field,
             () => {
                 const v = parse(field.getText(), 'millisecond');
-                if (field.getText() && isNaN(v)) {
-                    throw Error(fieldDefinition.Name + ' is not a number');
+                if (field.getText() && Number.isNaN(v)) {
+                    throw new Error(fieldDefinition.Name + ' is not a number');
                 }
+
                 if (fieldDefinition.Required && !v) {
-                    throw Error(fieldDefinition.Name + ' is required');
+                    throw new Error(fieldDefinition.Name + ' is required');
                 }
+
                 return v;
             },
         ];
@@ -411,8 +425,9 @@ function createField(fieldDefinition) {
             () => {
                 const v = sanitizeSizeSuffix(field.getText());
                 if (!v && fieldDefinition.Required) {
-                    throw Error(fieldDefinition.Name + ' is required');
+                    throw new Error(fieldDefinition.Name + ' is required');
                 }
+
                 return v;
             },
         ];
@@ -423,9 +438,11 @@ function createField(fieldDefinition) {
         if (fieldDefinition.Value) {
             field.setText(fieldDefinition.Value.toString());
         }
-        if (fieldDefinition.OnChange) {
-            field.onTextChange = () => fieldDefinition.OnChange(field.getText());
+
+        if (fieldDefinition.onChange) {
+            field.onTextChange = () => fieldDefinition.onChange(field.getText());
         }
+
         return [field, () => field.getText()];
     }
 
@@ -433,16 +450,19 @@ function createField(fieldDefinition) {
     if (fieldDefinition.Value) {
         field.setText(fieldDefinition.Value.toString());
     }
-    if (fieldDefinition.OnChange) {
-        field.onTextChange = () => fieldDefinition.OnChange(field.getText());
+
+    if (fieldDefinition.onChange) {
+        field.onTextChange = () => fieldDefinition.onChange(field.getText());
     }
+
     return [
         field,
         () => {
             const v = field.getText();
             if (fieldDefinition.Required && !field.getText()) {
-                throw Error(fieldDefinition.Name + ' is required');
+                throw new Error(fieldDefinition.Name + ' is required');
             }
+
             return v;
         },
     ];
@@ -450,10 +470,10 @@ function createField(fieldDefinition) {
 
 /**
  * @param {FieldDefinition} fieldDefinition
- * @param {gui.Entry} textField
- * @param {gui.Button} browseButton
+ * @param {gui.Entry} connectedTextField
+ * @param {gui.Button} connectedBrowseButton
  */
-function fileDialogSetter(fieldDefinition, textField, browseButton) {
+function fileDialogSetter(fieldDefinition, connectedTextField, connectedBrowseButton) {
     const fileDialog = gui.FileOpenDialog.create();
     fileDialog.setTitle(formatTitle(fieldDefinition.Name));
 
@@ -478,13 +498,13 @@ function fileDialogSetter(fieldDefinition, textField, browseButton) {
     }
 
     // It seems that on libyue v0.9.6 it cannot get reference of parent window
-    if (browseButton.getWindow()) {
-        if (!fileDialog.runForWindow(browseButton.getWindow())) return;
+    if (connectedBrowseButton.getWindow()) {
+        if (!fileDialog.runForWindow(connectedBrowseButton.getWindow())) return;
     } else if (!fileDialog.run()) return;
 
     if (fieldDefinition.FileDialog === 'files') {
-        textField.setText(fileDialog.getResults().join(':'));
+        connectedTextField.setText(fileDialog.getResults().join(':'));
     } else {
-        textField.setText(fileDialog.getResult().toString());
+        connectedTextField.setText(fileDialog.getResult().toString());
     }
 }

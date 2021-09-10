@@ -1,6 +1,7 @@
+import { defineConfig } from 'rollup';
 import { main } from './package.json';
 
-export default {
+export default defineConfig({
     input: 'src/index.js',
     output: {
         file: main,
@@ -9,4 +10,4 @@ export default {
         inlineDynamicImports: true,
         compact: true,
     },
-};
+});

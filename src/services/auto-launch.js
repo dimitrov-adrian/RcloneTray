@@ -1,3 +1,4 @@
+import process from 'node:process';
 import AutoLaunch from 'easy-auto-launch';
 import { packageJson } from '../utils/package.js';
 import { promptError } from '../utils/prompt.js';

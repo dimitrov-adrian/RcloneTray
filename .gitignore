@@ -9,5 +9,8 @@ node_modules
 /*.tgz
 /*.zip
 
+# Just for fun
+/test.js
+
 # Breaks when testing between platforms and environments
 /package-lock.json

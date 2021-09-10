@@ -4,13 +4,6 @@
 const store = new Map();
 
 /**
- * @param {(item: any) => void} callbackfn
- */
-export function forEach(callbackfn) {
-    return store.forEach(callbackfn);
-}
-
-/**
  *
  * @returns {Ref}
  */
@@ -18,17 +11,10 @@ export function ref() {
     return new Ref();
 }
 
-export class Ref {
+class Ref {
     constructor() {
-        this.id = Symbol();
+        this.id = Symbol('Generic references store');
         Object.freeze(this);
-    }
-
-    /**
-     * @param {*} value
-     */
-    set value(value) {
-        store.set(this.id, value);
     }
 
     /**
@@ -36,6 +22,13 @@ export class Ref {
      */
     get value() {
         return store.get(this.id);
+    }
+
+    /**
+     * @param {*} value
+     */
+    set value(value) {
+        store.set(this.id, value);
     }
 
     /**

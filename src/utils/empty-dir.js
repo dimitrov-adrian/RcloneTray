@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, promises as fsp } from 'fs';
+import { existsSync, mkdirSync, promises as fsp } from 'node:fs';
 
 /**
  * @param {string} path
@@ -12,8 +12,9 @@ export async function isEmptyDirectory(path) {
             iterator.close();
             return false;
         }
+
         return true;
-    } catch (error) {
+    } catch {
         return false;
     }
 }
@@ -27,7 +28,7 @@ export async function ensureEmptyDirectory(path) {
         try {
             mkdirSync(path, { recursive: true });
             return true;
-        } catch (error) {
+        } catch {
             return false;
         }
     }

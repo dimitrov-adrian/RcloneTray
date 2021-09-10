@@ -1,16 +1,17 @@
+import process from 'node:process';
 import gui from 'gui';
-import { config } from './services/config.js';
+import open from 'open';
+import debounce from 'debounce';
 import * as rclone from './services/rclone.js';
+import { config } from './services/config.js';
 import { ref } from './utils/ref.js';
 import { providerIcons, trayIcons } from './services/images.js';
 import { packageJson } from './utils/package.js';
-import { debounce } from './utils/debounce.js';
 import { createBookmarkWizardWindow } from './bookmark-wizard.js';
 import { createPreferencesWindow, openRcloneConfigFile } from './preferences.js';
 import { createAboutWindow } from './about.js';
 import { createBookmarkWindowByName } from './bookmark-edit.js';
 import { appQuit } from './app-quit.js';
-import open from 'open';
 
 /** @type {{ value: gui.Tray, unref: CallableFunction }} */
 const trayIcon = ref();
@@ -25,31 +26,7 @@ const preferencesAccelerator = process.platform === 'darwin' ? 'CmdOrCtrl+,' : '
  * Tasks tray menu for update
  * @type {() => void}
  */
-export const updateMenu = debounce(async () => {
-    const connected = rclone.isDaemonConnected();
-    if (connected) {
-        try {
-            const [bookmarks, mounted, inSync] = await Promise.all([
-                rclone.getBookmarks(),
-                rclone.getMounted(),
-                rclone.getSyncing(),
-            ]);
-
-            setMenu(bookmarks, {
-                mounted: mounted.mountPoints.map((item) => item.Fs),
-                inSync,
-                connected,
-                dlna: rclone.getDLNAServings(),
-            });
-
-            return;
-        } catch (error) {
-            console.warn('Cannot get required info to update menu');
-        }
-    }
-
-    setMenu([], { mounted: [], inSync: [], dlna: [], connected: false });
-});
+export const updateMenu = debounce(() => setMenu(), 500);
 
 /**
  * Create tray menu instance
@@ -57,35 +34,35 @@ export const updateMenu = debounce(async () => {
 export function createTrayMenu() {
     if (trayIcon.value) return;
     trayIcon.value = gui.Tray.createWithImage(getTrayIcon());
-    setMenu([], { mounted: [], inSync: [], dlna: [], connected: false });
+    setMenu();
 }
 
 /**
  * Set tray menu content
- * @param {object} bookmarks
- * @param {{mounted: string[], inSync: string[], dlna: string[], connected: boolean}} state
  */
-async function setMenu(bookmarks, state) {
-    const hasConnectedBookmark = state.inSync.length + state.dlna.length + state.mounted.length > 0;
+async function setMenu() {
+    const connected = rclone.hasActiveJobs();
+    const activeJobsMap = rclone.getActiveJobsMap();
 
-    const bookmarksMenus = Object.keys(bookmarks)
-        .map((bookmarkName) =>
-            buildBookmarkMenu(bookmarkName, bookmarks[bookmarkName], {
-                mounted: state.mounted.indexOf(bookmarkName) !== -1,
-                inSync: state.inSync.indexOf(bookmarkName) !== -1,
-                dlna: state.dlna.indexOf(bookmarkName) !== -1,
-            })
+    // Prepare submenus for the bookmarks items.
+    const bookmarksMenus = Object.entries(await rclone.getBookmarks())
+        .map(([bookmarkName, bookmarkConfig]) =>
+            buildBookmarkMenu(bookmarkName, bookmarkConfig, activeJobsMap[bookmarkName] || {})
         )
         .sort(bookmarkSortByFunction(config.store.bookmarks_order))
         .sort(config.store.connected_first ? bookmarkSortConnectedFirstFunction : undefined);
 
+    /**
+     * @type {object[]}
+     */
     const menuStructure = [];
+
     menuStructure.push(
         {
             label: 'New Bookmark',
             accelerator: 'CmdOrCtrl+N',
             onClick: createBookmarkWizardWindow,
-            enabled: state.connected,
+            enabled: connected,
         },
         { type: 'separator' },
         ...bookmarksMenus
@@ -126,35 +103,34 @@ async function setMenu(bookmarks, state) {
         },
         {
             type: 'separator',
+        },
+        {
+            label: `Quit ${packageJson.build.productName}`,
+            accelerator: 'CmdOrCtrl+Q',
+            onClick: appQuit,
         }
     );
 
-    menuStructure.push({
-        label: `Quit ${packageJson.build.productName}`,
-        accelerator: 'CmdOrCtrl+Q',
-        onClick: appQuit,
-    });
-
+    trayIcon.value.setImage(getTrayIcon(rclone.hasActiveJobs()));
     trayIcon.value.setMenu(gui.Menu.create(menuStructure));
-    trayIcon.value.setImage(getTrayIcon(hasConnectedBookmark));
 }
 
 /**
  * Create bookmark item menu content
  * @param {string} bookmarkName
  * @param {object} bookmarkConfig
- * @param {{mounted: boolean, inSync: boolean, dlna: boolean}} state
+ * @param {import('./services/rclone.js').ActiveJobMapList} activeJobs
  * @returns {object}
  */
-function buildBookmarkMenu(bookmarkName, bookmarkConfig, state) {
-    const isConnected = state.mounted || state.dlna || state.inSync;
+function buildBookmarkMenu(bookmarkName, bookmarkConfig, activeJobs) {
+    const isConnected = Object.keys(activeJobs).length > 0;
     const showMenuType = process.platform === 'linux' && config.store.show_type ? 'text' : config.store.show_type;
 
     const bookmarkMenu = {
         $meta: {
             type: bookmarkConfig.type,
             name: bookmarkName,
-            isConnected: isConnected,
+            isConnected,
         },
         label: bookmarkName || '<Untitled>',
         type: 'submenu',
@@ -163,9 +139,8 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, state) {
 
     if (bookmarkConfig.host && config.store.show_host) {
         if (showMenuType === 'text') {
-            bookmarkMenu.label = bookmarkMenu.label + ' - ' + bookmarkConfig.type + '://' + bookmarkConfig.host;
-        } else {
-            bookmarkMenu.label = bookmarkMenu.label + ' - ' + bookmarkConfig.host;
+            bookmarkMenu.label +=
+                showMenuType === 'text' ? bookmarkConfig.type + '://' + bookmarkConfig.host : bookmarkConfig.host;
         }
     } else if (showMenuType === 'text') {
         bookmarkMenu.label = bookmarkConfig.type + '://' + bookmarkMenu.label;
@@ -182,15 +157,15 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, state) {
     bookmarkMenu.submenu.push({
         label: 'Mount',
         type: 'checkbox',
-        checked: !!state.mounted,
-        enabled: !state.mounted,
+        checked: activeJobs.mount,
+        enabled: !activeJobs.mount,
         onClick: (menuItem) => {
             menuItem.setChecked(false);
             rclone.mount(bookmarkName, bookmarkConfig);
         },
     });
 
-    if (state.mounted) {
+    if (activeJobs.mount) {
         bookmarkMenu.submenu.push(
             {
                 label: 'Unmount',
@@ -203,39 +178,37 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, state) {
         );
     }
 
-    bookmarkMenu.submenu.push({ type: 'separator' });
-
-    if (bookmarkConfig.rclonetray_local_directory) {
+    if (bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]) {
         bookmarkMenu.submenu.push(
+            { type: 'separator' },
             {
                 type: 'label',
                 label: 'Pull',
                 onClick: () => rclone.pull(bookmarkName, bookmarkConfig),
-                enabled: !state.inSync,
+                enabled: !activeJobs.pull && !activeJobs.push,
             },
             {
                 type: 'label',
                 label: 'Push',
                 onClick: () => rclone.push(bookmarkName, bookmarkConfig),
-                enabled: !state.inSync,
+                enabled: !activeJobs.pull && !activeJobs.push,
             },
             {
                 label: 'Push on Change',
                 type: 'label',
-                checked: !!state.inSync,
+                checked: activeJobs.autopush,
                 onClick: () => {
-                    if (state.inSync) {
-                        rclone.pushOnChange(bookmarkName, bookmarkConfig).close();
+                    if (activeJobs.autopush) {
+                        rclone.autopush(bookmarkName, false);
                     } else {
-                        rclone.pushOnChange(bookmarkName, bookmarkConfig);
+                        rclone.autopush(bookmarkName, bookmarkConfig);
                     }
                 },
             },
             {
                 label: `Open Local in ${fileExplorerAppName}`,
-                onClick: () => open('file://' + bookmarkConfig.rclonetray_local_directory),
-            },
-            { type: 'separator' }
+                onClick: () => open('file://' + bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]),
+            }
         );
     }
 
@@ -257,14 +230,14 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, state) {
             {
                 label: 'Serve DLNA',
                 type: 'checkbox',
-                checked: state.dlna,
+                checked: activeJobs.dlna,
                 onClick: (menuItem) => {
-                    if (!rclone.isBookmarkDLNAStarted(bookmarkName)) {
-                        menuItem.setChecked(true);
-                        rclone.bookmarkStartDLNA(bookmarkName, bookmarkConfig);
-                    } else {
+                    if (activeJobs.dlna) {
                         menuItem.setChecked(false);
-                        rclone.bookmarkStopDLNA(bookmarkName);
+                        rclone.stopDLNA(bookmarkName);
+                    } else {
+                        menuItem.setChecked(true);
+                        rclone.startDLNA(bookmarkName, bookmarkConfig);
                     }
                 },
             }
@@ -303,11 +276,13 @@ function bookmarkSortByFunction(field) {
         if (field === 'type') {
             if (a.$meta.type === b.$meta.type) return 0;
             return a.$meta.type > b.$meta.type ? 1 : -1;
-        } else if (field === 'name') {
-            return a.$meta.name > b.$meta.name ? 1 : -1;
-        } else {
-            return 0;
         }
+
+        if (field === 'name') {
+            return a.$meta.name > b.$meta.name ? 1 : -1;
+        }
+
+        return 0;
     };
 }
 

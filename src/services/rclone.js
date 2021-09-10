@@ -1,28 +1,8 @@
-import { spawn, spawnSync } from 'child_process';
-import EventEmitter from 'events';
-import fs from 'fs';
-import os from 'os';
-import path from 'path';
-import chokidar from 'chokidar';
-import fetch from 'node-fetch';
-import semver from 'semver';
-import open from 'open';
-import AbortController from 'abort-controller';
-import { config } from './config.js';
-import { ensureEmptyDirectory } from '../utils/empty-dir.js';
-import { randomPort } from '../utils/random-port.js';
-import { emitLines } from '../utils/stream-readline.js';
-import { execInOSTerminal } from '../utils/terminal-command.js';
-import { getResourcePath, getSubcommand } from '../utils/package.js';
-
 /**
  * @typedef {{
  *  type: string,
- *  rclonetray_local_directory?: string,
- *  rclonetray_remote_home?: string,
- *  rclonetray_automount?: 'true' | 'false',
- *  rclonetray_pullonstart?: 'true' | 'false'
- * } & Record<string, string>} RcloneBookmarkConfig
+ * }
+ * & Record<string, string>} RcloneBookmarkConfig
  *
  * @typedef {'string'|'int'|'bool'|'SizeSuffix'|'MultiEncoder'|'Duration'|'CommaSepList'} RcloneProviderOptionType
  *
@@ -61,336 +41,189 @@ import { getResourcePath, getSubcommand } from '../utils/package.js';
  *   Options: RcloneProviderOption[],
  *   CommandHelp: string | null
  * }} RcloneProvider
+ *
+ * @typedef {{
+ *  data?: Record<string, any>,
+ *  stop: () => void|Promise<any>
+ * }} Job
+ *
+ * @typedef {Record<string, ActiveJobMapList>} ActiveJobsMap
+ *
+ * @typedef {{
+ *  mount?: true,
+ *  dlna?: true,
+ *  pull?: true,
+ *  push?: true,
+ *  autopush?: true
+ * }} ActiveJobMapList
  */
 
-/**
- * Semver version
- * @type {string}
- */
-export const RCLONE_MIN_VERSION = '1.51.0';
+import process from 'node:process';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import EventEmitter from 'node:events';
+import chokidar from 'chokidar';
+import open from 'open';
+import getPort from 'get-port';
+import { ensureEmptyDirectory, isEmptyDirectory } from '../utils/empty-dir.js';
+import { execInOSTerminal } from '../utils/terminal-command.js';
+import { getResourcePath, getSubcommand } from '../utils/package.js';
+import { rcloneDriver, remoteCommand } from '../utils/rclone.js';
+import { config } from './config.js';
+import logger from './logger.js';
 
-/**
- * Unsupported remote types definition
- * @type {string[]}
- */
-export const UNSUPPORTED_PROVIDERS = ['memory', 'http', 'compress', 'cache', 'union', 'chunker', 'local'];
-
-/**
- * Remote types that requires bucket in order to works (usually those that cannot work with root only)
- * @type {string[]}
- */
-export const BUCKET_REQUIRED_PROVIDERS = ['b2', 'swift', 's3', 'gsc', 'hubic'];
-
-/**
- * System's rclone binary name
- * @type {string}
- */
-const rcloneBinaryFilename = process.platform === 'win32' ? 'rclone.exe' : 'rclone';
-
-/**
- * In charge rclone binary
- * @type {string}
- */
-const rcloneBinary = process.env.RCLONETRAY_RCLONE_PATH
-    ? process.env.RCLONETRAY_RCLONE_PATH
-    : config.get('use_system_rclone')
-    ? rcloneBinaryFilename
-    : getResourcePath('vendor', 'rclone', rcloneBinaryFilename);
-
-/**
- * Service event emitter
- * @type {EventEmitter}
- */
-const eventEmitter = new EventEmitter({ captureRejections: true });
-
-// Exports once method listener.
-export const once = eventEmitter.once.bind(eventEmitter);
-
-// Exports on method listener.
-export const on = eventEmitter.on.bind(eventEmitter);
-
-/**
- * Instance holder
- * @type {{
- *  auth: string,
- *  server: string,
- *  connected: boolean,
- *  proc: import('child_process').ChildProcess ,
- *  pushOnChangeWatchers: Map<string, chokidar.FSWatcher>,
- *  servingDLNA: Map<string, any>,
- * }}
- */
-const daemonState = {
-    auth: '',
-    server: '',
-    connected: false,
-    proc: null,
-    pushOnChangeWatchers: new Map(),
-    servingDLNA: new Map(),
+export const RCLONETRAY_CONFIG = {
+    RCLONE_MIN_VERSION: '1.56.0',
+    UNSUPPORTED_PROVIDERS: ['memory', 'http', 'compress', 'cache', 'union', 'chunker', 'local'],
+    BUCKET_REQUIRED_PROVIDERS: ['b2', 'swift', 's3', 'gsc', 'hubic'],
+    CUSTOM_KEYS: {
+        localDirectory: 'rclonetray_local_directory',
+        remoteHome: 'rclonetray_remote_home',
+        autoMount: 'rclonetray_automount',
+        pullOnStart: 'rclonetray_pullonstart',
+        bucket: 'rclonetray_bucket',
+    },
 };
 
-// Clear mountpoint directory
-eventEmitter.on('bookmark:unmounted', async (bookmarkName, mountpoint) => {
-    if (!mountpoint) return;
-    cleanMountpoint(mountpoint);
+const rclone = rcloneDriver({
+    binary:
+        process.env.RCLONETRAY_RCLONE_PATH ||
+        (config.get('use_system_rclone')
+            ? null
+            : getResourcePath('vendor', 'rclone', process.platform === 'win32' ? 'rclone.exe' : 'rclone')),
+    configFile: config.get('rclone_config_file'),
 });
 
-eventEmitter.on('connected', () => {
-    setOptions({
-        vfs: {
-            Timeout: 10,
-            DirCacheTime: 3,
-            ReadOnly: true,
-            CachePollInterval: 10000,
-            PollInterval: 10000,
-        },
-        mount: {
-            NoAppleDouble: true,
-            NoAppleXattr: true,
-            AllowNonEmpty: false,
-            Daemon: false,
-            DebugFUSE: false,
-        },
-    }).catch(() => {
-        console.warn('Cannot set default RcloneTray daemon options.');
-    });
-});
+export const emitter = new EventEmitter({ captureRejections: true });
+
+const rcloneDaemonInfo = {
+    proc: null,
+    server: null,
+};
 
 /**
- * @returns {string}
- * @throws {Error}
+ * @type {Map<string, Job>}
  */
-export function getVersion() {
-    try {
-        const result = spawnSync(rcloneBinary, ['version'], {
-            env: {
-                RCLONE_CONFIG: process.platform === 'win32' ? 'NUL' : '/dev/null',
-            },
-        });
+const jobs = new Map();
 
-        if (result.output) {
-            return semver.clean(result.output.toString().trim().split(/\r?\n/).shift().split(/\s+/).pop());
+/**
+ * @returns {boolean}
+ */
+export function hasActiveJobs() {
+    return jobs.size > 0;
+}
+
+/**
+ * @returns {ActiveJobsMap}
+ */
+export function getActiveJobsMap() {
+    const result = {};
+    for (const key of jobs.keys()) {
+        const [bookmarkName, jobname] = key.split(':');
+        if (!(bookmarkName in result)) {
+            result[bookmarkName] = {};
         }
-    } catch (error) {
-        console.warn(error.toString());
-        config.set('use_system_rclone', false);
+
+        result[bookmarkName][jobname] = true;
     }
 
-    throw Error('Cannot detect Rclone version. Switching back to bundled. Please restart the application.');
+    // @ts-ignore
+    return result;
+}
+
+export function setupDaemon() {
+    if (!rclone.versionGte(RCLONETRAY_CONFIG.RCLONE_MIN_VERSION)) {
+        throw new Error(`Minimum version of Rclone must be ${RCLONETRAY_CONFIG.RCLONE_MIN_VERSION}`);
+    }
+
+    const user = Math.round(Math.random() * Date.now()).toString(24);
+    const pass = Math.round(Math.random() * Date.now()).toString(24);
+
+    rclone
+        .rcd({
+            RCLONE_PASSWORD: 'false',
+            RCLONE_PASSWORD_COMMAND: getSubcommand('ask-pass-config'),
+            RCLONE_SFTP_ASK_PASSWORD: getSubcommand('ask-pass-remote'),
+            RCLONE_RC_USER: user,
+            RCLONE_RC_PASS: pass,
+            RCLONE_RC_ADDR: '127.0.0.1:0',
+        })
+        .on('close', () => {
+            logger.error('Rclone daemon exited');
+            rcloneDaemonInfo.server = null;
+            rcloneDaemonInfo.proc = null;
+        })
+        .on('error', (error) => {
+            emitter.emit('error', error);
+        })
+        .on('data', (data) => {
+            logger.debug('rclone:rcd@data', data);
+            rcloneDaemonLogHandler(data);
+        })
+        .on('data', rcloneDaemonLogHandler)
+        .once('ready', (endpoint) => {
+            rcloneDaemonInfo.server = {
+                uri: endpoint,
+                auth: user + ':' + pass,
+            };
+            emitter.emit('ready');
+        });
+
+    /**
+     * @param {import('../utils/rclone.js').LogMessage} data
+     */
+    function rcloneDaemonLogHandler(data) {
+        if (data.msg.includes('go to the following link:')) {
+            const url = data.msg.match(/https?:\/\/(\S+)/i);
+            emitter.emit('webconfirm', url);
+        } else if (data.msg.includes('Error: NewFs: failed to make')) {
+            emitter.emit('error', 'NewFs:' + data);
+        } else if (data.msg.includes('Fatal error:')) {
+            throw new Error(data.msg);
+        } else if (
+            data.msg.includes("ERROR : Couldn't decrypt configuration, most likely wrong password") ||
+            data.msg.includes('password-command returned empty string')
+        ) {
+            emitter.emit('error', {
+                command: 'boot',
+                error: new Error('Invalid configuration password'),
+            });
+            emitter.emit('invalid-password');
+        }
+    }
+}
+
+/**
+ * @param {string} endpoint
+ * @param {object=} payload
+ */
+export function rc(endpoint, payload) {
+    if (!rcloneDaemonInfo.server) throw new Error('No server');
+
+    logger.debug('>', endpoint);
+
+    return remoteCommand(rcloneDaemonInfo.server, endpoint, payload);
 }
 
 /**
  * @returns {string}
  */
 export function getConfigFile() {
-    if (config.get('rclone_config_file')) {
-        return config.get('rclone_config_file');
-    }
-
-    try {
-        const result = spawnSync(rcloneBinary, ['config', 'file']);
-        return (result.output.toString().trim().split('\n')[1] || '').trim();
-    } catch (error) {
-        console.warn(error.toString());
-    }
-
-    throw Error('Cannot detect Rclone config file.');
+    return rclone.getConfigFile();
 }
 
-export async function stopRcloneDaemon() {
-    return true;
-}
-
-/**
- * Bootstrap the Rclone daemon as a subprocess
- */
-export async function startRcloneDaemon() {
-    if (daemonState.proc) {
-        daemonState.proc.kill(0);
-    }
-
-    const version = getVersion();
-    if (!version) {
-        throw Error(`Cannot detect Rclone version, at least ${RCLONE_MIN_VERSION} is required.`);
-    }
-
-    if (semver.gte(RCLONE_MIN_VERSION, version)) {
-        throw Error(
-            `Unsupported version, required version of Rclone is >= ${RCLONE_MIN_VERSION}, but you have ${version}`
-        );
-    }
-
-    const port = await randomPort();
-    if (!port) {
-        throw Error('Cannot run Rclone daemon. System need to provide free port number in order to run the daemon.');
-    }
-
-    daemonState.server = '127.0.0.1:' + port;
-
-    const args = [
-        'rcd',
-        // '--no-console',
-        // '--use-mmap'
-    ];
-
-    daemonState.auth = 'rclonetray:' + (Math.random() * Date.now() * process.pid).toString(24);
-
-    const proc = spawn(rcloneBinary, args, {
-        detached: false,
-        shell: false,
-        windowsHide: true,
-        stdio: 'pipe',
-        env: {
-            RCLONE_USE_JSON_LOG: 'false',
-            RCLONE_AUTO_CONFIRM: 'false',
-            RCLONE_CONFIG: getConfigFile(),
-            RCLONE_PASSWORD: 'false',
-            RCLONE_PASSWORD_COMMAND: getSubcommand('ask-pass-config'),
-            RCLONE_RC_SERVER_WRITE_TIMEOUT: '8760h0m0s',
-            RCLONE_RC_SERVER_READ_TIMEOUT: '8760h0m0s',
-            RCLONE_RC_WEB_GUI: 'false',
-            RCLONE_RC_ADDR: daemonState.server,
-            RCLONE_RC_NO_AUTH: 'false',
-            RCLONE_RC_USER: 'rclonetray',
-            RCLONE_RC_PASS: daemonState.auth.split(':')[1],
-            RCLONE_LOG_FORMAT: '',
-            RCLONE_SFTP_ASK_PASSWORD: getSubcommand('ask-pass-remote'),
-        },
-    });
-
-    proc.once('close', rcloneCloseHandler);
-    proc.stdout.on('data', rcloneStdoutHandler.bind(proc));
-    proc.stderr.on('line', rcloneStderrHandler.bind(proc));
-    proc.stderr.setEncoding('utf8');
-
-    emitLines(proc.stderr);
-
-    daemonState.proc = proc;
-    return daemonState;
-}
-
-function rcloneCloseHandler() {
-    if (!daemonState.connected) return;
-    daemonState.connected = false;
-    daemonState.pushOnChangeWatchers.forEach((watcher) => watcher.close());
-    eventEmitter.emit('disconnected');
-}
-
-/**
- * @this {import('child_process').ChildProcess}
- * @param {string} data
- */
-function rcloneStdoutHandler(data) {
-    if (data.toString() === 'Remote config') {
-        eventEmitter.emit('config');
-    }
-    console.log(`RC|>${data.toString()}`);
-}
-
-/**
- * @this {import('child_process').ChildProcess}
- * @param {string} data
- */
-function rcloneStderrHandler(data) {
-    console.debug('>>>', daemonState.connected, this.signalCode, this.exitCode, '>>', data);
-
-    if (!daemonState.connected) {
-        if (data.indexOf('Fatal error:') !== -1) {
-            throw Error(data);
-        } else if (data.indexOf('NOTICE: Serving remote control on') !== -1) {
-            daemonState.connected = true;
-            console.debug('Initialized Rclone daemon:', { server: daemonState.server, auth: daemonState.auth });
-            eventEmitter.emit('connected', daemonState.server);
-        } else if (data.indexOf(`Failed to start remote control:`) !== -1) {
-            eventEmitter.emit('error', {
-                command: 'boot',
-                error: Error('Failed to start daemon.'),
-            });
-            eventEmitter.emit('disconnected');
-            // proc.kill(1);
-        } else if (
-            data.indexOf("ERROR : Couldn't decrypt configuration, most likely wrong password") !== -1 ||
-            data.indexOf('password-command returned empty string') !== -1
-        ) {
-            // proc.kill(1);
-            eventEmitter.emit('error', {
-                command: 'boot',
-                error: Error('Invalid configuration password'),
-            });
-            eventEmitter.emit('invalid-password');
-        }
-    } else {
-        if (data.indexOf(' >Destroy:') !== -1) {
-            // @todo notify that need update
-            eventEmitter.emit('refresh');
-        } else if (data.indexOf("If your browser doesn't open automatically go to the following link: ")) {
-            const url = data.match(/https?:\/\/([^\s]+)/i);
-            console.log('RC|u', url);
-            eventEmitter.emit('webconfirm', url);
-        }
-        // else if (data.indexOf('Error: NewFs: failed to make')) {
-        //     eventEmitter.emit('error', {
-
-        //     })
-        // }
-    }
-}
 /**
  * Set current instace options
  * @param {object=} newOptions
  */
 export async function setOptions(newOptions) {
     if (newOptions && typeof newOptions === 'object') {
-        await remoteCommand('options/set', newOptions);
+        rc('options/set', newOptions);
         return true;
     }
+
     return true;
-}
-
-/**
- * Perform RC command
- * @param {string} command
- * @param {object=} payload
- * @param {AbortSignal=} abortSignal
- * @returns {Promise<*>}
- */
-export async function remoteCommand(command, payload, abortSignal) {
-    if (!daemonState.server) {
-        throw Error('Rclone daemon not started');
-    }
-
-    const authHeader = 'Basic ' + Buffer.from(daemonState.auth).toString('base64');
-    console.log('RC|=>', command);
-
-    try {
-        const response = await fetch('http://' + daemonState.server + '/' + command, {
-            method: 'POST',
-            signal: abortSignal,
-            headers: {
-                Authorization: authHeader,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(payload || {}),
-            timeout: 0,
-        });
-
-        const data = await response.json().catch(async (error) => {
-            return { error: Error('Not a JSON'), prevError: error };
-        });
-
-        if (data.error) {
-            throw Error(data.error);
-        }
-
-        return data;
-    } catch (err) {
-        err.command = command;
-        throw err;
-    }
-}
-
-export async function stopAll() {
-    await unmountAll();
 }
 
 /**
@@ -398,22 +231,24 @@ export async function stopAll() {
  * @param {string} bookmarkName
  * @param {string} type
  * @param {Record<string, any>} parameters
- * @returns {Promise<JSON>}
+ * @returns {Promise<object>}
  * @emits 'bookmark:created'
  */
 export async function createBookmark(bookmarkName, type, parameters) {
-    if (!bookmarkName || !/^([0-9a-z_-]{2,40})$/i.test(bookmarkName)) {
-        throw Error('Invalid bookmark name: ' + bookmarkName);
+    if (!bookmarkName || !/^([\w-]{2,40})$/i.test(bookmarkName)) {
+        throw new Error('Invalid bookmark name: ' + bookmarkName);
     }
 
-    const result = await remoteCommand('config/create', {
+    const command = rc('config/create', {
         name: bookmarkName,
         type,
         parameters,
     });
 
-    eventEmitter.emit('bookmark:created', bookmarkName, { ...parameters, type });
-    return result;
+    emitter.emit('config');
+    emitter.emit('bookmarkCreated', bookmarkName, { ...parameters, type });
+
+    return command.result;
 }
 
 /**
@@ -424,12 +259,21 @@ export async function createBookmark(bookmarkName, type, parameters) {
  * @emits 'bookmark:updated'
  */
 export async function updateBookmark(bookmarkName, parameters) {
-    const result = await remoteCommand('config/update', {
+    if (jobs.has(`${bookmarkName}:autopush`)) {
+        // @TODO if path is changed, then should restart autopush,
+        //       for now, just stop it
+        autopush(bookmarkName, false);
+    }
+
+    const command = rc('config/update', {
         name: bookmarkName,
         parameters,
     });
-    eventEmitter.emit('bookmark:updated', bookmarkName, parameters);
-    return result;
+
+    emitter.emit('config');
+    emitter.emit('bookmarkCreated', bookmarkName, parameters);
+
+    return command.result;
 }
 
 /**
@@ -439,14 +283,18 @@ export async function updateBookmark(bookmarkName, parameters) {
  * @emits 'bookmark:deleted'
  */
 export async function deleteBookmark(bookmarkName) {
-    const result = await remoteCommand('config/delete', {
+    if (jobs.has(`${bookmarkName}:autopush`)) {
+        autopush(bookmarkName, false);
+    }
+
+    const command = rc('config/delete', {
         name: bookmarkName,
     });
-    if (daemonState.pushOnChangeWatchers.has(bookmarkName)) {
-        daemonState.pushOnChangeWatchers.get(bookmarkName).close();
-    }
-    eventEmitter.emit('bookmark:deleted', bookmarkName);
-    return result;
+
+    emitter.emit('config');
+    emitter.emit('bookmarkDeleted', bookmarkName);
+
+    return command.result;
 }
 
 /**
@@ -455,20 +303,22 @@ export async function deleteBookmark(bookmarkName) {
  * @returns {Promise<RcloneBookmarkConfig, Error>}
  */
 export function getBookmark(bookmarkName) {
-    return remoteCommand('config/get', {
-        name: bookmarkName,
-    });
+    return rc('config/get', { name: bookmarkName }).result;
 }
 
 /**
- * @returns {Promise<Record<string, RcloneBookmarkConfig>, Error>}
+ * @returns {Promise<Record<string, RcloneBookmarkConfig>>}
  */
-export function getBookmarks() {
-    return remoteCommand('config/dump').then((result) => {
+export async function getBookmarks() {
+    try {
+        const result = await rc('config/dump').result;
+
         return Object.fromEntries(
-            Object.entries(result).filter(([, info]) => !UNSUPPORTED_PROVIDERS.includes(info.type))
+            Object.entries(result).filter(([, info]) => !RCLONETRAY_CONFIG.UNSUPPORTED_PROVIDERS.includes(info.type))
         );
-    });
+    } catch {}
+
+    return {};
 }
 
 /**
@@ -476,8 +326,8 @@ export function getBookmarks() {
  * @returns {Promise<object[]>}
  */
 export async function getProviders() {
-    const providers = await remoteCommand('config/providers');
-    return providers.providers.filter((provider) => UNSUPPORTED_PROVIDERS.indexOf(provider.Prefix) === -1);
+    const providers = await rc('config/providers').result;
+    return providers.providers.filter((provider) => !RCLONETRAY_CONFIG.UNSUPPORTED_PROVIDERS.includes(provider.Prefix));
 }
 
 /**
@@ -493,18 +343,34 @@ export async function getProvider(prefix) {
  * @param {string} bookmarkName
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
-export async function push(bookmarkName, bookmarkConfig) {
-    if (!bookmarkConfig.rclonetray_local_directory) {
-        return Promise.reject(Error(`Local directory not set for ${bookmarkName}`));
+export async function push(bookmarkName, bookmarkConfig, initiator) {
+    if (jobs.has(`${bookmarkName}:push`) || jobs.has(`${bookmarkName}:pull`)) return;
+
+    if (!bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]) {
+        throw new Error(`Local directory not set for ${bookmarkName}`);
     }
+
+    emitter.emit('activity', 'push');
+
+    const info = {
+        srcFs: bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
+        dstFs: getBookmarkFs(bookmarkName, bookmarkConfig),
+    };
+
     try {
-        return remoteCommand('sync/sync', {
-            srcFs: bookmarkConfig.rclonetray_local_directory,
-            dstFs: getBookmarkFs(bookmarkName, bookmarkConfig),
+        const command = rc('sync/sync', { ...info });
+
+        jobs.set(`${bookmarkName}:push`, {
+            stop: () => command.abort(),
+            data: { ...info },
         });
-    } catch (error) {
-        eventEmitter.emit('error', 'Push: ' + bookmarkName, error);
-    }
+
+        await command.result;
+    } catch {}
+
+    jobs.delete(`${bookmarkName}:push`);
+    emitter.emit('pushed', bookmarkName, initiator);
+    emitter.emit('activity', 'pushed');
 }
 
 /**
@@ -512,63 +378,132 @@ export async function push(bookmarkName, bookmarkConfig) {
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
 export async function pull(bookmarkName, bookmarkConfig) {
-    if (!bookmarkConfig.rclonetray_local_directory) {
-        return Promise.reject(Error(`Local directory not set for ${bookmarkName}`));
+    if (jobs.has(`${bookmarkName}:push`) || jobs.has(`${bookmarkName}:pull`)) return;
+
+    if (!bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]) {
+        throw new Error(`Local directory not set for ${bookmarkName}`);
     }
+
+    emitter.emit('activity', 'pull');
+
+    const info = {
+        srcFs: getBookmarkFs(bookmarkName, bookmarkConfig),
+        dstFs: bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
+    };
+
     try {
-        remoteCommand('sync/sync', {
-            srcFs: getBookmarkFs(bookmarkName, bookmarkConfig),
-            dstFs: bookmarkConfig.rclonetray_local_directory,
+        const command = rc('sync/sync', { ...info });
+
+        jobs.set(`${bookmarkName}:pull`, {
+            stop: () => command.abort(),
+            data: { ...info },
         });
-    } catch (error) {
-        eventEmitter.emit('error', 'Pull: ' + bookmarkName, error);
-    }
+
+        await command.result;
+    } catch {}
+
+    jobs.delete(`${bookmarkName}:pull`);
+    emitter.emit('pulled', bookmarkName);
+    emitter.emit('activity', 'pulled');
 }
 
 /**
  * @param {string} bookmarkName
+ * @param {RcloneBookmarkConfig|false=} bookmarkConfig
  */
-export function getPushOnChangeState(bookmarkName) {
-    if (daemonState.pushOnChangeWatchers.has(bookmarkName)) {
-        return daemonState.pushOnChangeWatchers.get(bookmarkName);
-    }
+export function autopush(bookmarkName, bookmarkConfig) {
+    if (typeof bookmarkConfig === 'boolean') {
+        if (jobs.has(`${bookmarkName}:autopush`)) {
+            jobs.get(`${bookmarkName}:autopush`).stop();
+        }
+    } else {
+        if (jobs.has(`${bookmarkName}:autopush`)) return;
 
-    return false;
+        if (!bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]) {
+            throw new Error(`Local directory not set for ${bookmarkName}`);
+        }
+
+        const watcher = chokidar.watch(bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory], {
+            awaitWriteFinish: true,
+            ignoreInitial: true,
+            ignored: ['.DS_Store', '._*', '*~'],
+            disableGlobbing: true,
+            usePolling: false,
+            useFsEvents: true,
+            persistent: true,
+            alwaysStat: true,
+            atomic: 3000,
+        });
+
+        watcher.on('raw', () => push(bookmarkName, bookmarkConfig, 'autopush'));
+
+        jobs.set(`${bookmarkName}:autopush`, {
+            data: {
+                path: bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
+            },
+            stop: async () => {
+                if (!watcher) return;
+                try {
+                    watcher.close();
+                    jobs.delete(`${bookmarkName}:autopush`);
+                } catch (error) {
+                    logger.error(error.toString());
+                }
+            },
+        });
+
+        push(bookmarkName, bookmarkConfig, 'autopush');
+    }
 }
 
 /**
+ * @TODO reimplement with mount/mount command,
+ *       right now this is not possible because of
+ *       https://github.com/rclone/rclone/issues/4860
+ *
  * @param {string} bookmarkName
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
-export function pushOnChange(bookmarkName, bookmarkConfig) {
-    if (daemonState.pushOnChangeWatchers.has(bookmarkName)) {
-        return daemonState.pushOnChangeWatchers.get(bookmarkName);
-    }
+export async function mount(bookmarkName, bookmarkConfig) {
+    if (jobs.has(`${bookmarkName}:mount`)) return;
 
-    if (!bookmarkConfig.rclonetray_local_directory) {
-        throw Error(`Local directory not set for ${bookmarkName}`);
-    }
+    const mountpoint = await prepareMountpoint(bookmarkName);
 
-    const watcher = chokidar.watch(bookmarkConfig.rclonetray_local_directory, {
-        awaitWriteFinish: true,
-        ignoreInitial: true,
-        ignored: ['.DS_Store', '._*', '*~'],
-        disableGlobbing: true,
-        usePolling: false,
-        useFsEvents: true,
-        persistent: true,
-        alwaysStat: true,
-        atomic: 3000,
-    });
+    emitter.emit('activity', 'mount');
 
-    watcher.on('raw', () => push(bookmarkName, bookmarkConfig));
-    push(bookmarkName, bookmarkConfig);
-    daemonState.pushOnChangeWatchers.set(bookmarkName, watcher);
-    return watcher;
+    try {
+        const command = rc('core/command', {
+            command: 'mount',
+            arg: [getBookmarkFs(bookmarkName, bookmarkConfig), mountpoint],
+            opt: {
+                volname: bookmarkName,
+            },
+            returnType: 'STREAM',
+        });
+
+        jobs.set(`${bookmarkName}:mount`, {
+            data: {
+                mountpoint,
+            },
+            stop: () => command.abort(),
+        });
+
+        emitter.emit('mounted', bookmarkName);
+        await command.result;
+    } catch {}
+
+    jobs.delete(`${bookmarkName}:mount`);
+    emitter.emit('unmounted', bookmarkName);
+    emitter.emit('activity', 'unmounted');
+    cleanMountpoint(mountpoint);
 }
 
-export function isDaemonConnected() {
-    return !!daemonState.connected;
+/**
+ * @param {string} bookmarkName
+ */
+export async function unmount(bookmarkName) {
+    if (!jobs.has(`${bookmarkName}:mount`)) return;
+    jobs.get(`${bookmarkName}:mount`).stop();
 }
 
 /**
@@ -577,9 +512,9 @@ export function isDaemonConnected() {
  */
 export function openNCDU(bookmarkName, bookmarkConfig) {
     return execInOSTerminal([
-        rcloneBinary,
+        rclone.getBinary(),
         '--config',
-        getConfigFile(),
+        rclone.getConfigFile(),
         'ncdu',
         getBookmarkFs(bookmarkName, bookmarkConfig),
     ]);
@@ -589,54 +524,46 @@ export function openNCDU(bookmarkName, bookmarkConfig) {
  * @param {string} bookmarkName
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
-export async function bookmarkStartDLNA(bookmarkName, bookmarkConfig) {
-    const abort = new AbortController();
-    daemonState.servingDLNA.set(bookmarkName, abort.abort.bind(abort));
-    eventEmitter.emit('bookmark:dlna:start', bookmarkName);
+export async function startDLNA(bookmarkName, bookmarkConfig) {
+    if (jobs.has(`${bookmarkName}:dlna`)) return;
+
+    const asrc = {
+        command: 'serve',
+        arg: ['dlna', getBookmarkFs(bookmarkName, bookmarkConfig)],
+        opt: {
+            name: bookmarkName,
+            addr: ':' + (await getPort()),
+            'no-checksum': '',
+            'no-modtime': '',
+        },
+        returnType: 'STREAM',
+    };
+
+    emitter.emit('activity', 'dlna');
+
     try {
-        await remoteCommand(
-            'core/command',
-            {
-                command: 'serve',
-                arg: ['dlna', getBookmarkFs(bookmarkName, bookmarkConfig)],
-                opt: {
-                    name: bookmarkName,
-                    addr: ':' + (await randomPort()),
-                    // 'no-checksum': '',
-                    // 'no-modtime': '',
-                },
-                returnType: 'STREAM',
-            },
-            abort.signal
-        );
-    } catch (error) {
-        eventEmitter.emit('bookmark:dlna:stop', bookmarkName);
-        daemonState.servingDLNA.delete(bookmarkName);
-    }
+        const command = rc('core/command', asrc);
+
+        jobs.set(`${bookmarkName}:dlna`, {
+            stop: () => command.abort(),
+        });
+
+        emitter.emit('dlnaStarted', bookmarkName);
+
+        await command.result;
+    } catch {}
+
+    emitter.emit('dlnaStopped', bookmarkName);
+    emitter.emit('activity', 'dlna');
+    jobs.delete(`${bookmarkName}:dlna`);
 }
 
 /**
  * @param {string} bookmarkName
  */
-export function isBookmarkDLNAStarted(bookmarkName) {
-    return daemonState.servingDLNA.has(bookmarkName);
-}
-
-/**
- * @param {string} bookmarkName
- */
-export function bookmarkStopDLNA(bookmarkName) {
-    if (daemonState.servingDLNA.has(bookmarkName)) {
-        daemonState.servingDLNA.get(bookmarkName)();
-    }
-}
-
-/**
- * Get all DLNA serving bookmark names
- * @retunrs {string[]}
- */
-export function getDLNAServings() {
-    return Array.from(daemonState.servingDLNA.keys());
+export function stopDLNA(bookmarkName) {
+    if (!jobs.has(`${bookmarkName}:dlna`)) return;
+    jobs.get(`${bookmarkName}:dlna`).stop();
 }
 
 /**
@@ -644,7 +571,12 @@ export function getDLNAServings() {
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
 export function getBookmarkFs(bookmarkName, bookmarkConfig) {
-    return bookmarkName + (bookmarkConfig.rclonetray_remote_home ? ':' + bookmarkConfig.rclonetray_remote_home : ':/');
+    return (
+        bookmarkName +
+        (bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.remoteHome]
+            ? ':' + bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.remoteHome]
+            : ':/')
+    );
 }
 
 /**
@@ -652,156 +584,28 @@ export function getBookmarkFs(bookmarkName, bookmarkConfig) {
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
 export async function openLocal(bookmarkName, bookmarkConfig) {
-    const dir = getBookmarkLocalDirectory(bookmarkConfig);
+    const dir = bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory];
     if (!dir) return;
     open(`file://${dir}`);
-}
-
-/**
- * @param {RcloneBookmarkConfig} bookmarkConfig
- */
-export function getBookmarkLocalDirectory(bookmarkConfig) {
-    return bookmarkConfig.rclonetray_local_directory || null;
-}
-
-/**
- * @returns {Promise<string[]>}
- */
-export async function getSyncing() {
-    // @TODO request from the operations
-    return Array.from(daemonState.pushOnChangeWatchers.keys());
-}
-
-/**
- * @returns {Promise<{
- *  mountPoints: {
- *      Fs: string,
- *      MountPoint: string,
- *  }[]
- * }>}
- */
-export function getMounted() {
-    return remoteCommand('mount/listmounts');
-}
-
-export async function getBookomarkMountinfo(bookmarkName) {
-    const mounted = await getMounted();
-    return mounted.mountPoints.find((item) => item.Fs === bookmarkName);
 }
 
 /**
  * @param {string} bookmarkName
  */
 export async function openMounted(bookmarkName) {
-    const mountedInfo = await getBookomarkMountinfo(bookmarkName);
-    if (!mountedInfo || !mountedInfo.MountPoint) return;
-
-    return open(`file://${mountedInfo.MountPoint}`);
-}
-
-/**
- * Unmount all drives
- * @returns {Promise<{}>}
- */
-export async function unmountAll() {
-    // @TOOD it'll be more ease to use mount/unmountall but we cannot know when it's done.
-    const mounted = await getMounted();
-    return Promise.all(mounted.mountPoints.map((item) => unmount(item.Fs)));
-}
-
-export async function mountWithProc(bookmarkName, bookmarkConfig) {
-    const mountpoint = await prepareMountpoint(bookmarkName);
-    eventEmitter.emit('bookmark:mounted', bookmarkName, mountpoint);
-
-    const asrc = {
-        _async: true,
-        command: 'mount',
-        arg: [getBookmarkFs(bookmarkName, bookmarkConfig), mountpoint],
-        opt: {
-            volname: bookmarkName,
-        },
-        returnType: 'STREAM',
-    };
-
-    const abort = new AbortController();
-
-    return remoteCommand('core/command', asrc, abort.signal)
-        .catch(() => {
-            return true;
-        })
-        .finally(() => {
-            cleanMountpoint(mountpoint);
-            eventEmitter.emit('bookmark:unmounted', bookmarkName);
-        });
-}
-
-/**
- * @param {string} bookmarkName
- * @param {RcloneBookmarkConfig} bookmarkConfig
- */
-export async function mount(bookmarkName, bookmarkConfig) {
-    const mountpoint = await prepareMountpoint(bookmarkName);
-
-    try {
-        const result = await remoteCommand('mount/mount', {
-            fs: getBookmarkFs(bookmarkName, bookmarkConfig),
-            mountPoint: mountpoint,
-            mountType: 'cmount',
-            mountOpt: {
-                VolumeName: bookmarkName,
-            },
-        });
-        eventEmitter.emit('bookmark:mounted', bookmarkName, mountpoint);
-        return result;
-    } catch (error) {
-        if (mountpoint) {
-            cleanMountpoint(mountpoint);
-        }
-        eventEmitter.emit('error', {
-            command: 'mount',
-            error: Error(`Failed to mount ${bookmarkName}`),
-            reason: error,
-        });
-        throw error;
-    }
-}
-
-/**
- * @param {string} bookmarkName
- */
-export async function unmount(bookmarkName) {
-    const mountedInfo = await getBookomarkMountinfo(bookmarkName);
-    if (!mountedInfo) return;
-    try {
-        const result = await remoteCommand('mount/unmount', {
-            mountPoint: mountedInfo.MountPoint,
-        });
-        eventEmitter.emit('bookmark:unmounted', bookmarkName, mountedInfo.MountPoint);
-        return result;
-    } catch (error) {
-        eventEmitter.emit('error', {
-            command: 'mount',
-            error: Error(`Failed to unmount ${bookmarkName}`),
-            reason: error,
-        });
-        throw error;
-    }
+    if (!jobs.has(`${bookmarkName}:mount`)) return;
+    const { mountpoint } = jobs.get(`${bookmarkName}:mount`).data;
+    if (mountpoint) return open(`file://${mountpoint}`);
 }
 
 /**
  * @param {string} mountpoint
  */
-export function cleanMountpoint(mountpoint) {
+export async function cleanMountpoint(mountpoint) {
     if (process.platform === 'win32' || !fs.existsSync(mountpoint)) return;
-
-    fs.rmdir(
-        mountpoint,
-        {
-            maxRetries: 3,
-            retryDelay: 1000,
-        },
-        () => {}
-    );
+    if (await isEmptyDirectory(mountpoint)) {
+        await fs.promises.rmdir(mountpoint, { maxRetries: 3, retryDelay: 1000 });
+    }
 }
 
 /**
@@ -822,8 +626,10 @@ function getMountpointPattern(bookmarkName) {
         if (/%s/.test(config.get('mount_pattern'))) {
             return config.get('mount_pattern').toString().replace('%s', bookmarkName);
         }
+
         return config.get('mount_pattern').toString() + '-' + bookmarkName;
     }
+
     return getDefaultMountPoint(bookmarkName);
 }
 

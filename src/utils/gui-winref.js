@@ -1,3 +1,4 @@
+import process from 'node:process';
 import gui from 'gui';
 
 /**
@@ -22,15 +23,17 @@ export function winRef(staticId) {
  * @param {(item: gui.Window) => void} callbackfn
  */
 export function forEach(callbackfn) {
-    return store.forEach(callbackfn);
+    for (const win of store.values()) {
+        callbackfn(win);
+    }
 }
 
 /**
  * @returns {gui.Window?}
  */
 export function findActive() {
-    for (const w of store.entries()) {
-        if (w[1].isActive()) return w[1];
+    for (const win of store.values()) {
+        if (win.isActive()) return win;
     }
 }
 
@@ -46,14 +49,23 @@ export class WinRef {
      * @param {string|Symbol} staticId
      */
     constructor(staticId) {
-        this.id = staticId || Symbol();
+        this.id = staticId || Symbol('GUI Windows');
         Object.freeze(this);
         if (process.platform === 'darwin' && gui.app.getActivationPolicy() !== 'regular') {
             gui.app.setActivationPolicy('regular');
         }
+
         if (store.has(this.id)) {
             store.get(this.id).activate();
         }
+    }
+
+    /**
+     * @returns {gui.Window}
+     * @type {gui.Window}
+     */
+    get value() {
+        return store.get(this.id);
     }
 
     /**
@@ -74,14 +86,6 @@ export class WinRef {
     }
 
     /**
-     * @returns {gui.Window}
-     * @type {gui.Window}
-     */
-    get value() {
-        return store.get(this.id);
-    }
-
-    /**
      * @returns {boolean}
      */
     unref() {
@@ -90,9 +94,10 @@ export class WinRef {
         }
 
         const result = store.delete(this.id);
-        if (store.size < 1 && process.platform === 'darwin') {
+        if (store.size === 0 && process.platform === 'darwin') {
             gui.app.setActivationPolicy('accessory');
         }
+
         return result;
     }
 }

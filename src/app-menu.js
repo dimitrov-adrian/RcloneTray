@@ -64,7 +64,7 @@ export const appMenu = gui.MenuBar.create([
         role: 'help',
         submenu: [
             {
-                label: 'RcloneTray Homepage',
+                label: 'Homepage',
                 onClick: openHomepage,
             },
             {

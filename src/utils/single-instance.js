@@ -1,7 +1,8 @@
-import crypto from 'crypto';
-import fs from 'fs';
-import net from 'net';
-import os from 'os';
+import process from 'node:process';
+import crypto from 'node:crypto';
+import fs from 'node:fs';
+import net from 'node:net';
+import os from 'node:os';
 
 /**
  * @param {string} id
@@ -9,26 +10,26 @@ import os from 'os';
  */
 export function singleInstanceLock(id) {
     // Calculate hash depending on version, runtime, user... So we won't
-    // accidentally prevent launch when there are multiple users running program.
-    const hash = crypto
-        .createHash('sha1')
-        .update(id)
-        .update(os.userInfo().username.toString())
-        .digest('base64')
-        .replace(/(\+|=|\/)/g, '')
-        .substr(0, 8);
+    // accidentally prevent launch when there are multiple users running program,
+    // if by some reason they use same temporary directory.
+    const hash = crypto.createHash('sha1').update(id).update(os.userInfo().username.toString()).digest('hex');
 
     // Socket filename.
     const socketName =
         `${id}-${hash}`
             .toString()
             .toLowerCase()
-            .replace(/[^a-z0-9-.]/g, '') + '.sock';
+            .replace(/[^a-z\d-.]/g, '') + '.lock';
 
     // Socket filepath.
-    const socketPath = process.platform === 'win32' ? `\\\\.\\pipe\\${socketName}` : `${os.tmpdir()}/${socketName}`;
+    const socketPath =
+        process.platform === 'win32'
+            ? `\\\\.\\pipe\\${socketName}`
+            : process.platform === 'darwin'
+            ? `${os.tmpdir()}/.${id}.${socketName}`
+            : `${os.homedir()}/.${id}.${socketName}`;
 
-    return new Promise(function (resolve, reject) {
+    return new Promise((resolve, reject) => {
         if (fs.existsSync(socketPath)) {
             connectToInstance(socketPath, () => createInstanceSock(socketPath, resolve, reject), reject);
         } else {
@@ -47,7 +48,7 @@ function createInstanceSock(socketPath, resolve, reject) {
 
     sock.listen(socketPath, () => {
         process.on('exit', () => {
-            if (fs.existsSync(socketPath)) {
+            if (process.platform !== 'win32' && fs.existsSync(socketPath)) {
                 fs.unlinkSync(socketPath);
             }
         });
@@ -72,7 +73,10 @@ function connectToInstance(socketPath, resolve, reject) {
     });
 
     socketServer.on('error', () => {
-        fs.unlinkSync(socketPath);
+        if (process.platform !== 'win32' && fs.existsSync(socketPath)) {
+            fs.unlinkSync(socketPath);
+        }
+
         resolve(socketPath);
     });
 }

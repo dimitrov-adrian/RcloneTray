@@ -1,17 +1,18 @@
-import { resolve, basename, join } from 'path';
-import { readFileSync } from 'fs';
+import process from 'node:process';
+import { resolve, basename, join } from 'node:path';
+import { readFileSync } from 'node:fs';
 
 /**
  * @type {boolean}
  */
-export const isPacked = ['yode', 'qode', 'node'].indexOf(basename(process.title).toLowerCase()) === -1;
+export const isPacked = !['yode', 'qode', 'node'].includes(basename(process.title).toLowerCase());
 
 /**
  * @type {Record<string, any>}
  */
 export const packageJson = JSON.parse(
     readFileSync(
-        // If packed it's under asar/
+        // If packed it's under asar/, otherwise just resolve it.
         isPacked ? process.execPath + '/asar/package.json' : resolve('package.json'),
         { encoding: 'utf-8' }
     )
@@ -27,18 +28,14 @@ export function getResourcePath(...args) {
     return isPacked
         ? // Yode.
           join(process.execPath, '..', 'res', ...args)
-        : // Node.
-          resolve(join(...args));
+        : resolve(join(...args));
 }
 
 /**
  * Get subcommand commandline (about, ask-pass-*, ... etc)
  * @param {string} subcommand
- * @param {string[]} parameters
  * @return {string}
  */
-export function getSubcommand(subcommand, ...parameters) {
-    return isPacked
-        ? process.argv[0] + ' ' + subcommand + ' ' + parameters.join(' ') // call self with argument
-        : process.argv.slice(0, 2).join(' ') + subcommand + ' ' + parameters.join(' '); // call two first args
+export function getSubcommand(subcommand) {
+    return [...process.argv.slice(0, isPacked ? 1 : 2), subcommand].join(' ');
 }

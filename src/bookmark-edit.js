@@ -1,3 +1,4 @@
+import process from 'node:process';
 import gui from 'gui';
 import open from 'open';
 import { winRef } from './utils/gui-winref.js';
@@ -64,6 +65,7 @@ export async function createBookmarkWindowByName(bookmarkName, parentWindow) {
         parentWindow
     );
 }
+
 /**
  * @param {boolean} isNew
  * @param {{
@@ -86,6 +88,7 @@ export function createBookmarkWindow(isNew, { name, type, providerConfig, values
     if (process.platform !== 'darwin') {
         win.value.setIcon(miscImages.rcloneColor);
     }
+
     win.value.setContentSizeConstraints({ width: 520, height: 560 }, { width: 860, height: 1080 });
     if (parentWindow) {
         win.value.setBounds({
@@ -114,8 +117,8 @@ export function createBookmarkWindow(isNew, { name, type, providerConfig, values
             Type: 'string',
             Readonly: !isNew,
             Value: name || 'Unnamed',
-            OnChange: setWindowCreateTitle,
             Help: isNew ? 'Once set, cannot be changed' : '',
+            onChange: setWindowCreateTitle,
         },
         {
             Readonly: true,
@@ -157,31 +160,32 @@ export function createBookmarkWindow(isNew, { name, type, providerConfig, values
                 [
                     {
                         Type: 'string',
-                        Name: 'rclonetray_bucket',
+                        Name: rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.bucket,
                         Title: 'Bucket',
-                        Disable: rclone.BUCKET_REQUIRED_PROVIDERS.indexOf(type) === -1,
+                        Disable: !rclone.RCLONETRAY_CONFIG.BUCKET_REQUIRED_PROVIDERS.includes(type),
+                        Hide: !rclone.RCLONETRAY_CONFIG.BUCKET_REQUIRED_PROVIDERS.includes(type),
                     },
                     {
                         Type: 'string',
-                        Name: 'rclonetray_remote_home',
+                        Name: rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.remoteHome,
                         Title: 'Remote Home',
                         Help: 'Use directory as a root or home on remote and avoid access outside it, or leave empty to use root.',
                     },
                     {
                         Type: 'bool',
-                        Name: 'rclonetray_automount',
+                        Name: rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.autoMount,
                         Title: 'Mount on start',
                     },
                     {
                         Type: 'string',
                         FileDialog: 'folder',
-                        Name: 'rclonetray_local_directory',
+                        Name: rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory,
                         Title: 'Sync Directory',
                         Help: 'Local directory to use when doing pull/push',
                     },
                     {
                         Type: 'bool',
-                        Name: 'rclonetray_pullonstart',
+                        Name: rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.pullOnStart,
                         Title: 'Pull on start',
                     },
                 ],
@@ -223,11 +227,10 @@ export function createBookmarkWindow(isNew, { name, type, providerConfig, values
 
     const actionButtonSave = gui.Button.create(isNew ? 'Create' : 'Save');
     actionButtonSave.setStyle({ marginLeft: 10 });
-    if (isNew) {
-        actionButtonSave.onClick = (self) => createNewAction({ self, systemForm, propertyForm });
-    } else {
-        actionButtonSave.onClick = (self) => saveAction({ self, providerConfig, name, systemForm, propertyForm });
-    }
+    actionButtonSave.onClick = isNew
+        ? (self) => createNewAction({ self, systemForm, propertyForm })
+        : (self) => saveAction({ self, providerConfig, name, systemForm, propertyForm });
+
     actionButtonsWrapper.addChildView(actionButtonSave);
 
     win.value.activate();
@@ -255,14 +258,17 @@ async function cloneAction({ name, providerConfig, self }) {
             message: `Clone ${name} bookmark and proceed to settings?`,
             parentWindow: self.getWindow(),
         },
-        (result) => {
-            if (!result) return;
-            if (self.getWindow()) {
-                self.getWindow().deactivate();
-            }
-            createClonedBookmarkWindow(name, providerConfig, self.getWindow());
-        }
+        doClone
     );
+
+    function doClone(result) {
+        if (!result) return;
+        if (self.getWindow()) {
+            self.getWindow().deactivate();
+        }
+
+        createClonedBookmarkWindow(name, providerConfig, self.getWindow());
+    }
 }
 
 /**

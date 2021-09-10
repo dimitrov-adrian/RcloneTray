@@ -1,5 +1,7 @@
+import process from 'node:process';
+import EventEmitter from 'node:events';
 import gui from 'gui';
-import './utils/gc.js';
+import { runGC } from './utils/gc.js';
 import { packageJson } from './utils/package.js';
 import { sendNotification } from './utils/gui-notification.js';
 import * as rclone from './services/rclone.js';
@@ -8,16 +10,20 @@ import { config } from './services/config.js';
 import { promptError, promptErrorReporting } from './utils/prompt.js';
 import { createTrayMenu, updateMenu } from './tray-menu.js';
 import { appMenu } from './app-menu.js';
+import logger from './services/logger.js';
+
+export const pubsub = new EventEmitter({ captureRejections: true });
 
 export async function app() {
     process.setUncaughtExceptionCaptureCallback((error) => {
-        console.warn('[UNEXPECTED_ERROR]', error);
+        logger.error('[UNEXPECTED_ERROR]', error);
         promptErrorReporting({ title: 'Unexpected error', message: error });
     });
 
     if (process.platform === 'win32' || process.platform === 'linux') {
         gui.app.setID(packageJson.build.appId);
     }
+
     gui.app.setName(packageJson.build.productName);
 
     try {
@@ -27,7 +33,7 @@ export async function app() {
             promptError(
                 {
                     title: packageJson.productName,
-                    message: 'There is already running instance of RcloneTray, cannot start twice.',
+                    message: `There is already running instance of ${packageJson.productName}, cannot start twice.`,
                 },
                 () => process.exit(1)
             );
@@ -43,94 +49,76 @@ export async function app() {
 
     config.onDidAnyChange(() => updateMenu());
 
-    rclone.on('invalid-password', async () => {
-        promptError(
-            {
-                title: 'Invalid Rclone password',
-                message: 'Current configuration is encrypted and requires valid password.',
-            },
-            () => process.exit(1)
-        );
-    });
-
-    rclone.on('disconnected', () => {
-        updateMenu();
-        setTimeout(() => {
-            rclone.startRcloneDaemon();
-        }, 5000);
-    });
-
-    rclone.on('connected', () => updateMenu());
-
-    rclone.on('connected', async () => {
-        if (!config.get('rclone_options')) return;
-        try {
-            await rclone.setOptions(config.get('rclone_options'));
-        } catch (error) {
-            console.warn('Cannot set custom RcloneTray daemon options.');
-        }
-    });
-
-    rclone.on('connected', async () => {
-        try {
-            const bookmarks = await rclone.getBookmarks();
-
-            Object.entries(bookmarks).forEach(([, bookmarkConfig]) => {
-                if (bookmarkConfig.rclonetray_automount !== 'true') return;
-                // rclone.mount(bookmarkName, bookmarkConfig)
-            });
-
-            Object.entries(bookmarks).forEach(([, bookmarkConfig]) => {
-                if (bookmarkConfig.rclonetray_pullonstart !== 'true') return;
-                if (!bookmarkConfig.rclonetray_local_directory) return;
-                // rclone.pull(bookmarkName, bookmarkConfig)
-            });
-        } catch (error) {
-            console.warn('Cannot fetch bookmarks upon start.', error.toString());
-        }
-    });
-
-    // Bookmark created, deleted and updated also triggers config refresh,
-    // so no need of separate updateMenu() notify, but in some cases does not.
-    rclone.on('config', () => updateMenu());
-    rclone.on('bookmark:created', () => updateMenu());
-    rclone.on('bookmark:deleted', () => updateMenu());
-    rclone.on('bookmark:updated', () => updateMenu());
-
-    rclone.on('bookmark:mounted', (bookmarkName) => {
-        updateMenu();
-        sendNotification(`Mounted ${bookmarkName}`);
-    });
-
-    rclone.on('bookmark:unmounted', (bookmarkName) => {
-        updateMenu();
-        sendNotification(`Unmounted ${bookmarkName}`);
-    });
-
-    rclone.on('bookmark:dlna:start', () => updateMenu());
-    rclone.on('bookmark:dlna:stop', () => updateMenu());
-
-    rclone.on('error', (error) => {
+    rclone.emitter.on('error', (error) => {
         const message = error.error.toString() + (error.reason ? '\n' + error.reason.toString() : '');
         sendNotification(message);
-        console.log('!!!RCLONE_ERROR!!!', message);
+        logger.log('!!!RCLONE_ERROR!!!', message);
     });
 
-    try {
-        await rclone.startRcloneDaemon();
-    } catch (error) {
-        console.warn(error);
-        promptError(
-            {
-                title: 'Connecting Rclone daemon',
-                message: error ? error : 'Unexpected error',
-            },
-            () => process.exit(1)
-        );
-    }
+    rclone.emitter.on('config', updateMenu);
+    rclone.emitter.on('activity', updateMenu);
 
-    if (process.platform === 'darwin') {
-        gui.app.setApplicationMenu(appMenu);
-        gui.app.setActivationPolicy('accessory');
-    }
+    rclone.emitter.on('ready', async () => {
+        await rclone.setOptions({
+            vfs: {
+                Timeout: 10,
+                DirCacheTime: 3,
+                ReadOnly: true,
+                CachePollInterval: 10_000,
+                PollInterval: 10_000,
+            },
+            mount: {
+                NoAppleDouble: true,
+                NoAppleXattr: true,
+                AllowNonEmpty: false,
+                Daemon: false,
+                DebugFUSE: false,
+            },
+            ...config.get('rclone_options'),
+        });
+    });
+
+    rclone.emitter.on('ready', () => {
+        updateMenu();
+        if (process.platform === 'darwin') {
+            gui.app.setApplicationMenu(appMenu);
+            gui.app.setActivationPolicy('accessory');
+        }
+    });
+
+    rclone.emitter.on('ready', async () => {
+        try {
+            const bookmarks = await rclone.getBookmarks();
+            for (const [bookmarkName, bookmarkConfig] of Object.entries(bookmarks)) {
+                if (bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.autoMount] === 'true') {
+                    console.log('@TODO', 'Automount', bookmarkName);
+                    // @TODO rclone.mount(bookmarkName, bookmarkConfig);
+                }
+
+                if (
+                    bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.pullOnStart] !== 'true' &&
+                    bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]
+                ) {
+                    console.log('@TODO', 'Pull', bookmarkName);
+                    // @TODO  rclone.pull(bookmarkName, bookmarkConfig);
+                }
+            }
+        } catch (error) {
+            logger.warn('Cannot fetch bookmarks upon start.', error.toString());
+        }
+    });
+
+    // rclone.on('invalid-password', async () => {
+    //     promptError(
+    //         {
+    //             title: 'Invalid Rclone password',
+    //             message: 'Current configuration is encrypted and requires valid password.',
+    //         },
+    //         () => process.exit(1)
+    //     );
+    // });
+
+    rclone.setupDaemon();
+
+    runGC();
 }

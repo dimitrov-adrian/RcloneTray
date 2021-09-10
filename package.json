@@ -1,7 +1,7 @@
 {
     "name": "rclonetray",
     "displayName": "RcloneTray",
-    "version": "2.0.0-beta.3",
+    "version": "2.0.0-beta.5",
     "author": "Adrian Dimitrov <dimitrov.adrian+gh@gmail.com>",
     "homepage": "https://github.com/dimitrov-adrian/RcloneTray",
     "license": "MIT",
@@ -25,7 +25,7 @@
         "productName": "RcloneTray",
         "unpack": "**/{vendor/rclone/**,*.node,*.html,*.png,*.gif,*.jpg,*.exe}",
         "copyright": "Copyright (c) 2020 Adrian Dimitrov",
-        "minify": true,
+        "minify": false,
         "extraInfoPlist": "<key>LSUIElement</key><true/>"
     },
     "os": [
@@ -47,45 +47,55 @@
     "main": "vendor/index.cjs",
     "type": "module",
     "scripts": {
-        "dist:mac": "       npm run _prepack     && yackage dist --arch=x64 --platform=darwin out/dist/darwin",
-        "dist:linux": "     npm run _prepack     && yackage dist --arch=x64 --platform=linux out/dist/linux",
-        "dist:win": "       npm run _prepack     && yackage dist --arch=x64 --platform=win32 out/dist/win32",
+        "dev": "yode --inspect src/index.js",
+        "install-rclone-binary": "node scripts/install-rclone-binary.js",
+        "generate-app-icons": "svg-app-icon --include icns --include ico --destination build < icons/rclone-logo.svg",
+        "generate-app-main": "rollup -c",
+        "optimize-provider-icons": "pngquant --force --strip --skip-if-larger --ext .png -v icons/providers/*.png",
+        "build": "npm run build:mac",
         "build:mac": "      npm run _prepack     && yackage build --arch=x64 --platform=darwin out/build/darwin",
         "build:linux": "    npm run _prepack     && yackage build --arch=x64 --platform=linux out/build/linux",
         "build:win": "      npm run _prepack     && yackage build --arch=x64 --platform=win32 out/build/win32",
-        "build": "npm run build:mac",
-        "dev": "yode --inspect src",
-        "install-rclone-binary": "node scripts/install-rclone-binary.cjs",
-        "generate-app-icons": "svg-app-icon --include icns --include ico --destination build < icons/rclone-logo.svg",
-        "optimize-provider-icons": "pngquant --force --strip --skip-if-larger --ext .png -v icons/providers/*.png",
-        "generate-app-main": "rollup -c",
+        "dist:mac": "       npm run _prepack     && yackage dist --arch=x64 --platform=darwin out/dist/darwin",
+        "dist:linux": "     npm run _prepack     && yackage dist --arch=x64 --platform=linux out/dist/linux",
+        "dist:win": "       npm run _prepack     && yackage dist --arch=x64 --platform=win32 out/dist/win32",
         "_prepack": "npm run generate-app-main",
         "postinstall": "npm run install-rclone-binary"
     },
     "dependencies": {
         "@directus/format-title": "latest",
-        "abort-controller": "^3.0.0",
         "adm-zip": "^0.5.5",
         "chokidar": "^3.5.2",
-        "conf": "^10.0.1",
+        "conf": "^10.0.2",
+        "debounce": "^1.2.1",
         "easy-auto-launch": "^6.0.0",
         "fetch-yode": "^1.0.2",
-        "gui": "^0.9.7",
-        "node-fetch": "^2.6.1",
+        "get-port": "^5.1.1",
+        "gui": "^0.10.0",
+        "node-fetch": "^3.0.0",
+        "object-path": "^0.11.7",
         "open": "^8.2.1",
         "parse-duration": "^1.0.0",
-        "semver": "^7.3.5"
+        "semver": "^7.3.5",
+        "which": "^2.0.2"
     },
     "devDependencies": {
-        "eslint": "^7.32.0",
-        "eslint-config-prettier": "^8.3.0",
-        "eslint-plugin-editorconfig": "^3.0.2",
-        "eslint-plugin-import": "^2.24.1",
-        "eslint-plugin-prettier": "^3.4.1",
-        "pngquant-bin": "^6.0.0",
+        "nodemon": "^2.0.12",
         "prettier": "^2.3.2",
-        "svg-app-icon": "^1.1.0",
-        "yackage": "^0.4.0",
-        "rollup": "^2.56.3"
+        "rollup": "^2.56.3",
+        "xo": "^0.44.0",
+        "yackage": "^0.4.0"
+    },
+    "optionalDependencies": {
+        "pngquant-bin": "^6.0.0",
+        "svg-app-icon": "^1.1.0"
+    },
+    "xo": {
+        "prettier": true,
+        "rules": {
+            "unicorn/prefer-switch": "off",
+            "unicorn/no-process-exit": "off",
+            "unicorn/no-array-reduce": "off"
+        }
     }
 }

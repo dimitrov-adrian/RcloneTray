@@ -1,4 +1,5 @@
-import { homedir } from 'os';
+import process from 'node:process';
+import { homedir } from 'node:os';
 import gui from 'gui';
 import open from 'open';
 import { helpTextFont } from './gui-form-builder.js';
@@ -27,6 +28,7 @@ export function promptError({ title, message, parentWindow }, resolve) {
     if (message) {
         win.value.setInformativeText(message.toString());
     }
+
     win.value.addButton('OK', 1);
     win.value.onResponse = () => {
         win.unref();
@@ -34,9 +36,11 @@ export function promptError({ title, message, parentWindow }, resolve) {
             resolve(true);
         }
     };
+
     if (process.platform === 'darwin') {
         gui.app.activate(true);
     }
+
     if (parentWindow) {
         win.value.showForWindow(parentWindow);
     } else if (process.platform === 'darwin') {
@@ -63,6 +67,7 @@ export function promptInfo({ title, message, parentWindow }, resolve) {
     if (message) {
         win.value.setInformativeText(message.toString());
     }
+
     win.value.addButton('OK', 1);
     win.value.onResponse = (self, result) => {
         win.unref();
@@ -70,9 +75,11 @@ export function promptInfo({ title, message, parentWindow }, resolve) {
             resolve(result === 1);
         }
     };
+
     if (process.platform === 'darwin') {
         gui.app.activate(true);
     }
+
     if (parentWindow) {
         win.value.showForWindow(parentWindow);
     } else if (process.platform === 'darwin') {
@@ -101,6 +108,7 @@ export function promptYesNo({ title, message, parentWindow }, resolve) {
     if (message) {
         win.value.setInformativeText(message.toString());
     }
+
     win.value.addButton('Yes', 1);
     win.value.addButton('No', 0);
     win.value.onResponse = (self, result) => {
@@ -109,9 +117,11 @@ export function promptYesNo({ title, message, parentWindow }, resolve) {
             resolve(result === 1);
         }
     };
+
     if (process.platform === 'darwin') {
         gui.app.activate(true);
     }
+
     if (parentWindow) {
         win.value.showForWindow(parentWindow);
     } else if (process.platform === 'darwin') {
@@ -163,9 +173,11 @@ export function promptErrorReporting({ title, message, parentWindow }, resolve) 
             }
         }
     };
+
     if (process.platform === 'darwin') {
         gui.app.activate(true);
     }
+
     if (parentWindow) {
         win.value.showForWindow(parentWindow);
     } else if (process.platform === 'darwin') {
@@ -182,14 +194,14 @@ export function promptErrorReporting({ title, message, parentWindow }, resolve) 
  *  helpText:? string,
  *  type?: ''|'password',
  *  required?: boolean,
- *  resolve?: (result: string) => void,
- *  reject?: () => void,
  *  parentWindow?: gui.Window,
  *  validator?: (result: string, invalidAttempts: number) => Error|void,
  *  }} options
+ * @param {(result: string) => void=} resolve
+ * @param {() => void=} reject
  * @returns {gui.Window}
  */
-export function promptInput(options) {
+export function promptInput(options, resolve, reject) {
     const win = ref();
     if (win.value) return win.value;
 
@@ -211,8 +223,8 @@ export function promptInput(options) {
     win.value.setMinimizable(false);
     win.value.onClose = () => {
         win.unref();
-        if (!isSuccess && options.reject) {
-            options.reject();
+        if (!isSuccess && reject) {
+            reject();
         }
     };
 
@@ -226,7 +238,7 @@ export function promptInput(options) {
 
     const contentView = createContentView();
     contentView.setStyle({
-        paddingTop: process.platform !== 'darwin' ? 10 : 32,
+        paddingTop: process.platform === 'darwin' ? 32 : 10,
         paddingLeft: 20,
         paddingRight: 20,
         paddingBottom: 20,
@@ -273,18 +285,18 @@ export function promptInput(options) {
             const error = options.validator(inputField.getText(), invalidAttempts);
             if (error) {
                 invalidAttempts++;
-                const errWindow = gui.MessageBox.create();
-                errWindow.setType('error');
-                errWindow.setText(error.toString());
-                errWindow.showForWindow(win.value);
+                const errorWindow = gui.MessageBox.create();
+                errorWindow.setType('error');
+                errorWindow.setText(error.toString());
+                errorWindow.showForWindow(win.value);
                 return;
             }
         }
 
         isSuccess = true;
 
-        if (options.resolve) {
-            options.resolve(inputField.getText());
+        if (resolve) {
+            resolve(inputField.getText());
         }
 
         if (win.value) {
@@ -301,7 +313,7 @@ function createContentView() {
         contentView.setMaterial('appearance-based');
         contentView.setBlendingMode('behind-window');
         return contentView;
-    } else {
-        return gui.Container.create();
     }
+
+    return gui.Container.create();
 }

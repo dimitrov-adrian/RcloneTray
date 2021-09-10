@@ -1,35 +1,44 @@
-// Check the OS and arch.
-if (process.arch !== 'x64' || ['win32', 'linux', 'darwin'].indexOf(process.platform) === -1) {
-    console.error('Unsupported platform. RcloneTray requires 64bit platform (macOS, Windows or Linux)');
-    process.exit();
-}
+import process from 'node:process';
+import { createAboutWindow } from './about.js';
+import { app } from './app.js';
+import { askPass, askConfigPass } from './ask-pass.js';
+import { createPreferencesWindow } from './preferences.js';
 
-// Check for yode.
-if (!process.versions.yode) {
-    console.error('App must be run under Yode engine.');
+if (process.arch !== 'x64' || !['win32', 'linux', 'darwin'].includes(process.platform)) {
+    console.log('Unsupported platform. Currently supported platforms are:');
+    console.log(' - macOS (Intel, M1)');
+    console.log(' - Windows 10, 11 (x64)');
+    console.log(' - GNU/Linux (x64) + Desktop Environment and GTK');
     process.exit(1);
 }
 
-(async function bootstrap(command) {
+// Check for yode.
+if (!process.versions.yode && !process.versions.qode) {
+    console.error('App must be run under Yode/Qode engine.');
+    process.exit(1);
+}
+
+// Main router.
+(async function (command) {
     if (command === 'ask-pass-config') {
-        const factory = await import('./ask-pass.js');
-        factory.askPass({
-            title: 'Rclone Config Password',
-            help: 'Rclone config file is encrypted, need to enter password to unlock.',
-        });
-    } else if (command === 'ask-pass-remote') {
-        const factory = await import('./ask-pass.js');
-        factory.askPass({
-            title: 'Enter Password',
-            help: 'Password is required to authenticate by remote.',
-        });
-    } else if (command === 'about') {
-        const factory = await import('./about.js');
-        (await factory.createAboutWindow()).onClose = () => process.exit();
-    } else if (command === 'preferences') {
-        const factory = await import('./preferences.js');
-        (await factory.createPreferencesWindow()).onClose = () => process.exit();
-    } else {
-        (await import('./app.js')).app();
+        askConfigPass();
+        return;
     }
+
+    if (command === 'ask-pass-remote' || command === 'ask-pass') {
+        askPass();
+        return;
+    }
+
+    if (command === 'about') {
+        createAboutWindow().onClose = () => process.exit();
+        return;
+    }
+
+    if (command === 'preferences') {
+        createPreferencesWindow().onClose = () => process.exit();
+        return;
+    }
+
+    app();
 })(process.argv.slice(-1)[0]);

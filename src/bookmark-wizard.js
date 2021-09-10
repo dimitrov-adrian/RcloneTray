@@ -1,6 +1,7 @@
+import process from 'node:process';
 import gui from 'gui';
 import { miscImages, providerIcons } from './services/images.js';
-import * as rclone from './services/rclone.js';
+import { getProviders, getProvider } from './services/rclone.js';
 import { winRef } from './utils/gui-winref.js';
 import { helpTextFont } from './utils/gui-form-builder.js';
 import { formatTitle } from './utils/formatter.js';
@@ -20,6 +21,7 @@ export async function createBookmarkWizardWindow() {
     if (process.platform !== 'darwin') {
         win.value.setIcon(miscImages.rcloneColor);
     }
+
     win.value.setContentSize({ width: 400, height: 160 });
 
     const contentView = gui.Container.create();
@@ -64,8 +66,11 @@ export async function createBookmarkWizardWindow() {
     win.value.activate();
 
     // Init data
-    const providers = await rclone.getProviders();
-    providers.forEach((provider) => picker.addItem(formatTitle(provider.Name)));
+    const providers = await getProviders();
+    for (const provider of providers) {
+        picker.addItem(formatTitle(provider.Name));
+    }
+
     updateProviderInfoFromSelection({ providers, providerIcon, providerDescription, picker });
     picker.setEnabled(true);
 
@@ -98,7 +103,7 @@ function updateProviderInfoFromSelection({ providers, providerIcon, providerDesc
 async function actionNext({ providers, picker, self }) {
     const selected = providers[picker.getSelectedItemIndex()];
 
-    const providerConfig = await rclone.getProvider(selected.Prefix);
+    const providerConfig = await getProvider(selected.Prefix);
     if (!providerConfig) {
         promptError({
             title: 'Create new bookmark',
@@ -116,5 +121,6 @@ async function actionNext({ providers, picker, self }) {
         },
         self.getWindow()
     );
+
     self.getWindow().close();
 }

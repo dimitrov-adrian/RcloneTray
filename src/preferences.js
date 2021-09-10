@@ -1,3 +1,4 @@
+import process from 'node:process';
 import gui from 'gui';
 import { config } from './services/config.js';
 import { winRef } from './utils/gui-winref.js';
@@ -8,6 +9,7 @@ import { autoLaunch, autoLaunchError } from './services/auto-launch.js';
 import { packageJson } from './utils/package.js';
 import { openFileEditor } from './utils/open-file-editor.js';
 import { getConfigFile, getDefaultMountPoint } from './services/rclone.js';
+import logger from './services/logger.js';
 
 /**
  * @type {import('./utils/gui-form-builder.js').FieldDefinitionGroup[]}
@@ -97,7 +99,7 @@ const preferencesDefinition = [
                         Value: 'color',
                     },
                 ],
-                // macOS doesn't need this because it supports templates.
+                // On macOS doesn't need this because it supports templates.
                 Hide: process.platform === 'darwin',
             },
             {
@@ -132,14 +134,14 @@ const preferencesDefinition = [
             {
                 Name: 'use_system_rclone',
                 Type: 'bool',
-                Help: 'Use system wide Rclone executable (it should be available in the system paths). Leave unchecked to use bundled Rclone within the RcloneTray.\n\nChanging this option requires restart.',
+                Help: 'Use system wide Rclone executable (it should be available in the system paths). Leave unchecked to use bundled Rclone version.\n\nChanging this option requires restart.',
             },
             {
                 Name: 'mount_pattern',
                 Type: 'string',
                 Help:
                     'Path pattern when mounting. Use %s token for bookmark name or leave empty for defaults:\n' +
-                    getDefaultMountPoint('ExampleBookmark'),
+                    getDefaultMountPoint('%s'),
                 // On windows this has no meaning as it only supports mount by letters like C: D: ... etc.
                 Hide: process.platform === 'win32',
             },
@@ -198,10 +200,17 @@ const preferencesDefinition = [
 ];
 
 export function openRcloneConfigFile() {
-    openFileEditor(getConfigFile());
+    try {
+        openFileEditor(getConfigFile());
+    } catch (error) {
+        logger.error(error);
+    }
 }
 
-export async function createPreferencesWindow() {
+/**
+ * @returns {gui.Window}
+ */
+export function createPreferencesWindow() {
     const win = winRef('preferences');
 
     if (win.value) return win.value;
@@ -210,6 +219,7 @@ export async function createPreferencesWindow() {
     if (process.platform !== 'darwin') {
         win.value.setIcon(miscImages.rcloneColor);
     }
+
     win.value.setResizable(true);
     win.value.setMaximizable(false);
     win.value.setContentSize({ width: 540, height: 520 });
@@ -270,29 +280,10 @@ async function autoLaunchInitValue(button) {
         button.setEnabled(true);
         button.setChecked(currentState);
     } catch (error) {
-        console.warn(error.toString());
+        logger.warn(error.toString());
         if (button) {
             autoLaunchError(button.getWindow());
         }
-    }
-}
-
-/**
- * @param {{
- *  self: gui.Button,
- *  form: import('./utils/gui-form-builder.js').Form
- * }} _
- */
-async function saveAction({ self, form }) {
-    try {
-        config.set(form.getValues());
-        self.getWindow().close();
-    } catch (error) {
-        promptError({
-            title: 'Invalid values',
-            message: error.toString(),
-            parentWindow: self.getWindow(),
-        });
     }
 }
 
@@ -302,12 +293,30 @@ async function saveAction({ self, form }) {
 async function autolaunchSaveAction(checkbox) {
     checkbox.setEnabled(false);
     try {
-        if (checkbox.isChecked()) await autoLaunch.enable();
-        else await autoLaunch.disable();
+        await (checkbox.isChecked() ? autoLaunch.enable() : autoLaunch.disable());
         checkbox.setEnabled(true);
     } catch (error) {
         checkbox.setChecked(false);
-        console.warn(error.toString());
+        logger.warn(error.toString());
         autoLaunchError(checkbox.getWindow());
+    }
+}
+
+/**
+ * @param {{
+ *  self: gui.Button,
+ *  form: import('./utils/gui-form-builder.js').Form
+ * }} _
+ */
+function saveAction({ self, form }) {
+    try {
+        config.set(form.getValues());
+        self.getWindow().close();
+    } catch (error) {
+        promptError({
+            title: 'Invalid values',
+            message: error.toString(),
+            parentWindow: self.getWindow(),
+        });
     }
 }

@@ -9,11 +9,12 @@
         "editor.defaultFormatter": "esbenp.prettier-vscode",
         "editor.formatOnSave": true,
         "editor.formatOnType": true,
+        "js/ts.implicitProjectConfig.checkJs": true,
+        "javascript.suggest.completeJSDocs": true,
         "javascript.preferences.importModuleSpecifier": "relative",
         "javascript.preferences.importModuleSpecifierEnding": "js",
         "files.exclude": {
             ".idea": true,
-            "**/._*": true,
             "**/node_modules/**": true
         }
     },
@@ -22,7 +23,7 @@
             "esbenp.prettier-vscode",
             "IronGeek.vscode-env",
             "dbaeumer.vscode-eslint",
-            "stylelint.vscode-stylelint",
+            "samverschueren.linter-xo",
             "codezombiech.gitignore",
             "EditorConfig.EditorConfig"
         ]

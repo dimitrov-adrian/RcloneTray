@@ -5,14 +5,15 @@ import directusFormatTitle from '@directus/format-title';
  * @returns {string}
  */
 export function sanitizeSizeSuffix(text) {
-    const n = parseInt(text);
-    if (isNaN(n) || n < 0) return null;
-    const suff = text.substr(-1).toUpperCase();
-    if (['b', 'k', 'M', 'G', 'T', 'P'].indexOf(suff) !== -1) return n + suff;
+    const n = Number.parseInt(text, 10);
+    if (Number.isNaN(n) || n < 0) return null;
+    const suff = text.slice(-1).toUpperCase();
+
+    if (['b', 'k', 'M', 'G', 'T', 'P'].includes(suff)) return n + suff;
     if (n > 1024 * 1024 * 1024) return n + 'G';
     if (n > 1024 * 1024) return n + 'M';
     if (n > 1024) return n + 'k';
-    return n.toString() + 'b';
+    return n + 'b';
 }
 
 /**

@@ -1,4 +1,5 @@
-import crypto from 'crypto';
+import process from 'node:process';
+import crypto from 'node:crypto';
 import gui from 'gui';
 import open from 'open';
 import { winRef } from './utils/gui-winref.js';
@@ -12,7 +13,7 @@ import { miscImages } from './services/images.js';
  * @returns {gui.Window}
  */
 export function createWebViewWindow(uri, title, parentWindow) {
-    const hash = crypto.createHash('sha1').update(uri).digest('base64').substr(2, 16);
+    const hash = crypto.createHash('sha1').update(uri).digest('hex').slice(0, 8);
 
     const win = winRef(hash);
     if (win.value) return win.value;
@@ -22,9 +23,11 @@ export function createWebViewWindow(uri, title, parentWindow) {
     win.value.setMaximizable(false);
     win.value.setMinimizable(false);
     win.value.setTitle(title || packageJson.build.productName);
+
     if (process.platform !== 'darwin') {
         win.value.setIcon(miscImages.rcloneColor);
     }
+
     if (parentWindow) {
         const parentBounds = parentWindow.getBounds();
         win.value.setBounds({
@@ -49,12 +52,9 @@ export function createWebViewWindow(uri, title, parentWindow) {
         webview2Support: true,
     });
     webview.setStyle({ flex: 1 });
-    webview.onFailNavigation = (self) => self.loadHTML('Failed to load document.', 'default');
-    webview.onStartNavigation = (self, url) => {
-        if (!url || url === uri) return;
-        open(url);
-        self.getWindow().close();
-    };
+    webview.onFailNavigation = errorDocument;
+    webview.onStartNavigation = handleExternals.bind(null, uri);
+
     webview.loadURL(uri);
     contentView.addChildView(webview);
 
@@ -62,4 +62,22 @@ export function createWebViewWindow(uri, title, parentWindow) {
     win.value.activate();
 
     return win.value;
+}
+
+/**
+ * @param {string} baseUrl
+ * @param {gui.Browser} self
+ * @param {string} nextUrl
+ */
+function handleExternals(baseUrl, self, nextUrl) {
+    if (!nextUrl || nextUrl === baseUrl) return;
+    open(nextUrl);
+    self.getWindow().close();
+}
+
+/**
+ * @param {gui.Browser} self
+ */
+function errorDocument(self) {
+    self.loadHTML('Failed to load document.', 'default');
 }
