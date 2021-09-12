@@ -81,7 +81,7 @@
     },
     "devDependencies": {
         "nodemon": "^2.0.12",
-        "prettier": "^2.3.2",
+        "prettier": "^2.4.0",
         "rollup": "^2.56.3",
         "xo": "^0.44.0",
         "yackage": "^0.4.0"

@@ -5,6 +5,7 @@ import { appQuit } from './app-quit.js';
 import { createBookmarkWizardWindow } from './bookmark-wizard.js';
 import { createPreferencesWindow } from './preferences.js';
 import { closeActive } from './utils/gui-winref.js';
+import { createLogWindow } from './log.js';
 
 export const appMenu = gui.MenuBar.create([
     {
@@ -25,6 +26,11 @@ export const appMenu = gui.MenuBar.create([
                 label: 'Preferences',
                 onClick: createPreferencesWindow,
                 accelerator: 'CmdOrCtrl+P',
+            },
+            {
+                label: 'Logs',
+                onClick: createLogWindow,
+                accelerator: 'CmdOrCtrl+O',
             },
             { type: 'separator' },
             { role: 'hide' },

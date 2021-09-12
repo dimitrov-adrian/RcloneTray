@@ -12,6 +12,7 @@ import { createPreferencesWindow, openRcloneConfigFile } from './preferences.js'
 import { createAboutWindow } from './about.js';
 import { createBookmarkWindowByName } from './bookmark-edit.js';
 import { appQuit } from './app-quit.js';
+import { createLogWindow } from './log.js';
 
 /** @type {{ value: gui.Tray, unref: CallableFunction }} */
 const trayIcon = ref();
@@ -96,6 +97,11 @@ async function setMenu() {
     }
 
     menuStructure.push(
+        {
+            label: 'Logs',
+            accelerator: 'CmdOrCtrl+O',
+            onClick: createLogWindow,
+        },
         {
             label: 'About',
             accelerator: 'CmdOrCtrl+A',

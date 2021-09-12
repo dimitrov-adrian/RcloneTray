@@ -11,6 +11,7 @@ import { promptError, promptErrorReporting } from './utils/prompt.js';
 import { createTrayMenu, updateMenu } from './tray-menu.js';
 import { appMenu } from './app-menu.js';
 import logger from './services/logger.js';
+import { insert as logInsert } from './log.js';
 
 export const pubsub = new EventEmitter({ captureRejections: true });
 
@@ -91,16 +92,14 @@ export async function app() {
             const bookmarks = await rclone.getBookmarks();
             for (const [bookmarkName, bookmarkConfig] of Object.entries(bookmarks)) {
                 if (bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.autoMount] === 'true') {
-                    console.log('@TODO', 'Automount', bookmarkName);
-                    // @TODO rclone.mount(bookmarkName, bookmarkConfig);
+                    rclone.mount(bookmarkName, bookmarkConfig);
                 }
 
                 if (
-                    bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.pullOnStart] !== 'true' &&
+                    bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.pullOnStart] === 'true' &&
                     bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]
                 ) {
-                    console.log('@TODO', 'Pull', bookmarkName);
-                    // @TODO  rclone.pull(bookmarkName, bookmarkConfig);
+                    rclone.pull(bookmarkName, bookmarkConfig);
                 }
             }
         } catch (error) {
@@ -108,15 +107,23 @@ export async function app() {
         }
     });
 
-    // rclone.on('invalid-password', async () => {
-    //     promptError(
-    //         {
-    //             title: 'Invalid Rclone password',
-    //             message: 'Current configuration is encrypted and requires valid password.',
-    //         },
-    //         () => process.exit(1)
-    //     );
-    // });
+    rclone.emitter.on('error', (e) => {
+        logInsert(e);
+    });
+
+    rclone.emitter.on('log', (e) => {
+        logInsert(e);
+    });
+
+    rclone.emitter.on('invalid-config-pass', (message) => {
+        promptError(
+            {
+                title: 'Invalid Rclone password',
+                message,
+            },
+            () => process.exit(1)
+        );
+    });
 
     rclone.setupDaemon();
 

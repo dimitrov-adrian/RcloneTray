@@ -158,8 +158,8 @@ export function setupDaemon() {
             emitter.emit('error', error);
         })
         .on('data', (data) => {
-            logger.debug('rclone:rcd@data', data);
-            rcloneDaemonLogHandler(data);
+            logger.debug('RCV', 'rclone:rcd@data', data);
+            emitter.emit('log', data);
         })
         .on('data', rcloneDaemonLogHandler)
         .once('ready', (endpoint) => {
@@ -181,15 +181,8 @@ export function setupDaemon() {
             emitter.emit('error', 'NewFs:' + data);
         } else if (data.msg.includes('Fatal error:')) {
             throw new Error(data.msg);
-        } else if (
-            data.msg.includes("ERROR : Couldn't decrypt configuration, most likely wrong password") ||
-            data.msg.includes('password-command returned empty string')
-        ) {
-            emitter.emit('error', {
-                command: 'boot',
-                error: new Error('Invalid configuration password'),
-            });
-            emitter.emit('invalid-password');
+        } else if (data.source.startsWith('config/crypt.go') && data.msg.startsWith("Couldn't decrypt configuration")) {
+            emitter.emit('invalid-config-pass', data.msg);
         }
     }
 }
@@ -201,7 +194,7 @@ export function setupDaemon() {
 export function rc(endpoint, payload) {
     if (!rcloneDaemonInfo.server) throw new Error('No server');
 
-    logger.debug('>', endpoint);
+    logger.debug('SND', endpoint);
 
     return remoteCommand(rcloneDaemonInfo.server, endpoint, payload);
 }

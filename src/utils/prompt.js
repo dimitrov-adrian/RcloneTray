@@ -293,6 +293,10 @@ export function promptInput(options, resolve, reject) {
             }
         }
 
+        if (options.required && !inputField.getText()) {
+            return;
+        }
+
         isSuccess = true;
 
         if (resolve) {
