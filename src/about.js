@@ -1,165 +1,178 @@
 import process from 'node:process';
 import gui from 'gui';
 import open from 'open';
-import { packageJson } from './utils/package.js';
-import { winRef } from './utils/gui-winref.js';
-import { miscImages } from './services/images.js';
-import { getLatestRelaseInfo } from './services/update-checker.js';
-import { promptYesNo } from './utils/prompt.js';
-import { createWebViewWindow } from './webview.js';
+import {packageJson} from './utils/package.js';
+import {winRef} from './utils/gui-winref.js';
+import {miscImages} from './services/images.js';
+import {getLatestRelaseInfo} from './services/update-checker.js';
+import {promptYesNo} from './utils/prompt.js';
+import {createWebViewWindow} from './webview.js';
 import logger from './services/logger.js';
 
 /**
  * @returns {gui.Window}
  */
 export function createAboutWindow() {
-    const win = winRef('about');
+	const win = winRef('about');
 
-    if (win.value) return win.value;
+	if (win.value) {
+		return win.value;
+	}
 
-    win.value = gui.Window.create(process.platform === 'darwin' ? { frame: false, showTrafficLights: true } : {});
-    win.value.setResizable(false);
-    win.value.setMaximizable(false);
-    win.value.setMinimizable(false);
-    win.value.setHasShadow(true);
-    win.value.setTitle(`About ${packageJson.build.productName}`);
-    win.value.setContentSize({ width: 540, height: 380 });
-    if (process.platform !== 'darwin') {
-        win.value.setIcon(miscImages.rcloneColor);
-    }
+	win.value = gui.Window.create(
+		process.platform === 'darwin'
+			? {frame: false, showTrafficLights: true}
+			: {},
+	);
+	win.value.setResizable(false);
+	win.value.setMaximizable(false);
+	win.value.setMinimizable(false);
+	win.value.setHasShadow(true);
+	win.value.setTitle(`About ${packageJson.build.productName}`);
+	win.value.setContentSize({width: 540, height: 380});
+	if (process.platform !== 'darwin') {
+		win.value.setIcon(miscImages.rcloneColor);
+	}
 
-    const contentView = createContentView();
-    win.value.setContentView(contentView);
+	const contentView = createContentView();
+	win.value.setContentView(contentView);
 
-    win.value.getContentView().setStyle({
-        flexDirection: 'column',
-        justifyContent: 'space-between',
-        padding: 20,
-    });
+	win.value.getContentView().setStyle({
+		flexDirection: 'column',
+		justifyContent: 'space-between',
+		padding: 20,
+	});
 
-    const logo = gui.GifPlayer.create();
-    logo.setStyle({ marginBottom: 20 });
-    logo.setImage(miscImages.rcloneColor);
-    contentView.addChildView(logo);
+	const logo = gui.GifPlayer.create();
+	logo.setStyle({marginBottom: 20});
+	logo.setImage(miscImages.rcloneColor);
+	contentView.addChildView(logo);
 
-    const appLines = [
-        packageJson.build.productName,
-        packageJson.version,
-        `by ${packageJson.author.replace(/(<.*>)/gm, '')}`,
-        '\0',
-        'Credits:',
-        '\0',
-        `Rclone from Nick Craig-Wood`,
-        'Yue from zcbenz',
-        'Node.js from Joyent, Inc',
-    ];
+	const appLines = [
+		packageJson.build.productName,
+		packageJson.version,
+		`by ${packageJson.author.replace(/(<.*>)/gm, '')}`,
+		'\0',
+		'Credits:',
+		'\0',
+		'Rclone from Nick Craig-Wood',
+		'Yue from zcbenz',
+		'Node.js from Joyent, Inc',
+	];
 
-    for (const appLine of appLines) {
-        if (appLine === undefined || appLine === null) continue;
-        const line = gui.Label.create(appLine);
-        line.setAlign('center');
-        contentView.addChildView(line);
-    }
+	for (const appLine of appLines) {
+		if (appLine === undefined || appLine === null) {
+			continue;
+		}
 
-    const actionButtonsWrapper = gui.Container.create();
-    actionButtonsWrapper.setStyle({ marginTop: '40px', flexDirection: 'row' });
-    contentView.addChildView(actionButtonsWrapper);
+		const line = gui.Label.create(appLine);
+		line.setAlign('center');
+		contentView.addChildView(line);
+	}
 
-    const actionButtonWebsite = gui.Button.create('Homepage');
-    actionButtonWebsite.setStyle({ flex: 1, marginRight: 10 });
-    actionButtonWebsite.onClick = openHomepage;
-    actionButtonsWrapper.addChildView(actionButtonWebsite);
+	const actionButtonsWrapper = gui.Container.create();
+	actionButtonsWrapper.setStyle({marginTop: '40px', flexDirection: 'row'});
+	contentView.addChildView(actionButtonsWrapper);
 
-    const actionButtonIssue = gui.Button.create('Issues');
-    actionButtonIssue.setStyle({ flex: 1, marginRight: 10 });
-    actionButtonIssue.onClick = openIssues;
-    actionButtonsWrapper.addChildView(actionButtonIssue);
+	const actionButtonWebsite = gui.Button.create('Homepage');
+	actionButtonWebsite.setStyle({flex: 1, marginRight: 10});
+	actionButtonWebsite.onClick = openHomepage;
+	actionButtonsWrapper.addChildView(actionButtonWebsite);
 
-    const actionButtonLicense = gui.Button.create('License Notes');
-    actionButtonLicense.setStyle({ flex: 1, marginRight: 10 });
-    actionButtonLicense.onClick = openLicense;
-    actionButtonsWrapper.addChildView(actionButtonLicense);
+	const actionButtonIssue = gui.Button.create('Issues');
+	actionButtonIssue.setStyle({flex: 1, marginRight: 10});
+	actionButtonIssue.onClick = openIssues;
+	actionButtonsWrapper.addChildView(actionButtonIssue);
 
-    const actionButtonRcloneWebsite = gui.Button.create('About Rclone');
-    actionButtonRcloneWebsite.setStyle({ flex: 1 });
-    actionButtonRcloneWebsite.onClick = openRcloneHomepage;
-    actionButtonsWrapper.addChildView(actionButtonRcloneWebsite);
+	const actionButtonLicense = gui.Button.create('License Notes');
+	actionButtonLicense.setStyle({flex: 1, marginRight: 10});
+	actionButtonLicense.onClick = openLicense;
+	actionButtonsWrapper.addChildView(actionButtonLicense);
 
-    win.value.center();
-    win.value.setVisible(true);
-    win.value.activate();
+	const actionButtonRcloneWebsite = gui.Button.create('About Rclone');
+	actionButtonRcloneWebsite.setStyle({flex: 1});
+	actionButtonRcloneWebsite.onClick = openRcloneHomepage;
+	actionButtonsWrapper.addChildView(actionButtonRcloneWebsite);
 
-    checkForUpdate(win.value);
-    return win.value;
+	win.value.center();
+	win.value.setVisible(true);
+	win.value.activate();
+
+	checkForUpdate(win.value);
+	return win.value;
 }
 
 export function openHomepage() {
-    open(packageJson.homepage);
+	open(packageJson.homepage);
 }
 
 export function openRcloneHomepage() {
-    open('https://rclone.org');
+	open('https://rclone.org');
 }
 
 /**
  * @param {gui.Button=} initiatorButton
  */
 export function openLicense(initiatorButton) {
-    createWebViewWindow(
-        packageJson.config.RcloneTray.licenseFile,
-        packageJson.build.productName + ' LICENSE',
-        // Cause on windows, the inner window goes within by size in parent window.
-        initiatorButton && process.platform !== 'win32' ? initiatorButton.getWindow() : null
-    );
+	createWebViewWindow(
+		packageJson.config.RcloneTray.licenseFile,
+		packageJson.build.productName + ' LICENSE',
+		// Cause on windows, the inner window goes within by size in parent window.
+		initiatorButton && process.platform !== 'win32'
+			? initiatorButton.getWindow()
+			: null,
+	);
 }
 
 export function openIssues() {
-    open(packageJson.bugs.url);
+	open(packageJson.bugs.url);
 }
 
 /**
  * @param {{ title: string, message: string }} _
  */
-export function reportIssue({ title, message }) {
-    const reportUrl =
-        packageJson.bugs.url +
-        '/new?title=' +
-        encodeURIComponent(title || 'Issue subject') +
-        '&body=' +
-        encodeURIComponent(message || 'Issue description');
-    open(reportUrl);
+export function reportIssue({title, message}) {
+	const reportUrl
+		= packageJson.bugs.url
+		+ '/new?title='
+		+ encodeURIComponent(title || 'Issue subject')
+		+ '&body='
+		+ encodeURIComponent(message || 'Issue description');
+	open(reportUrl);
 }
 
 /**
  * @param {gui.Window=} parentWindow
  */
 export async function checkForUpdate(parentWindow) {
-    let updateResult;
-    try {
-        updateResult = await getLatestRelaseInfo();
-        if (!updateResult.hasUpdate) return;
-    } catch (error) {
-        logger.warn('Cannot check for new release', error.toString());
-        return;
-    }
+	let updateResult;
+	try {
+		updateResult = await getLatestRelaseInfo();
+		if (!updateResult.hasUpdate) {
+			return;
+		}
+	} catch (error) {
+		logger.warn('Cannot check for new release', error.toString());
+		return;
+	}
 
-    promptYesNo(
-        {
-            title: 'Update Available',
-            message: `There is new ${updateResult.version} version of ${packageJson.build.productName} available, do you want to go and download it?`,
-            parentWindow,
-        },
-        (result) => result && open(updateResult.url)
-    );
+	promptYesNo(
+		{
+			title: 'Update Available',
+			message: `There is new ${updateResult.version} version of ${packageJson.build.productName} available, do you want to go and download it?`,
+			parentWindow,
+		},
+		result => result && open(updateResult.url),
+	);
 }
 
 function createContentView() {
-    if (process.platform === 'darwin') {
-        const contentView = gui.Vibrant.create();
-        contentView.setMaterial('appearance-based');
-        contentView.setBlendingMode('behind-window');
-        return contentView;
-    }
+	if (process.platform === 'darwin') {
+		const contentView = gui.Vibrant.create();
+		contentView.setMaterial('appearance-based');
+		contentView.setBlendingMode('behind-window');
+		return contentView;
+	}
 
-    return gui.Container.create();
+	return gui.Container.create();
 }

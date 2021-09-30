@@ -1,0 +1,19 @@
+{
+	"compilerOptions": {
+		"checkJs": true,
+		"target": "es2020",
+		"module": "es2020",
+		"lib": [
+			"ES2020"
+		],
+		"resolveJsonModule": true,
+		"moduleResolution": "Node",
+		"allowSyntheticDefaultImports": true,
+	},
+	"include": [
+		"src/**/*",
+	],
+	"exclude": [
+		"node_modules/**"
+	]
+}

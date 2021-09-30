@@ -1,51 +1,66 @@
 {
-    "folders": [
-        {
-            "path": "./"
-        }
-    ],
-    "settings": {
-        "editor.suggest.showEvents": true,
-        "editor.defaultFormatter": "esbenp.prettier-vscode",
-        "editor.formatOnSave": true,
-        "editor.formatOnType": true,
-        "js/ts.implicitProjectConfig.checkJs": true,
-        "javascript.suggest.completeJSDocs": true,
-        "javascript.preferences.importModuleSpecifier": "relative",
-        "javascript.preferences.importModuleSpecifierEnding": "js",
-        "files.exclude": {
-            ".idea": true,
-            "**/node_modules/**": true
-        }
-    },
-    "extensions": {
-        "recommendations": [
-            "esbenp.prettier-vscode",
-            "IronGeek.vscode-env",
-            "dbaeumer.vscode-eslint",
-            "samverschueren.linter-xo",
-            "codezombiech.gitignore",
-            "EditorConfig.EditorConfig"
-        ]
-    },
-    "launch": {
-        "configurations": [
-            {
-                "name": "Attach",
-                "port": 9229,
-                "request": "attach",
-                "skipFiles": ["<node_internals>/**"],
-                "type": "pwa-node"
-            },
-            {
-                "command": "npm run dev",
-                "name": "RUN Dev",
-                "request": "launch",
-                "type": "node-terminal",
-                "skipFiles": ["<node_internals>/**"],
-                "outputCapture": "std",
-                "autoAttachChildProcesses": true
-            }
-        ]
-    }
+	"folders": [
+		{
+			"path": "./"
+		}
+	],
+	"settings": {
+		"prettier.useEditorConfig": true,
+		"prettier.enable": true,
+		"javascript.validate.enable": true,
+		"javascript.suggest.completeJSDocs": true,
+		"javascript.suggest.jsdoc.generateReturns": true,
+		"javascript.suggest.completeFunctionCalls": true,
+		"javascript.preferences.importModuleSpecifier": "relative",
+		"javascript.preferences.importModuleSpecifierEnding": "js",
+		"javascript.updateImportsOnFileMove.enabled": "always",
+		"editor.formatOnSave": true,
+		"editor.formatOnType": true,
+		"files.exclude": {
+			"**/node_modules/**": true
+		},
+		"xo.enable": true,
+		"xo.format.enable": true,
+		"[javascript]": {
+			"editor.defaultFormatter": "samverschueren.linter-xo"
+		},
+		"[json]": {
+			"editor.defaultFormatter": "vscode.json-language-features"
+		},
+		"[jsonc]": {
+			"editor.defaultFormatter": "vscode.json-language-features"
+		}
+	},
+	"extensions": {
+		"recommendations": [
+			"IronGeek.vscode-env",
+			"samverschueren.linter-xo",
+			"codezombiech.gitignore",
+			"EditorConfig.EditorConfig"
+		]
+	},
+	"launch": {
+		"configurations": [
+			{
+				"name": "Attach",
+				"port": 9229,
+				"request": "attach",
+				"skipFiles": [
+					"<node_internals>/**"
+				],
+				"type": "pwa-node"
+			},
+			{
+				"command": "npm dev",
+				"name": "RUN Dev",
+				"request": "launch",
+				"type": "node-terminal",
+				"skipFiles": [
+					"<node_internals>/**"
+				],
+				"outputCapture": "std",
+				"autoAttachChildProcesses": true
+			}
+		]
+	}
 }

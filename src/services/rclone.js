@@ -66,40 +66,38 @@ import EventEmitter from 'node:events';
 import chokidar from 'chokidar';
 import open from 'open';
 import getPort from 'get-port';
-import { ensureEmptyDirectory, isEmptyDirectory } from '../utils/empty-dir.js';
-import { execInOSTerminal } from '../utils/terminal-command.js';
-import { getResourcePath, getSubcommand } from '../utils/package.js';
-import { rcloneDriver, remoteCommand } from '../utils/rclone.js';
-import { config } from './config.js';
+import {ensureEmptyDirectory, isEmptyDirectory} from '../utils/empty-dir.js';
+import {execInOSTerminal} from '../utils/terminal-command.js';
+import {getResourcePath, getSubcommand} from '../utils/package.js';
+import {rcloneDriver, remoteCommand} from '../utils/rclone.js';
+import {config} from './config.js';
 import logger from './logger.js';
 
 export const RCLONETRAY_CONFIG = {
-    RCLONE_MIN_VERSION: '1.56.0',
-    UNSUPPORTED_PROVIDERS: ['memory', 'http', 'compress', 'cache', 'union', 'chunker', 'local'],
-    BUCKET_REQUIRED_PROVIDERS: ['b2', 'swift', 's3', 'gsc', 'hubic'],
-    CUSTOM_KEYS: {
-        localDirectory: 'rclonetray_local_directory',
-        remoteHome: 'rclonetray_remote_home',
-        autoMount: 'rclonetray_automount',
-        pullOnStart: 'rclonetray_pullonstart',
-        bucket: 'rclonetray_bucket',
-    },
+	RCLONE_MIN_VERSION: '1.56.0',
+	UNSUPPORTED_PROVIDERS: ['memory', 'http', 'compress', 'cache', 'union', 'chunker', 'local'],
+	BUCKET_REQUIRED_PROVIDERS: ['b2', 'swift', 's3', 'gsc', 'hubic'],
+	CUSTOM_KEYS: {
+		localDirectory: 'rclonetray_local_directory',
+		remoteHome: 'rclonetray_remote_home',
+		autoMount: 'rclonetray_automount',
+		pullOnStart: 'rclonetray_pullonstart',
+		bucket: 'rclonetray_bucket',
+	},
 };
 
 const rclone = rcloneDriver({
-    binary:
-        process.env.RCLONETRAY_RCLONE_PATH ||
-        (config.get('use_system_rclone')
-            ? null
-            : getResourcePath('vendor', 'rclone', process.platform === 'win32' ? 'rclone.exe' : 'rclone')),
-    configFile: config.get('rclone_config_file'),
+	binary: process.env.RCLONETRAY_RCLONE_PATH || (config.get('use_system_rclone')
+		? null
+		: getResourcePath('vendor', 'rclone', process.platform === 'win32' ? 'rclone.exe' : 'rclone')),
+	configFile: config.get('rclone_config_file'),
 });
 
-export const emitter = new EventEmitter({ captureRejections: true });
+export const emitter = new EventEmitter({captureRejections: true});
 
 const rcloneDaemonInfo = {
-    proc: null,
-    server: null,
+	proc: null,
+	server: null,
 };
 
 /**
@@ -111,80 +109,80 @@ const jobs = new Map();
  * @returns {boolean}
  */
 export function hasActiveJobs() {
-    return jobs.size > 0;
+	return jobs.size > 0;
 }
 
 /**
  * @returns {ActiveJobsMap}
  */
 export function getActiveJobsMap() {
-    const result = {};
-    for (const key of jobs.keys()) {
-        const [bookmarkName, jobname] = key.split(':');
-        if (!(bookmarkName in result)) {
-            result[bookmarkName] = {};
-        }
+	const result = {};
+	for (const key of jobs.keys()) {
+		const [bookmarkName, jobname] = key.split(':');
+		if (!(bookmarkName in result)) {
+			result[bookmarkName] = {};
+		}
 
-        result[bookmarkName][jobname] = true;
-    }
+		result[bookmarkName][jobname] = true;
+	}
 
-    // @ts-ignore
-    return result;
+	// @ts-ignore
+	return result;
 }
 
 export function setupDaemon() {
-    if (!rclone.versionGte(RCLONETRAY_CONFIG.RCLONE_MIN_VERSION)) {
-        throw new Error(`Minimum version of Rclone must be ${RCLONETRAY_CONFIG.RCLONE_MIN_VERSION}`);
-    }
+	if (!rclone.versionGte(RCLONETRAY_CONFIG.RCLONE_MIN_VERSION)) {
+		throw new Error(`Minimum version of Rclone must be ${RCLONETRAY_CONFIG.RCLONE_MIN_VERSION}`);
+	}
 
-    const user = Math.round(Math.random() * Date.now()).toString(24);
-    const pass = Math.round(Math.random() * Date.now()).toString(24);
+	const user = Math.round(Math.random() * Date.now()).toString(24);
+	const pass = Math.round(Math.random() * Date.now()).toString(24);
 
-    rclone
-        .rcd({
-            RCLONE_PASSWORD: 'false',
-            RCLONE_PASSWORD_COMMAND: getSubcommand('ask-pass-config'),
-            RCLONE_SFTP_ASK_PASSWORD: getSubcommand('ask-pass-remote'),
-            RCLONE_RC_USER: user,
-            RCLONE_RC_PASS: pass,
-            RCLONE_RC_ADDR: '127.0.0.1:0',
-        })
-        .on('close', () => {
-            logger.error('Rclone daemon exited');
-            rcloneDaemonInfo.server = null;
-            rcloneDaemonInfo.proc = null;
-        })
-        .on('error', (error) => {
-            emitter.emit('error', error);
-        })
-        .on('data', (data) => {
-            logger.debug('RCV', 'rclone:rcd@data', data);
-            emitter.emit('log', data);
-        })
-        .on('data', rcloneDaemonLogHandler)
-        .once('ready', (endpoint) => {
-            rcloneDaemonInfo.server = {
-                uri: endpoint,
-                auth: user + ':' + pass,
-            };
-            emitter.emit('ready');
-        });
+	rclone
+		.rcd({
+			RCLONE_PASSWORD: 'false',
+			RCLONE_PASSWORD_COMMAND: getSubcommand('ask-pass-config'),
+			RCLONE_SFTP_ASK_PASSWORD: getSubcommand('ask-pass-remote'),
+			RCLONE_RC_USER: user,
+			RCLONE_RC_PASS: pass,
+			RCLONE_RC_ADDR: '127.0.0.1:0',
+		})
+		.on('close', () => {
+			logger.error('Rclone daemon exited');
+			rcloneDaemonInfo.server = null;
+			rcloneDaemonInfo.proc = null;
+		})
+		.on('error', error => {
+			emitter.emit('error', error);
+		})
+		.on('data', data => {
+			logger.debug('RCV', 'rclone:rcd@data', data);
+			emitter.emit('log', data);
+		})
+		.on('data', rcloneDaemonLogHandler)
+		.once('ready', endpoint => {
+			rcloneDaemonInfo.server = {
+				uri: endpoint,
+				auth: user + ':' + pass,
+			};
+			emitter.emit('ready');
+		});
 
-    /**
+	/**
      * @param {import('../utils/rclone.js').LogMessage} data
      */
-    function rcloneDaemonLogHandler(data) {
-        if (data.msg.includes('go to the following link:')) {
-            const url = data.msg.match(/https?:\/\/(\S+)/i);
-            emitter.emit('webconfirm', url);
-        } else if (data.msg.includes('Error: NewFs: failed to make')) {
-            emitter.emit('error', 'NewFs:' + data);
-        } else if (data.msg.includes('Fatal error:')) {
-            throw new Error(data.msg);
-        } else if (data.source.startsWith('config/crypt.go') && data.msg.startsWith("Couldn't decrypt configuration")) {
-            emitter.emit('invalid-config-pass', data.msg);
-        }
-    }
+	function rcloneDaemonLogHandler(data) {
+		if (data.msg.includes('go to the following link:')) {
+			const url = data.msg.match(/https?:\/\/(\S+)/i);
+			emitter.emit('webconfirm', url);
+		} else if (data.msg.includes('Error: NewFs: failed to make')) {
+			emitter.emit('error', 'NewFs:' + data);
+		} else if (data.msg.includes('Fatal error:')) {
+			throw new Error(data.msg);
+		} else if (data.source.startsWith('config/crypt.go') && data.msg.startsWith('Couldn\'t decrypt configuration')) {
+			emitter.emit('invalid-config-pass', data.msg);
+		}
+	}
 }
 
 /**
@@ -192,18 +190,20 @@ export function setupDaemon() {
  * @param {object=} payload
  */
 export function rc(endpoint, payload) {
-    if (!rcloneDaemonInfo.server) throw new Error('No server');
+	if (!rcloneDaemonInfo.server) {
+		throw new Error('No server');
+	}
 
-    logger.debug('SND', endpoint);
+	logger.debug('SND', endpoint);
 
-    return remoteCommand(rcloneDaemonInfo.server, endpoint, payload);
+	return remoteCommand(rcloneDaemonInfo.server, endpoint, payload);
 }
 
 /**
  * @returns {string}
  */
 export function getConfigFile() {
-    return rclone.getConfigFile();
+	return rclone.getConfigFile();
 }
 
 /**
@@ -211,12 +211,12 @@ export function getConfigFile() {
  * @param {object=} newOptions
  */
 export async function setOptions(newOptions) {
-    if (newOptions && typeof newOptions === 'object') {
-        rc('options/set', newOptions);
-        return true;
-    }
+	if (newOptions && typeof newOptions === 'object') {
+		rc('options/set', newOptions);
+		return true;
+	}
 
-    return true;
+	return true;
 }
 
 /**
@@ -228,20 +228,23 @@ export async function setOptions(newOptions) {
  * @emits 'bookmark:created'
  */
 export async function createBookmark(bookmarkName, type, parameters) {
-    if (!bookmarkName || !/^([\w-]{2,40})$/i.test(bookmarkName)) {
-        throw new Error('Invalid bookmark name: ' + bookmarkName);
-    }
+	if (!bookmarkName || !/^([\w-]{2,40})$/i.test(bookmarkName)) {
+		throw new Error('Invalid bookmark name: ' + bookmarkName);
+	}
 
-    const command = rc('config/create', {
-        name: bookmarkName,
-        type,
-        parameters,
-    });
+	const command = rc('config/create', {
+		name: bookmarkName,
+		type,
+		parameters,
+	});
 
-    emitter.emit('config');
-    emitter.emit('bookmarkCreated', bookmarkName, { ...parameters, type });
+	emitter.emit('config', {
+		action: 'create',
+		name: bookmarkName,
+		config: {...parameters, type},
+	});
 
-    return command.result;
+	return command.result;
 }
 
 /**
@@ -252,21 +255,24 @@ export async function createBookmark(bookmarkName, type, parameters) {
  * @emits 'bookmark:updated'
  */
 export async function updateBookmark(bookmarkName, parameters) {
-    if (jobs.has(`${bookmarkName}:autopush`)) {
-        // @TODO if path is changed, then should restart autopush,
-        //       for now, just stop it
-        autopush(bookmarkName, false);
-    }
+	if (jobs.has(`${bookmarkName}:autopush`)) {
+		// @TODO if path is changed, then should restart autopush,
+		//       for now, just stop it
+		autopush(bookmarkName, false);
+	}
 
-    const command = rc('config/update', {
-        name: bookmarkName,
-        parameters,
-    });
+	const command = rc('config/update', {
+		name: bookmarkName,
+		parameters,
+	});
 
-    emitter.emit('config');
-    emitter.emit('bookmarkCreated', bookmarkName, parameters);
+	emitter.emit('config', {
+		action: 'update',
+		name: bookmarkName,
+		config: parameters,
+	});
 
-    return command.result;
+	return command.result;
 }
 
 /**
@@ -276,18 +282,20 @@ export async function updateBookmark(bookmarkName, parameters) {
  * @emits 'bookmark:deleted'
  */
 export async function deleteBookmark(bookmarkName) {
-    if (jobs.has(`${bookmarkName}:autopush`)) {
-        autopush(bookmarkName, false);
-    }
+	if (jobs.has(`${bookmarkName}:autopush`)) {
+		autopush(bookmarkName, false);
+	}
 
-    const command = rc('config/delete', {
-        name: bookmarkName,
-    });
+	const command = rc('config/delete', {
+		name: bookmarkName,
+	});
 
-    emitter.emit('config');
-    emitter.emit('bookmarkDeleted', bookmarkName);
+	emitter.emit('config', {
+		action: 'delete',
+		name: bookmarkName,
+	});
 
-    return command.result;
+	return command.result;
 }
 
 /**
@@ -296,22 +304,24 @@ export async function deleteBookmark(bookmarkName) {
  * @returns {Promise<RcloneBookmarkConfig, Error>}
  */
 export function getBookmark(bookmarkName) {
-    return rc('config/get', { name: bookmarkName }).result;
+	return rc('config/get', {name: bookmarkName}).result;
 }
 
 /**
  * @returns {Promise<Record<string, RcloneBookmarkConfig>>}
  */
 export async function getBookmarks() {
-    try {
-        const result = await rc('config/dump').result;
+	try {
+		const result = await rc('config/dump').result;
 
-        return Object.fromEntries(
-            Object.entries(result).filter(([, info]) => !RCLONETRAY_CONFIG.UNSUPPORTED_PROVIDERS.includes(info.type))
-        );
-    } catch {}
+		return Object.fromEntries(
+			Object
+				.entries(result)
+				.filter(([, info]) => !RCLONETRAY_CONFIG.UNSUPPORTED_PROVIDERS.includes(info.type)),
+		);
+	} catch {}
 
-    return {};
+	return {};
 }
 
 /**
@@ -319,8 +329,9 @@ export async function getBookmarks() {
  * @returns {Promise<object[]>}
  */
 export async function getProviders() {
-    const providers = await rc('config/providers').result;
-    return providers.providers.filter((provider) => !RCLONETRAY_CONFIG.UNSUPPORTED_PROVIDERS.includes(provider.Prefix));
+	const providers = await rc('config/providers').result;
+	return providers.providers
+		.filter(provider => !RCLONETRAY_CONFIG.UNSUPPORTED_PROVIDERS.includes(provider.Prefix));
 }
 
 /**
@@ -328,8 +339,8 @@ export async function getProviders() {
  * @returns {Promise<Object, Error>}
  */
 export async function getProvider(prefix) {
-    const definition = await getProviders();
-    return definition.find((item) => item.Prefix === prefix);
+	const definition = await getProviders();
+	return definition.find(item => item.Prefix === prefix);
 }
 
 /**
@@ -337,33 +348,45 @@ export async function getProvider(prefix) {
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
 export async function push(bookmarkName, bookmarkConfig, initiator) {
-    if (jobs.has(`${bookmarkName}:push`) || jobs.has(`${bookmarkName}:pull`)) return;
+	if (jobs.has(`${bookmarkName}:push`) || jobs.has(`${bookmarkName}:pull`)) {
+		return;
+	}
 
-    if (!bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]) {
-        throw new Error(`Local directory not set for ${bookmarkName}`);
-    }
+	if (!bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]) {
+		throw new Error(`Local directory not set for ${bookmarkName}`);
+	}
 
-    emitter.emit('activity', 'push');
+	const info = {
+		srcFs: bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
+		dstFs: getBookmarkFs(bookmarkName, bookmarkConfig),
+	};
 
-    const info = {
-        srcFs: bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
-        dstFs: getBookmarkFs(bookmarkName, bookmarkConfig),
-    };
+	try {
+		const command = rc('sync/sync', {...info});
 
-    try {
-        const command = rc('sync/sync', { ...info });
+		emitter.emit('action', {
+			action: 'push',
+			name: bookmarkName,
+			initiator,
+			completed: false,
+		});
 
-        jobs.set(`${bookmarkName}:push`, {
-            stop: () => command.abort(),
-            data: { ...info },
-        });
+		jobs.set(`${bookmarkName}:push`, {
+			stop: () => command.abort(),
+			data: {...info},
+		});
 
-        await command.result;
-    } catch {}
+		await command.result;
+	} catch {}
 
-    jobs.delete(`${bookmarkName}:push`);
-    emitter.emit('pushed', bookmarkName, initiator);
-    emitter.emit('activity', 'pushed');
+	jobs.delete(`${bookmarkName}:push`);
+
+	emitter.emit('action', {
+		action: 'push',
+		name: bookmarkName,
+		initiator,
+		completed: true,
+	});
 }
 
 /**
@@ -371,33 +394,43 @@ export async function push(bookmarkName, bookmarkConfig, initiator) {
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
 export async function pull(bookmarkName, bookmarkConfig) {
-    if (jobs.has(`${bookmarkName}:push`) || jobs.has(`${bookmarkName}:pull`)) return;
+	if (jobs.has(`${bookmarkName}:push`) || jobs.has(`${bookmarkName}:pull`)) {
+		return;
+	}
 
-    if (!bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]) {
-        throw new Error(`Local directory not set for ${bookmarkName}`);
-    }
+	if (!bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]) {
+		throw new Error(`Local directory not set for ${bookmarkName}`);
+	}
 
-    emitter.emit('activity', 'pull');
+	emitter.emit('action', {
+		action: 'pull',
+		name: bookmarkName,
+		completed: false,
+	});
 
-    const info = {
-        srcFs: getBookmarkFs(bookmarkName, bookmarkConfig),
-        dstFs: bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
-    };
+	const info = {
+		srcFs: getBookmarkFs(bookmarkName, bookmarkConfig),
+		dstFs: bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
+	};
 
-    try {
-        const command = rc('sync/sync', { ...info });
+	try {
+		const command = rc('sync/sync', {...info});
 
-        jobs.set(`${bookmarkName}:pull`, {
-            stop: () => command.abort(),
-            data: { ...info },
-        });
+		jobs.set(`${bookmarkName}:pull`, {
+			stop: () => command.abort(),
+			data: {...info},
+		});
 
-        await command.result;
-    } catch {}
+		await command.result;
+	} catch {}
 
-    jobs.delete(`${bookmarkName}:pull`);
-    emitter.emit('pulled', bookmarkName);
-    emitter.emit('activity', 'pulled');
+	jobs.delete(`${bookmarkName}:pull`);
+
+	emitter.emit('action', {
+		action: 'pull',
+		name: bookmarkName,
+		completed: true,
+	});
 }
 
 /**
@@ -405,48 +438,68 @@ export async function pull(bookmarkName, bookmarkConfig) {
  * @param {RcloneBookmarkConfig|false=} bookmarkConfig
  */
 export function autopush(bookmarkName, bookmarkConfig) {
-    if (typeof bookmarkConfig === 'boolean') {
-        if (jobs.has(`${bookmarkName}:autopush`)) {
-            jobs.get(`${bookmarkName}:autopush`).stop();
-        }
-    } else {
-        if (jobs.has(`${bookmarkName}:autopush`)) return;
+	if (bookmarkConfig === false) {
+		if (jobs.has(`${bookmarkName}:autopush`)) {
+			jobs.get(`${bookmarkName}:autopush`).stop();
+		}
 
-        if (!bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]) {
-            throw new Error(`Local directory not set for ${bookmarkName}`);
-        }
+		emitter.emit('action', {
+			action: 'autopush',
+			name: bookmarkName,
+			completed: true,
+		});
+	} else {
+		if (jobs.has(`${bookmarkName}:autopush`)) {
+			return;
+		}
 
-        const watcher = chokidar.watch(bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory], {
-            awaitWriteFinish: true,
-            ignoreInitial: true,
-            ignored: ['.DS_Store', '._*', '*~'],
-            disableGlobbing: true,
-            usePolling: false,
-            useFsEvents: true,
-            persistent: true,
-            alwaysStat: true,
-            atomic: 3000,
-        });
+		if (!bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]) {
+			throw new Error(`Local directory not set for ${bookmarkName}`);
+		}
 
-        watcher.on('raw', () => push(bookmarkName, bookmarkConfig, 'autopush'));
+		const watcher = chokidar
+			.watch(
+				bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
+				{
+					awaitWriteFinish: true,
+					ignoreInitial: true,
+					ignored: ['.DS_Store', '._*', '*~'],
+					disableGlobbing: true,
+					usePolling: false,
+					useFsEvents: true,
+					persistent: true,
+					alwaysStat: true,
+					atomic: 3000,
+				});
 
-        jobs.set(`${bookmarkName}:autopush`, {
-            data: {
-                path: bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
-            },
-            stop: async () => {
-                if (!watcher) return;
-                try {
-                    watcher.close();
-                    jobs.delete(`${bookmarkName}:autopush`);
-                } catch (error) {
-                    logger.error(error.toString());
-                }
-            },
-        });
+		watcher.on('raw', () => push(bookmarkName, bookmarkConfig, 'autopush'));
 
-        push(bookmarkName, bookmarkConfig, 'autopush');
-    }
+		jobs.set(`${bookmarkName}:autopush`, {
+			data: {
+				path: bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
+			},
+			stop: async () => {
+				if (!watcher) {
+					return;
+				}
+
+				try {
+					watcher.close();
+					jobs.delete(`${bookmarkName}:autopush`);
+				} catch (error) {
+					logger.error(error.toString());
+				}
+			},
+		});
+
+		emitter.emit('action', {
+			action: 'autopush',
+			name: bookmarkName,
+			completed: false,
+		});
+
+		push(bookmarkName, bookmarkConfig, 'autopush');
+	}
 }
 
 /**
@@ -458,45 +511,59 @@ export function autopush(bookmarkName, bookmarkConfig) {
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
 export async function mount(bookmarkName, bookmarkConfig) {
-    if (jobs.has(`${bookmarkName}:mount`)) return;
+	if (jobs.has(`${bookmarkName}:mount`)) {
+		return;
+	}
 
-    const mountpoint = await prepareMountpoint(bookmarkName);
+	const mountpoint = await prepareMountpoint(bookmarkName);
 
-    emitter.emit('activity', 'mount');
+	try {
+		const command = rc('core/command', {
+			command: 'mount',
+			arg: [getBookmarkFs(bookmarkName, bookmarkConfig), mountpoint],
+			opt: {
+				volname: bookmarkName,
+			},
+			returnType: 'STREAM',
+		});
 
-    try {
-        const command = rc('core/command', {
-            command: 'mount',
-            arg: [getBookmarkFs(bookmarkName, bookmarkConfig), mountpoint],
-            opt: {
-                volname: bookmarkName,
-            },
-            returnType: 'STREAM',
-        });
+		emitter.emit('action', {
+			action: 'mount',
+			name: bookmarkName,
+			completed: false,
+		});
 
-        jobs.set(`${bookmarkName}:mount`, {
-            data: {
-                mountpoint,
-            },
-            stop: () => command.abort(),
-        });
+		jobs.set(`${bookmarkName}:mount`, {
+			data: {
+				mountpoint,
+			},
+			stop: () => command.abort(),
+		});
 
-        emitter.emit('mounted', bookmarkName);
-        await command.result;
-    } catch {}
+		emitter.emit('mounted', bookmarkName);
+		await command.result;
+	} catch {}
 
-    jobs.delete(`${bookmarkName}:mount`);
-    emitter.emit('unmounted', bookmarkName);
-    emitter.emit('activity', 'unmounted');
-    cleanMountpoint(mountpoint);
+	jobs.delete(`${bookmarkName}:mount`);
+
+	emitter.emit('action', {
+		on: 'mount',
+		name: bookmarkName,
+		completed: true,
+	});
+
+	cleanMountpoint(mountpoint);
 }
 
 /**
  * @param {string} bookmarkName
  */
 export async function unmount(bookmarkName) {
-    if (!jobs.has(`${bookmarkName}:mount`)) return;
-    jobs.get(`${bookmarkName}:mount`).stop();
+	if (!jobs.has(`${bookmarkName}:mount`)) {
+		return;
+	}
+
+	jobs.get(`${bookmarkName}:mount`).stop();
 }
 
 /**
@@ -504,13 +571,13 @@ export async function unmount(bookmarkName) {
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
 export function openNCDU(bookmarkName, bookmarkConfig) {
-    return execInOSTerminal([
-        rclone.getBinary(),
-        '--config',
-        rclone.getConfigFile(),
-        'ncdu',
-        getBookmarkFs(bookmarkName, bookmarkConfig),
-    ]);
+	return execInOSTerminal([
+		rclone.getBinary(),
+		'--config',
+		rclone.getConfigFile(),
+		'ncdu',
+		getBookmarkFs(bookmarkName, bookmarkConfig),
+	]);
 }
 
 /**
@@ -518,45 +585,58 @@ export function openNCDU(bookmarkName, bookmarkConfig) {
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
 export async function startDLNA(bookmarkName, bookmarkConfig) {
-    if (jobs.has(`${bookmarkName}:dlna`)) return;
+	if (jobs.has(`${bookmarkName}:dlna`)) {
+		return;
+	}
 
-    const asrc = {
-        command: 'serve',
-        arg: ['dlna', getBookmarkFs(bookmarkName, bookmarkConfig)],
-        opt: {
-            name: bookmarkName,
-            addr: ':' + (await getPort()),
-            'no-checksum': '',
-            'no-modtime': '',
-        },
-        returnType: 'STREAM',
-    };
+	const asrc = {
+		command: 'serve',
+		arg: ['dlna', getBookmarkFs(bookmarkName, bookmarkConfig)],
+		opt: {
+			name: bookmarkName,
+			addr: ':' + (await getPort()),
+			'no-checksum': '',
+			'no-modtime': '',
+		},
+		returnType: 'STREAM',
+	};
 
-    emitter.emit('activity', 'dlna');
+	emitter.emit('action', {
+		action: 'dlna',
+		name: bookmarkName,
+		completed: false,
+	});
 
-    try {
-        const command = rc('core/command', asrc);
+	try {
+		const command = rc('core/command', asrc);
 
-        jobs.set(`${bookmarkName}:dlna`, {
-            stop: () => command.abort(),
-        });
+		jobs.set(`${bookmarkName}:dlna`, {
+			stop: () => command.abort(),
+		});
 
-        emitter.emit('dlnaStarted', bookmarkName);
+		emitter.emit('dlnaStarted', bookmarkName);
 
-        await command.result;
-    } catch {}
+		await command.result;
+	} catch {}
 
-    emitter.emit('dlnaStopped', bookmarkName);
-    emitter.emit('activity', 'dlna');
-    jobs.delete(`${bookmarkName}:dlna`);
+	jobs.delete(`${bookmarkName}:dlna`);
+
+	emitter.emit('action', {
+		action: 'dlna',
+		name: bookmarkName,
+		completed: true,
+	});
 }
 
 /**
  * @param {string} bookmarkName
  */
 export function stopDLNA(bookmarkName) {
-    if (!jobs.has(`${bookmarkName}:dlna`)) return;
-    jobs.get(`${bookmarkName}:dlna`).stop();
+	if (!jobs.has(`${bookmarkName}:dlna`)) {
+		return;
+	}
+
+	jobs.get(`${bookmarkName}:dlna`).stop();
 }
 
 /**
@@ -564,12 +644,13 @@ export function stopDLNA(bookmarkName) {
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
 export function getBookmarkFs(bookmarkName, bookmarkConfig) {
-    return (
-        bookmarkName +
-        (bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.remoteHome]
-            ? ':' + bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.remoteHome]
-            : ':/')
-    );
+	return (
+		bookmarkName
+		+ (
+			bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.remoteHome]
+				? ':' + bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.remoteHome]
+				: ':/')
+	);
 }
 
 /**
@@ -577,28 +658,39 @@ export function getBookmarkFs(bookmarkName, bookmarkConfig) {
  * @param {RcloneBookmarkConfig} bookmarkConfig
  */
 export async function openLocal(bookmarkName, bookmarkConfig) {
-    const dir = bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory];
-    if (!dir) return;
-    open(`file://${dir}`);
+	const dir = bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory];
+	if (!dir) {
+		return;
+	}
+
+	open(`file://${dir}`);
 }
 
 /**
  * @param {string} bookmarkName
  */
 export async function openMounted(bookmarkName) {
-    if (!jobs.has(`${bookmarkName}:mount`)) return;
-    const { mountpoint } = jobs.get(`${bookmarkName}:mount`).data;
-    if (mountpoint) return open(`file://${mountpoint}`);
+	if (!jobs.has(`${bookmarkName}:mount`)) {
+		return;
+	}
+
+	const {mountpoint} = jobs.get(`${bookmarkName}:mount`).data;
+	if (mountpoint) {
+		return open(`file://${mountpoint}`);
+	}
 }
 
 /**
  * @param {string} mountpoint
  */
 export async function cleanMountpoint(mountpoint) {
-    if (process.platform === 'win32' || !fs.existsSync(mountpoint)) return;
-    if (await isEmptyDirectory(mountpoint)) {
-        await fs.promises.rmdir(mountpoint, { maxRetries: 3, retryDelay: 1000 });
-    }
+	if (process.platform === 'win32' || !fs.existsSync(mountpoint)) {
+		return;
+	}
+
+	if (await isEmptyDirectory(mountpoint)) {
+		await fs.promises.rmdir(mountpoint, {maxRetries: 3, retryDelay: 1000});
+	}
 }
 
 /**
@@ -606,8 +698,11 @@ export async function cleanMountpoint(mountpoint) {
  * @returns {string}
  */
 export function getDefaultMountPoint(bookmarkName) {
-    if (process.platform === 'win32') return `\\\\cloud\\\\${bookmarkName}`;
-    return path.join(os.homedir(), `volume_${bookmarkName}`);
+	if (process.platform === 'win32') {
+		return `\\\\cloud\\\\${bookmarkName}`;
+	}
+
+	return path.join(os.homedir(), `volume_${bookmarkName}`);
 }
 
 /**
@@ -615,15 +710,15 @@ export function getDefaultMountPoint(bookmarkName) {
  * @returns {string}
  */
 function getMountpointPattern(bookmarkName) {
-    if (config.get('mount_pattern')) {
-        if (/%s/.test(config.get('mount_pattern'))) {
-            return config.get('mount_pattern').toString().replace('%s', bookmarkName);
-        }
+	if (config.get('mount_pattern')) {
+		if (/%s/.test(config.get('mount_pattern'))) {
+			return config.get('mount_pattern').toString().replace('%s', bookmarkName);
+		}
 
-        return config.get('mount_pattern').toString() + '-' + bookmarkName;
-    }
+		return config.get('mount_pattern').toString() + '-' + bookmarkName;
+	}
 
-    return getDefaultMountPoint(bookmarkName);
+	return getDefaultMountPoint(bookmarkName);
 }
 
 /**
@@ -632,14 +727,14 @@ function getMountpointPattern(bookmarkName) {
  * @returns {Promise<string>}
  */
 async function prepareMountpoint(bookmarkName, i) {
-    if (process.platform === 'win32') {
-        return getMountpointPattern(bookmarkName);
-    }
+	if (process.platform === 'win32') {
+		return getMountpointPattern(bookmarkName);
+	}
 
-    const mountpoint = getMountpointPattern(bookmarkName) + (i ? '_' + i : '');
-    if (!(await ensureEmptyDirectory(mountpoint))) {
-        return prepareMountpoint(bookmarkName, i ? i + 1 : 1);
-    }
+	const mountpoint = getMountpointPattern(bookmarkName) + (i ? '_' + i : '');
+	if (!(await ensureEmptyDirectory(mountpoint))) {
+		return prepareMountpoint(bookmarkName, i ? i + 1 : 1);
+	}
 
-    return mountpoint;
+	return mountpoint;
 }

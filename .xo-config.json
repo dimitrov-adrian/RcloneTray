@@ -1,0 +1,7 @@
+{
+	"rules": {
+		"unicorn/no-array-reduce": "off",
+		"unicorn/no-process-exit": "off",
+		"unicorn/prefer-switch": "off"
+	}
+}
