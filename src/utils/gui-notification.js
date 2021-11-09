@@ -1,6 +1,6 @@
-import {title} from 'node:process';
+import { title } from 'node:process';
 import gui from 'gui';
-import {packageJson} from './package.js';
+import { packageJson } from './package.js';
 
 /**
  * @param {string} message

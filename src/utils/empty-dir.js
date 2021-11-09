@@ -1,4 +1,4 @@
-import {existsSync, mkdirSync, promises as fsp} from 'node:fs';
+import { existsSync, mkdirSync, promises as fsp } from 'node:fs';
 
 /**
  * @param {string} path
@@ -7,7 +7,7 @@ import {existsSync, mkdirSync, promises as fsp} from 'node:fs';
 export async function isEmptyDirectory(path) {
 	try {
 		const iterator = await fsp.opendir(path);
-		const {done} = await iterator[Symbol.asyncIterator]().next();
+		const { done } = await iterator[Symbol.asyncIterator]().next();
 		if (!done) {
 			iterator.close();
 			return false;
@@ -26,7 +26,7 @@ export async function isEmptyDirectory(path) {
 export async function ensureEmptyDirectory(path) {
 	if (!existsSync(path)) {
 		try {
-			mkdirSync(path, {recursive: true});
+			mkdirSync(path, { recursive: true });
 			return true;
 		} catch {
 			return false;

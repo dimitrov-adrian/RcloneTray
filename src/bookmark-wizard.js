@@ -1,13 +1,13 @@
 import process from 'node:process';
 import gui from 'gui';
-import {miscImages, providerIcons} from './services/images.js';
-import {getProviders, getProvider} from './services/rclone.js';
-import {winRef} from './utils/gui-winref.js';
-import {helpTextFont} from './utils/gui-form-builder.js';
-import {formatTitle} from './utils/formatter.js';
-import {packageJson} from './utils/package.js';
-import {promptError} from './utils/prompt.js';
-import {createBookmarkWindow} from './bookmark-edit.js';
+import { miscImages, providerIcons } from './services/images.js';
+import { getProviders, getProvider } from './services/rclone.js';
+import { winRef } from './utils/gui-winref.js';
+import { helpTextFont } from './utils/gui-form-builder.js';
+import { formatTitle } from './utils/formatter.js';
+import { packageJson } from './utils/package.js';
+import { promptError } from './utils/prompt.js';
+import { createBookmarkWindow } from './bookmark-edit.js';
 
 export async function createBookmarkWizardWindow() {
 	const win = winRef('createwizard');
@@ -24,14 +24,14 @@ export async function createBookmarkWizardWindow() {
 		win.value.setIcon(miscImages.rcloneColor);
 	}
 
-	win.value.setContentSize({width: 400, height: 160});
+	win.value.setContentSize({ width: 400, height: 160 });
 
 	const contentView = gui.Container.create();
-	contentView.setStyle({flexDirection: 'column', padding: 10});
+	contentView.setStyle({ flexDirection: 'column', padding: 10 });
 	win.value.setContentView(contentView);
 
 	const pickerWrapper = gui.Container.create();
-	pickerWrapper.setStyle({flexDirection: 'row', marginTop: 10});
+	pickerWrapper.setStyle({ flexDirection: 'row', marginTop: 10 });
 	contentView.addChildView(pickerWrapper);
 
 	const providerIcon = gui.GifPlayer.create();
@@ -39,8 +39,8 @@ export async function createBookmarkWizardWindow() {
 	pickerWrapper.addChildView(providerIcon);
 
 	const picker = gui.Picker.create();
-	picker.setStyle({flex: 1, marginLeft: 10});
-	picker.onSelectionChange = self =>
+	picker.setStyle({ flex: 1, marginLeft: 10 });
+	picker.onSelectionChange = (self) =>
 		updateProviderInfoFromSelection({
 			providers,
 			providerIcon,
@@ -52,18 +52,17 @@ export async function createBookmarkWizardWindow() {
 	const providerDescription = gui.Label.create('\0');
 	providerDescription.setAlign('start');
 	providerDescription.setVAlign('start');
-	providerDescription.setStyle({flex: 1, flexGrow: 1, marginTop: 10, marginLeft: 40});
+	providerDescription.setStyle({ flex: 1, flexGrow: 1, marginTop: 10, marginLeft: 40 });
 	contentView.addChildView(providerDescription);
 
 	const actionButtonsWrapper = gui.Container.create();
-	actionButtonsWrapper.setStyle({flexGrow: 0, alignSelf: 'flex-end', flexDirection: 'row'});
+	actionButtonsWrapper.setStyle({ flexGrow: 0, alignSelf: 'flex-end', flexDirection: 'row' });
 	contentView.addChildView(actionButtonsWrapper);
 
 	const actionButtonNext = gui.Button.create('Next');
-	actionButtonNext.onClick = self => actionNext({providers, picker, self});
+	actionButtonNext.onClick = (self) => actionNext({ providers, picker, self });
 	actionButtonsWrapper.addChildView(actionButtonNext);
 
-	win.value.center();
 	win.value.setVisible(true);
 	win.value.activate();
 
@@ -73,7 +72,7 @@ export async function createBookmarkWizardWindow() {
 		picker.addItem(formatTitle(provider.Name));
 	}
 
-	updateProviderInfoFromSelection({providers, providerIcon, providerDescription, picker});
+	updateProviderInfoFromSelection({ providers, providerIcon, providerDescription, picker });
 	picker.setEnabled(true);
 
 	return win.value;
@@ -87,9 +86,9 @@ export async function createBookmarkWizardWindow() {
  *  picker: gui.Picker
  * }} _
  */
-function updateProviderInfoFromSelection({providers, providerIcon, providerDescription, picker}) {
+function updateProviderInfoFromSelection({ providers, providerIcon, providerDescription, picker }) {
 	const selected = providers[picker.getSelectedItemIndex()];
-	const providerDescriptionText = gui.AttributedText.create(selected.Description, {font: helpTextFont});
+	const providerDescriptionText = gui.AttributedText.create(selected.Description, { font: helpTextFont });
 	providerDescription.setAttributedText(providerDescriptionText);
 	providerIcon.setImage(providerIcons[selected.Prefix] || providerIcons.$unknown);
 	picker.getWindow().setTitle(`Create new ${selected.Name} bookmark`);
@@ -102,7 +101,7 @@ function updateProviderInfoFromSelection({providers, providerIcon, providerDescr
  *  self: gui.Button,
  * }} _
  */
-async function actionNext({providers, picker, self}) {
+async function actionNext({ providers, picker, self }) {
 	const selected = providers[picker.getSelectedItemIndex()];
 
 	const providerConfig = await getProvider(selected.Prefix);
@@ -111,6 +110,7 @@ async function actionNext({providers, picker, self}) {
 			title: 'Create new bookmark',
 			message: `The remote type: ${selected.Name} is not supported by Rclone.`,
 		});
+
 		return;
 	}
 
@@ -121,7 +121,7 @@ async function actionNext({providers, picker, self}) {
 			providerConfig,
 			type: selected.Prefix,
 		},
-		self.getWindow(),
+		self.getWindow()
 	);
 
 	self.getWindow().close();

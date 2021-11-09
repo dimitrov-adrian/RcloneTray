@@ -3,22 +3,26 @@ import gui from 'gui';
 import open from 'open';
 import debounce from 'debounce';
 import * as rclone from './services/rclone.js';
-import {config} from './services/config.js';
-import {ref} from './utils/ref.js';
-import {providerIcons, trayIcons} from './services/images.js';
-import {packageJson} from './utils/package.js';
-import {createBookmarkWizardWindow} from './bookmark-wizard.js';
-import {createPreferencesWindow, openRcloneConfigFile} from './preferences.js';
-import {createAboutWindow} from './about.js';
-import {createBookmarkWindowByName} from './bookmark-edit.js';
-import {appQuit} from './app-quit.js';
-import {createLogWindow} from './logs.js';
+import { config } from './services/config.js';
+import { ref } from './utils/ref.js';
+import { providerIcons, trayIcons } from './services/images.js';
+import { packageJson } from './utils/package.js';
+import { createBookmarkWizardWindow } from './bookmark-wizard.js';
+import { createPreferencesWindow, openRcloneConfigFile } from './preferences.js';
+import { createAboutWindow } from './about.js';
+import { createBookmarkWindowByName } from './bookmark-edit.js';
+import { appQuit } from './app-quit.js';
+import { createLogWindow } from './logs.js';
 
 /** @type {{ value: gui.Tray, unref: CallableFunction }} */
 const trayIcon = ref();
 
 /** @type {string} */
-const fileExplorerAppName = {darwin: 'Finder', win32: 'Explorer'}[process.platform] || 'File Browser';
+const fileExplorerAppName =
+	{
+		darwin: 'Finder',
+		win32: 'Explorer',
+	}[process.platform] || 'File Browser';
 
 /** @type {string} */
 const preferencesAccelerator = process.platform === 'darwin' ? 'CmdOrCtrl+,' : 'CmdOrCtrl+P';
@@ -33,9 +37,7 @@ export const updateMenu = debounce(() => setMenu(), 500);
  * Create tray menu instance
  */
 export function createTrayMenu() {
-	if (trayIcon.value) {
-		return;
-	}
+	if (trayIcon.value) return;
 
 	trayIcon.value = gui.Tray.createWithImage(getTrayIcon());
 	setMenu();
@@ -50,14 +52,14 @@ async function setMenu() {
 	// Prepare submenus for the bookmarks items.
 	const bookmarksMenus = Object.entries(await rclone.getBookmarks())
 		.map(([bookmarkName, bookmarkConfig]) =>
-			buildBookmarkMenu(bookmarkName, bookmarkConfig, activeJobsMap[bookmarkName] || {}),
+			buildBookmarkMenu(bookmarkName, bookmarkConfig, activeJobsMap[bookmarkName] || {})
 		)
 		.sort(bookmarkSortByFunction(config.store.bookmarks_order))
 		.sort(config.store.connected_first ? bookmarkSortConnectedFirstFunction : undefined);
 
 	/**
-     * @type {object[]}
-     */
+	 * @type {object[]}
+	 */
 	const menuStructure = [];
 
 	menuStructure.push(
@@ -66,12 +68,12 @@ async function setMenu() {
 			accelerator: 'CmdOrCtrl+N',
 			onClick: createBookmarkWizardWindow,
 		},
-		{type: 'separator'},
-		...bookmarksMenus,
+		{ type: 'separator' },
+		...bookmarksMenus
 	);
 
 	if (bookmarksMenus.length > 0) {
-		menuStructure.push({type: 'separator'});
+		menuStructure.push({ type: 'separator' });
 	}
 
 	if (config.store.show_config_refresh) {
@@ -80,7 +82,7 @@ async function setMenu() {
 				label: 'Refresh Bookmarks',
 				onClick: updateMenu,
 			},
-			{type: 'separator'},
+			{ type: 'separator' }
 		);
 	}
 
@@ -115,7 +117,7 @@ async function setMenu() {
 			label: `Quit ${packageJson.build.productName}`,
 			accelerator: 'CmdOrCtrl+Q',
 			onClick: appQuit,
-		},
+		}
 	);
 
 	trayIcon.value.setImage(getTrayIcon(rclone.hasActiveJobs()));
@@ -131,9 +133,7 @@ async function setMenu() {
  */
 function buildBookmarkMenu(bookmarkName, bookmarkConfig, activeJobs) {
 	const isConnected = Object.keys(activeJobs).length > 0;
-	const showMenuType = process.platform === 'linux' && config.store.show_type
-		? 'text'
-		: config.store.show_type;
+	const showMenuType = process.platform === 'linux' && config.store.show_type ? 'text' : config.store.show_type;
 
 	const bookmarkMenu = {
 		$meta: {
@@ -148,9 +148,8 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, activeJobs) {
 
 	if (bookmarkConfig.host && config.store.show_host) {
 		if (showMenuType === 'text') {
-			bookmarkMenu.label += showMenuType === 'text'
-				? bookmarkConfig.type + '://' + bookmarkConfig.host
-				: bookmarkConfig.host;
+			bookmarkMenu.label +=
+				showMenuType === 'text' ? bookmarkConfig.type + '://' + bookmarkConfig.host : bookmarkConfig.host;
 		}
 	} else if (showMenuType === 'text') {
 		bookmarkMenu.label = bookmarkConfig.type + '://' + bookmarkMenu.label;
@@ -169,7 +168,7 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, activeJobs) {
 		type: 'checkbox',
 		checked: activeJobs.mount,
 		enabled: !activeJobs.mount,
-		onClick: menuItem => {
+		onClick: (menuItem) => {
 			menuItem.setChecked(false);
 			rclone.mount(bookmarkName, bookmarkConfig);
 		},
@@ -184,13 +183,13 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, activeJobs) {
 			{
 				label: `Open in ${fileExplorerAppName}`,
 				onClick: rclone.openMounted(bookmarkName),
-			},
+			}
 		);
 	}
 
 	if (bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]) {
 		bookmarkMenu.submenu.push(
-			{type: 'separator'},
+			{ type: 'separator' },
 			{
 				type: 'label',
 				label: 'Pull',
@@ -218,30 +217,30 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, activeJobs) {
 			{
 				label: `Open Local in ${fileExplorerAppName}`,
 				onClick: () => open('file://' + bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]),
-			},
+			}
 		);
 	}
 
 	// NCDU
 	if (config.store.enable_ncdu) {
 		bookmarkMenu.submenu.push(
-			{type: 'separator'},
+			{ type: 'separator' },
 			{
 				label: 'Console Browser',
 				onClick: () => rclone.openNCDU(bookmarkName, bookmarkConfig),
-			},
+			}
 		);
 	}
 
 	// DLNA
 	if (config.store.enable_dlna_serve) {
 		bookmarkMenu.submenu.push(
-			{type: 'separator'},
+			{ type: 'separator' },
 			{
 				label: 'Serve DLNA',
 				type: 'checkbox',
 				checked: activeJobs.dlna,
-				onClick: menuItem => {
+				onClick: (menuItem) => {
 					if (activeJobs.dlna) {
 						menuItem.setChecked(false);
 						rclone.stopDLNA(bookmarkName);
@@ -250,17 +249,17 @@ function buildBookmarkMenu(bookmarkName, bookmarkConfig, activeJobs) {
 						rclone.startDLNA(bookmarkName, bookmarkConfig);
 					}
 				},
-			},
+			}
 		);
 	}
 
 	bookmarkMenu.submenu.push(
-		{type: 'separator'},
+		{ type: 'separator' },
 		{
 			label: 'Edit',
 			enabled: !isConnected,
 			onClick: () => createBookmarkWindowByName(bookmarkName),
-		},
+		}
 	);
 
 	return bookmarkMenu;

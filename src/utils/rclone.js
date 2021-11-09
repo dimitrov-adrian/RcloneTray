@@ -1,26 +1,26 @@
 /**
  * @typedef {{
- *  level: 'error' | 'warning' | 'debug' | 'info',
- *  msg: string,
- *  source: string,
- *  time: string,
+ * 		level: 'error' | 'warning' | 'debug' | 'info',
+ * 		msg: string,
+ * 		source: string,
+ * 		time: string,
  * }} LogMessage
  *
  * @typedef {{
- *  abort: () => void,
- *  result: Promise<object>
+ * 		abort: () => void,
+ * 		result: Promise<object>
  * }} RemoteCommandResult
  *
  * @typedef {{
- *  auth: string,
- *  uri: string
+ * 		auth: string,
+ * 		uri: string
  * }} RemoteCommandServerInfo
  */
 
-import {Buffer} from 'node:buffer';
-import {spawn, spawnSync} from 'node:child_process';
-import {devNull} from 'node:os';
-import {platform} from 'node:process';
+import { Buffer } from 'node:buffer';
+import { spawn, spawnSync } from 'node:child_process';
+import { devNull } from 'node:os';
+import { platform } from 'node:process';
 import semver from 'semver';
 import fetch from 'node-fetch';
 
@@ -30,7 +30,7 @@ import fetch from 'node-fetch';
  *  configFile?: string,
  * }} _
  */
-export function rcloneDriver({binary, configFile}) {
+export function rcloneDriver({ binary, configFile }) {
 	const binaryName = platform === 'win32' ? 'rclone.exe' : 'rclone';
 
 	if (!binary) {
@@ -71,7 +71,8 @@ export function rcloneDriver({binary, configFile}) {
 			});
 
 			if (result.output) {
-				return semver.clean(result.output.toString().trim().split(/\r?\n/).shift().split(/\s+/).pop());
+				const ver = result.output.toString().trim().split(/\r?\n/).shift().split(/\s+/).pop();
+				return semver.clean(ver);
 			}
 		} catch {}
 
@@ -79,9 +80,9 @@ export function rcloneDriver({binary, configFile}) {
 	}
 
 	/**
-     * @param {string} minVersion
-     * @returns {boolean}
-     */
+	 * @param {string} minVersion
+	 * @returns {boolean}
+	 */
 	function versionGte(minVersion) {
 		return semver.gte(getVersion(), minVersion);
 	}
@@ -191,6 +192,7 @@ export function rcloneDriver({binary, configFile}) {
  * @returns {RemoteCommandResult}
  */
 export function remoteCommand(server, endpoint, payload) {
+	// eslint-disable-next-line no-undef
 	const abortController = new AbortController();
 	const uri = server.uri + endpoint;
 	const authHeader = server.auth ? 'Basic ' + Buffer.from(server.auth).toString('base64') : null;
@@ -243,7 +245,7 @@ function rcdJsonParser(text) {
 function streamReadlineHandler(stream, callback) {
 	let backlog = '';
 
-	stream.on('data', data => {
+	stream.on('data', (data) => {
 		backlog += data;
 		let n = backlog.indexOf('\n');
 		while (~n) {

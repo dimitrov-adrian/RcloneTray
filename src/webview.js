@@ -2,9 +2,9 @@ import process from 'node:process';
 import crypto from 'node:crypto';
 import gui from 'gui';
 import open from 'open';
-import {winRef} from './utils/gui-winref.js';
-import {packageJson} from './utils/package.js';
-import {miscImages} from './services/images.js';
+import { winRef } from './utils/gui-winref.js';
+import { packageJson } from './utils/package.js';
+import { miscImages } from './services/images.js';
 
 /**
  * @param {string} uri
@@ -13,11 +13,7 @@ import {miscImages} from './services/images.js';
  * @returns {gui.Window}
  */
 export function createWebViewWindow(uri, title, parentWindow) {
-	const hash = crypto
-		.createHash('sha1')
-		.update(uri)
-		.digest('hex')
-		.slice(0, 8);
+	const hash = crypto.createHash('sha1').update(uri).digest('hex').slice(0, 8);
 
 	const win = winRef(hash);
 	if (win.value) {
@@ -44,7 +40,7 @@ export function createWebViewWindow(uri, title, parentWindow) {
 		});
 		parentWindow.addChildWindow(win.value);
 	} else {
-		win.value.setContentSize({width: 540, height: 380});
+		win.value.setContentSize({ width: 540, height: 380 });
 	}
 
 	const contentView = gui.Container.create();
@@ -57,7 +53,7 @@ export function createWebViewWindow(uri, title, parentWindow) {
 		hardwareAcceleration: false,
 		webview2Support: true,
 	});
-	webview.setStyle({flex: 1});
+	webview.setStyle({ flex: 1 });
 	webview.onFailNavigation = errorDocument;
 	webview.onStartNavigation = handleExternals.bind(null, uri);
 
@@ -76,9 +72,7 @@ export function createWebViewWindow(uri, title, parentWindow) {
  * @param {string} nextUrl
  */
 function handleExternals(baseUrl, self, nextUrl) {
-	if (!nextUrl || nextUrl === baseUrl) {
-		return;
-	}
+	if (!nextUrl || nextUrl === baseUrl) return;
 
 	open(nextUrl);
 	self.getWindow().close();

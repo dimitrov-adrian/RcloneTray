@@ -1,8 +1,9 @@
 import process from 'node:process';
-import {createAboutWindow} from './about.js';
-import {app} from './app.js';
-import {askPass, askConfigPass} from './ask-pass.js';
-import {createPreferencesWindow} from './preferences.js';
+import console from 'node:console';
+import { createAboutWindow } from './about.js';
+import { app } from './app.js';
+import { askPass, askConfigPass } from './ask-pass.js';
+import { createPreferencesWindow } from './preferences.js';
 
 if (process.arch !== 'x64' || !['win32', 'linux', 'darwin'].includes(process.platform)) {
 	console.log('Unsupported platform. Currently supported platforms are:');
@@ -19,26 +20,16 @@ if (!process.versions.yode && !process.versions.qode) {
 }
 
 // Main router.
-(async function (command) {
+(async (command) => {
 	if (command === 'ask-pass-config') {
 		askConfigPass();
-		return;
-	}
-
-	if (command === 'ask-pass-remote' || command === 'ask-pass') {
+	} else if (command === 'ask-pass-remote' || command === 'ask-pass') {
 		askPass();
-		return;
-	}
-
-	if (command === 'about') {
+	} else if (command === 'about') {
 		createAboutWindow().onClose = () => process.exit();
-		return;
-	}
-
-	if (command === 'preferences') {
+	} else if (command === 'preferences') {
 		createPreferencesWindow().onClose = () => process.exit();
-		return;
+	} else {
+		await app();
 	}
-
-	app();
 })(process.argv.slice(-1)[0]);

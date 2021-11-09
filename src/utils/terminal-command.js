@@ -1,17 +1,15 @@
 import process from 'node:process';
-import {spawn} from 'node:child_process';
+import { spawn } from 'node:child_process';
 
 /**
  * Run command in OS terminal application
  * @param {string[]} command
  */
 export function execInOSTerminal(command) {
-	const enquotedCommand = command.map(i => optionEnquote(i));
+	const enquotedCommand = command.map((i) => optionEnquote(i));
 	if (process.platform === 'darwin') {
-		spawn('/usr/bin/osascript', [
-			'-e',
-			`tell application "Terminal" to do script "${enquotedCommand.join(' ').replace(/"/g, '\\"')}" activate`,
-		]).unref();
+		const darwinCommand = enquotedCommand.join(' ').replace(/"/g, '\\"');
+		spawn('/usr/bin/osascript', ['-e', `tell application "Terminal" to do script "${darwinCommand}" activate`]).unref();
 	} else if (process.platform === 'linux') {
 		spawn('x-terminal-emulator', ['-e', ...enquotedCommand]).unref();
 	} else if (process.platform === 'win32') {

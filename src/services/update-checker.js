@@ -14,7 +14,7 @@
 import process from 'node:process';
 import fetch from 'node-fetch';
 import semver from 'semver';
-import {packageJson} from '../utils/package.js';
+import { packageJson } from '../utils/package.js';
 
 /**
  * @throws {Error}
@@ -30,9 +30,7 @@ export async function getLatestRelaseInfo() {
 		throw new Error('Invalid remote manifest');
 	}
 
-	const asset = info
-		.assets
-		.find(url => findBundleForPlatformFunction(url, process.platform));
+	const asset = info.assets.find((url) => findBundleForPlatformFunction(url, process.platform));
 
 	if (!asset) {
 		throw new Error('No update for current platform');

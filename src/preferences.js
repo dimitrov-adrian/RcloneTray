@@ -1,14 +1,14 @@
 import process from 'node:process';
 import gui from 'gui';
-import {config} from './services/config.js';
-import {winRef} from './utils/gui-winref.js';
-import {assignFieldsValues, createTabbedForm} from './utils/gui-form-builder.js';
-import {miscImages} from './services/images.js';
-import {promptError} from './utils/prompt.js';
-import {autoLaunch, autoLaunchError} from './services/auto-launch.js';
-import {packageJson} from './utils/package.js';
-import {openFileEditor} from './utils/open-file-editor.js';
-import {getConfigFile, getDefaultMountPoint} from './services/rclone.js';
+import { config } from './services/config.js';
+import { winRef } from './utils/gui-winref.js';
+import { assignFieldsValues, createTabbedForm } from './utils/gui-form-builder.js';
+import { miscImages } from './services/images.js';
+import { promptError } from './utils/prompt.js';
+import { autoLaunch, autoLaunchError } from './services/auto-launch.js';
+import { packageJson } from './utils/package.js';
+import { openFileEditor } from './utils/open-file-editor.js';
+import { getConfigFile, getDefaultMountPoint } from './services/rclone.js';
 import logger from './services/logger.js';
 
 /**
@@ -24,25 +24,25 @@ const preferencesDefinition = [
 				Name: 'show_type',
 				...(process.platform === 'linux'
 					? {
-						Type: 'bool',
-					}
+							Type: 'bool',
+					  }
 					: {
-						Type: 'string',
-						Enums: [
-							{
-								Name: 'None',
-								Value: '',
-							},
-							{
-								Name: 'Text',
-								Value: 'text',
-							},
-							{
-								Name: 'Icon',
-								Value: 'icon',
-							},
-						],
-					}),
+							Type: 'string',
+							Enums: [
+								{
+									Name: 'None',
+									Value: '',
+								},
+								{
+									Name: 'Text',
+									Value: 'text',
+								},
+								{
+									Name: 'Icon',
+									Value: 'icon',
+								},
+							],
+					  }),
 			},
 			{
 				Name: 'show_host',
@@ -140,8 +140,8 @@ const preferencesDefinition = [
 				Name: 'mount_pattern',
 				Type: 'string',
 				Help:
-                    'Path pattern when mounting. Use %s token for bookmark name or leave empty for defaults:\n'
-                    + getDefaultMountPoint('%s'),
+					'Path pattern when mounting. Use %s token for bookmark name or leave empty for defaults:\n' +
+					getDefaultMountPoint('%s'),
 				// On windows this has no meaning as it only supports mount by letters like C: D: ... etc.
 				Hide: process.platform === 'win32',
 			},
@@ -228,15 +228,12 @@ export function createPreferencesWindow() {
 
 	win.value.setResizable(true);
 	win.value.setMaximizable(false);
-	win.value.setContentSize({width: 540, height: 520});
-	win.value.setContentSizeConstraints(
-		{width: 520, height: 280},
-		{width: 860, height: 800},
-	);
+	win.value.setContentSize({ width: 540, height: 520 });
+	win.value.setContentSizeConstraints({ width: 520, height: 280 }, { width: 860, height: 800 });
 	win.value.setTitle(`${packageJson.build.productName} Preferences`);
 
 	const contentView = gui.Container.create();
-	contentView.setStyle({flex: 1, flexDirection: 'column', padding: 10});
+	contentView.setStyle({ flex: 1, flexDirection: 'column', padding: 10 });
 	win.value.setContentView(contentView);
 
 	const preferencesTabs = createTabbedForm(preferenceDefinitionWithValues());
@@ -252,17 +249,18 @@ export function createPreferencesWindow() {
 	});
 	contentView.addChildView(actionButtonsWrapper);
 
-	const autoLaunchButton = gui.Button.create({title: 'Auto Launch', type: 'checkbox'});
-	autoLaunchButton.setStyle({marginLeft: 0, marginRight: 40, justifySelf: 'flex-start'});
+	const autoLaunchButton = gui.Button.create({ title: 'Auto Launch', type: 'checkbox' });
+	autoLaunchButton.setStyle({ marginLeft: 0, marginRight: 40, justifySelf: 'flex-start' });
 	autoLaunchButton.setEnabled(false);
 	autoLaunchButton.onClick = autolaunchSaveAction;
 	actionButtonsWrapper.addChildView(autoLaunchButton);
 
 	const actionButtonSave = gui.Button.create('Save');
-	actionButtonSave.onClick = self => saveAction({self, form: preferencesTabs});
+	actionButtonSave.onClick = (self) => saveAction({ self, form: preferencesTabs });
 	actionButtonsWrapper.addChildView(actionButtonSave);
 
 	win.value.activate();
+	win.restorePosition();
 
 	autoLaunchInitValue(autoLaunchButton);
 
@@ -273,7 +271,7 @@ export function createPreferencesWindow() {
  * @returns {import('./utils/gui-form-builder.js').FieldDefinitionGroup[]}
  */
 function preferenceDefinitionWithValues() {
-	return preferencesDefinition.map(group => ({
+	return preferencesDefinition.map((group) => ({
 		...group,
 		fields: assignFieldsValues(group.fields, config.store),
 	}));
@@ -285,9 +283,7 @@ function preferenceDefinitionWithValues() {
 async function autoLaunchInitValue(button) {
 	try {
 		const currentState = await autoLaunch.isEnabled();
-		if (!button) {
-			return;
-		}
+		if (!button) return;
 
 		button.setEnabled(true);
 		button.setChecked(currentState);
@@ -320,14 +316,14 @@ async function autolaunchSaveAction(checkbox) {
  *  form: import('./utils/gui-form-builder.js').Form
  * }} _
  */
-function saveAction({self, form}) {
+function saveAction({ self, form }) {
 	try {
 		config.set(form.getValues());
 		self.getWindow().close();
 	} catch (error) {
 		promptError({
 			title: 'Invalid values',
-			message: error.toString(),
+			message: error,
 			parentWindow: self.getWindow(),
 		});
 	}

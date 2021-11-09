@@ -1,6 +1,6 @@
 import process from 'node:process';
-import {resolve, basename, join} from 'node:path';
-import {readFileSync} from 'node:fs';
+import { resolve, basename, join } from 'node:path';
+import { readFileSync } from 'node:fs';
 
 /**
  * @type {boolean}
@@ -14,8 +14,8 @@ export const packageJson = JSON.parse(
 	readFileSync(
 		// If packed it's under asar/, otherwise just resolve it.
 		isPacked ? process.execPath + '/asar/package.json' : resolve('package.json'),
-		{encoding: 'utf-8'},
-	),
+		{ encoding: 'utf-8' }
+	)
 );
 
 /**
@@ -25,9 +25,7 @@ export const packageJson = JSON.parse(
  * @returns {string}
  */
 export function getResourcePath(...args) {
-	return isPacked
-		? join(process.execPath, '..', 'res', ...args)
-		: resolve(join(...args));
+	return isPacked ? join(process.execPath, '..', 'res', ...args) : resolve(join(...args));
 }
 
 /**

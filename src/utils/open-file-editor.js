@@ -3,7 +3,7 @@
 // until then, we go with some zero-near custom implementation
 
 import process from 'node:process';
-import {spawn} from 'node:child_process';
+import { spawn } from 'node:child_process';
 import which from 'which';
 
 /**
@@ -11,7 +11,7 @@ import which from 'which';
  */
 export function openFileEditor(file) {
 	const cmd = getEditorCommandline(file);
-	spawn(cmd[0], cmd[1], {detached: true, windowsHide: true}).unref();
+	spawn(cmd[0], cmd[1], { detached: true, windowsHide: true }).unref();
 }
 
 /**
@@ -70,7 +70,7 @@ function findAvailableLinuxEditor(editors) {
 			continue;
 		}
 
-		const editor = which.sync(ed, {nothrow: true});
+		const editor = which.sync(ed, { nothrow: true });
 		if (editor) {
 			return editor;
 		}

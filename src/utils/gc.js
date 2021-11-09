@@ -1,18 +1,17 @@
+// @ts-nocheck
+import { setTimeout, setInterval, clearTimeout } from 'node:timers';
+
 /**
  * @file https://github.com/yue/wey/blob/master/lib/util/gc.js
  * @author: zcbenz
  */
-
-// @ts-nocheck
 import process from 'node:process';
 import gui from 'gui';
 
 let gcInterval = null;
 
 export function runGC() {
-	if (gcInterval) {
-		return;
-	}
+	if (gcInterval) return;
 
 	let gcTimer = null;
 	process.gc = function (immediate = false, level = 1) {

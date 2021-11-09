@@ -1,5 +1,5 @@
 import Conf from 'conf';
-import {packageJson} from '../utils/package.js';
+import { packageJson } from '../utils/package.js';
 
 /* eslint-disable camelcase */
 const defaults = {
@@ -10,7 +10,7 @@ const defaults = {
 		},
 		vfs: {
 			CacheMode: 1,
-			DirCacheTime: 360_000,
+			DirCacheTime: 360000,
 		},
 		mount: {
 			AllowRoot: true,

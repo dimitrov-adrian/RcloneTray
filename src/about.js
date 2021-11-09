@@ -1,12 +1,12 @@
 import process from 'node:process';
 import gui from 'gui';
 import open from 'open';
-import {packageJson} from './utils/package.js';
-import {winRef} from './utils/gui-winref.js';
-import {miscImages} from './services/images.js';
-import {getLatestRelaseInfo} from './services/update-checker.js';
-import {promptYesNo} from './utils/prompt.js';
-import {createWebViewWindow} from './webview.js';
+import { packageJson } from './utils/package.js';
+import { winRef } from './utils/gui-winref.js';
+import { miscImages } from './services/images.js';
+import { getLatestRelaseInfo } from './services/update-checker.js';
+import { promptYesNo } from './utils/prompt.js';
+import { createWebViewWindow } from './webview.js';
 import logger from './services/logger.js';
 
 /**
@@ -19,17 +19,13 @@ export function createAboutWindow() {
 		return win.value;
 	}
 
-	win.value = gui.Window.create(
-		process.platform === 'darwin'
-			? {frame: false, showTrafficLights: true}
-			: {},
-	);
+	win.value = gui.Window.create(process.platform === 'darwin' ? { frame: false, showTrafficLights: true } : {});
 	win.value.setResizable(false);
 	win.value.setMaximizable(false);
 	win.value.setMinimizable(false);
 	win.value.setHasShadow(true);
 	win.value.setTitle(`About ${packageJson.build.productName}`);
-	win.value.setContentSize({width: 540, height: 380});
+	win.value.setContentSize({ width: 540, height: 380 });
 	if (process.platform !== 'darwin') {
 		win.value.setIcon(miscImages.rcloneColor);
 	}
@@ -44,7 +40,7 @@ export function createAboutWindow() {
 	});
 
 	const logo = gui.GifPlayer.create();
-	logo.setStyle({marginBottom: 20});
+	logo.setStyle({ marginBottom: 20 });
 	logo.setImage(miscImages.rcloneColor);
 	contentView.addChildView(logo);
 
@@ -61,36 +57,32 @@ export function createAboutWindow() {
 	];
 
 	for (const appLine of appLines) {
-		if (appLine === undefined || appLine === null) {
-			continue;
-		}
-
 		const line = gui.Label.create(appLine);
 		line.setAlign('center');
 		contentView.addChildView(line);
 	}
 
 	const actionButtonsWrapper = gui.Container.create();
-	actionButtonsWrapper.setStyle({marginTop: '40px', flexDirection: 'row'});
+	actionButtonsWrapper.setStyle({ marginTop: '40px', flexDirection: 'row' });
 	contentView.addChildView(actionButtonsWrapper);
 
 	const actionButtonWebsite = gui.Button.create('Homepage');
-	actionButtonWebsite.setStyle({flex: 1, marginRight: 10});
+	actionButtonWebsite.setStyle({ flex: 1, marginRight: 10 });
 	actionButtonWebsite.onClick = openHomepage;
 	actionButtonsWrapper.addChildView(actionButtonWebsite);
 
 	const actionButtonIssue = gui.Button.create('Issues');
-	actionButtonIssue.setStyle({flex: 1, marginRight: 10});
+	actionButtonIssue.setStyle({ flex: 1, marginRight: 10 });
 	actionButtonIssue.onClick = openIssues;
 	actionButtonsWrapper.addChildView(actionButtonIssue);
 
 	const actionButtonLicense = gui.Button.create('License Notes');
-	actionButtonLicense.setStyle({flex: 1, marginRight: 10});
+	actionButtonLicense.setStyle({ flex: 1, marginRight: 10 });
 	actionButtonLicense.onClick = openLicense;
 	actionButtonsWrapper.addChildView(actionButtonLicense);
 
 	const actionButtonRcloneWebsite = gui.Button.create('About Rclone');
-	actionButtonRcloneWebsite.setStyle({flex: 1});
+	actionButtonRcloneWebsite.setStyle({ flex: 1 });
 	actionButtonRcloneWebsite.onClick = openRcloneHomepage;
 	actionButtonsWrapper.addChildView(actionButtonRcloneWebsite);
 
@@ -118,9 +110,7 @@ export function openLicense(initiatorButton) {
 		packageJson.config.RcloneTray.licenseFile,
 		packageJson.build.productName + ' LICENSE',
 		// Cause on windows, the inner window goes within by size in parent window.
-		initiatorButton && process.platform !== 'win32'
-			? initiatorButton.getWindow()
-			: null,
+		initiatorButton && process.platform !== 'win32' ? initiatorButton.getWindow() : null
 	);
 }
 
@@ -131,13 +121,13 @@ export function openIssues() {
 /**
  * @param {{ title: string, message: string }} _
  */
-export function reportIssue({title, message}) {
-	const reportUrl
-		= packageJson.bugs.url
-		+ '/new?title='
-		+ encodeURIComponent(title || 'Issue subject')
-		+ '&body='
-		+ encodeURIComponent(message || 'Issue description');
+export function reportIssue({ title, message }) {
+	const reportUrl =
+		packageJson.bugs.url +
+		'/new?title=' +
+		encodeURIComponent(title || 'Issue subject') +
+		'&body=' +
+		encodeURIComponent(message || 'Issue description');
 	open(reportUrl);
 }
 
@@ -148,9 +138,7 @@ export async function checkForUpdate(parentWindow) {
 	let updateResult;
 	try {
 		updateResult = await getLatestRelaseInfo();
-		if (!updateResult.hasUpdate) {
-			return;
-		}
+		if (!updateResult.hasUpdate) return;
 	} catch (error) {
 		logger.warn('Cannot check for new release', error.toString());
 		return;
@@ -162,7 +150,7 @@ export async function checkForUpdate(parentWindow) {
 			message: `There is new ${updateResult.version} version of ${packageJson.build.productName} available, do you want to go and download it?`,
 			parentWindow,
 		},
-		result => result && open(updateResult.url),
+		(result) => result && open(updateResult.url)
 	);
 }
 

@@ -35,7 +35,7 @@ import gui from 'gui';
 import parse from 'parse-duration';
 import debounce from 'debounce';
 import objectPath from 'object-path';
-import {formatTitle, sanitizeSizeSuffix} from './formatter.js';
+import { formatTitle, sanitizeSizeSuffix } from './formatter.js';
 
 /**
  * @type {gui.Font}
@@ -49,7 +49,7 @@ export const helpTextFont = gui.Font.create('', 10, 'normal', 'normal');
  * @param {{}} values
  */
 export function assignFieldsValues(fields, values) {
-	return fields.map(field => ({
+	return fields.map((field) => ({
 		...field,
 		Value: values[field.Name] || objectPath.get(values, field.Name) || field.Value || field.Default || null,
 	}));
@@ -72,11 +72,11 @@ function scrollRedraw(view) {
  */
 export function createForm(fieldsDefinition, enableScroll) {
 	const container = gui.Container.create();
-	container.setStyle({flexDirection: 'column', padding: 10});
+	container.setStyle({ flexDirection: 'column', padding: 10 });
 
 	const fields = Object.values(fieldsDefinition)
-		.filter(fieldsDefinition => !fieldsDefinition.Disable)
-		.map(fieldDefinition => createFormField(fieldDefinition));
+		.filter((fieldsDefinition) => !fieldsDefinition.Disable)
+		.map((fieldDefinition) => createFormField(fieldDefinition));
 
 	for (const field of fields) {
 		container.addChildView(field.container);
@@ -111,7 +111,7 @@ export function createForm(fieldsDefinition, enableScroll) {
 	}
 
 	function getValues() {
-		return Object.assign({}, ...fields.map(i => i.getValue()));
+		return Object.assign({}, ...fields.map((i) => i.getValue()));
 	}
 }
 
@@ -121,7 +121,7 @@ export function createForm(fieldsDefinition, enableScroll) {
  */
 export function createTabbedForm(tabsDefinition) {
 	const tabsContainer = gui.Tab.create();
-	tabsContainer.setStyle({flex: 1});
+	tabsContainer.setStyle({ flex: 1 });
 
 	const tabsForms = [];
 
@@ -143,7 +143,7 @@ export function createTabbedForm(tabsDefinition) {
 	 * @returns {object}
 	 */
 	function getValues() {
-		return Object.assign({}, ...tabsForms.map(i => i.getValues()));
+		return Object.assign({}, ...tabsForms.map((i) => i.getValues()));
 	}
 
 	/**
@@ -159,7 +159,8 @@ export function createTabbedForm(tabsDefinition) {
  * @param {FieldDefinition} fieldDefinition
  */
 export function createFormField(fieldDefinition) {
-	const labelText = (fieldDefinition.Required ? '*' : '') + (fieldDefinition.Title || formatTitle(fieldDefinition.Name));
+	const labelText =
+		(fieldDefinition.Required ? '*' : '') + (fieldDefinition.Title || formatTitle(fieldDefinition.Name));
 
 	const wrapper = gui.Container.create();
 	wrapper.setStyle({
@@ -178,7 +179,7 @@ export function createFormField(fieldDefinition) {
 	});
 
 	const fieldContainer = gui.Container.create();
-	fieldContainer.setStyle({flexGrow: 1, flexDirection: 'column'});
+	fieldContainer.setStyle({ flexGrow: 1, flexDirection: 'column' });
 
 	wrapper.addChildView(labelField);
 	wrapper.addChildView(fieldContainer);
@@ -193,22 +194,17 @@ export function createFormField(fieldDefinition) {
 	fieldContainer.addChildView(theField);
 
 	if (fieldDefinition.Help) {
-		const hintAttributedLabel = gui.AttributedText.create(fieldDefinition.Help, {
-			font: helpTextFont,
-		});
-		hintAttributedLabel.setFormat({
-			ellipsis: true,
-			wrap: true,
-		});
+		const hintAttributedLabel = gui.AttributedText.create(fieldDefinition.Help, { font: helpTextFont });
+		hintAttributedLabel.setFormat({ ellipsis: true, wrap: true });
 		const hintLabelField = gui.Label.createWithAttributedText(hintAttributedLabel);
 		hintLabelField.setAlign('start');
-		hintLabelField.setStyle({width: 280, marginTop: 4, marginBottom: 3});
+		hintLabelField.setStyle({ width: 280, marginTop: 4, marginBottom: 3 });
 		fieldContainer.addChildView(hintLabelField);
 	}
 
 	if (fieldDefinition.Hide) {
 		wrapper.setVisible(false);
-		wrapper.setStyle({height: 0});
+		wrapper.setStyle({ height: 0 });
 	}
 
 	return {
@@ -239,7 +235,7 @@ function createField(fieldDefinition) {
 		}
 
 		if (fieldDefinition.Value) {
-			const selected = fieldDefinition.Examples.find(item => item.Value === field.getText());
+			const selected = fieldDefinition.Examples.find((item) => item.Value === field.getText());
 			if (!selected) {
 				field.addItem(fieldDefinition.Value.toString());
 			}
@@ -248,13 +244,13 @@ function createField(fieldDefinition) {
 		}
 
 		const updateHelp = () => {
-			const item = fieldDefinition.Examples.find(i => i.Value === field.getText());
+			const item = fieldDefinition.Examples.find((i) => i.Value === field.getText());
 			if (item) {
 				optionHelpLabel.setVisible(true);
 				const optionHelpText = gui.AttributedText.create(item.Help, {
 					font: helpTextFont,
 				});
-				optionHelpText.setFormat({ellipsis: true, wrap: true});
+				optionHelpText.setFormat({ ellipsis: true, wrap: true });
 				optionHelpLabel.setAttributedText(optionHelpText);
 			} else {
 				optionHelpLabel.setVisible(false);
@@ -262,7 +258,7 @@ function createField(fieldDefinition) {
 		};
 
 		const optionHelpLabel = gui.Label.create('\0');
-		optionHelpLabel.setStyle({width: 340, marginTop: 4, marginBottom: 3});
+		optionHelpLabel.setStyle({ width: 340, marginTop: 4, marginBottom: 3 });
 
 		field.onTextChange = () => {
 			if (fieldDefinition.onChange) {
@@ -310,10 +306,10 @@ function createField(fieldDefinition) {
 
 	if (fieldDefinition.Type === 'string' && fieldDefinition.FileDialog) {
 		const wrapper = gui.Container.create();
-		wrapper.setStyle({flexDirection: 'row'});
+		wrapper.setStyle({ flexDirection: 'row' });
 
 		const textField = gui.Entry.createType('normal');
-		textField.setStyle({flex: 1, flexGrow: 1});
+		textField.setStyle({ flex: 1, flexGrow: 1 });
 		if (fieldDefinition.Value) {
 			textField.setText(fieldDefinition.Value.toString());
 		}
@@ -322,7 +318,7 @@ function createField(fieldDefinition) {
 
 		const browseButton = gui.Button.create('Browse');
 		wrapper.addChildView(browseButton);
-		browseButton.setStyle({flex: 1, flexGrow: 0, marginLeft: 10});
+		browseButton.setStyle({ flex: 1, flexGrow: 0, marginLeft: 10 });
 		browseButton.onClick = fileDialogSetter.bind(null, fieldDefinition, textField, browseButton);
 		if (fieldDefinition.onChange) {
 			textField.onTextChange = () => fieldDefinition.onChange(textField.getText());
@@ -332,10 +328,10 @@ function createField(fieldDefinition) {
 	}
 
 	if (fieldDefinition.Type === 'bool') {
-		const field = gui.Button.create({type: 'checkbox'});
+		const field = gui.Button.create({ type: 'checkbox' });
 		if (process.platform === 'win32') {
 			// Bug in libyue, it need height in windows
-			field.setStyle({height: 20});
+			field.setStyle({ height: 20 });
 		}
 
 		if (fieldDefinition.Value === true || fieldDefinition.Value === 'true') {
@@ -498,13 +494,11 @@ function fileDialogSetter(fieldDefinition, connectedTextField, connectedBrowseBu
 	}
 
 	// It seems that on libyue v0.9.6 it cannot get reference of parent window
-	if (connectedBrowseButton.getWindow()) {
-		if (!fileDialog.runForWindow(connectedBrowseButton.getWindow())) {
-			return;
-		}
-	} else if (!fileDialog.run()) {
+	if (
+		(connectedBrowseButton.getWindow() && !fileDialog.runForWindow(connectedBrowseButton.getWindow())) ||
+		!fileDialog.run()
+	)
 		return;
-	}
 
 	if (fieldDefinition.FileDialog === 'files') {
 		connectedTextField.setText(fileDialog.getResults().join(':'));

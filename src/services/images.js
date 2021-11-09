@@ -1,5 +1,5 @@
 import gui from 'gui';
-import {getResourcePath} from '../utils/package.js';
+import { getResourcePath } from '../utils/package.js';
 
 /**
  * Some miscelaneous images

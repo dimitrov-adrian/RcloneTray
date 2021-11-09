@@ -1,11 +1,11 @@
 import process from 'node:process';
 import gui from 'gui';
 import open from 'open';
-import {winRef} from './utils/gui-winref.js';
-import {assignFieldsValues, createForm, createTabbedForm} from './utils/gui-form-builder.js';
-import {promptError, promptYesNo} from './utils/prompt.js';
-import {miscImages} from './services/images.js';
-import {packageJson} from './utils/package.js';
+import { winRef } from './utils/gui-winref.js';
+import { assignFieldsValues, createForm, createTabbedForm } from './utils/gui-form-builder.js';
+import { promptError, promptYesNo } from './utils/prompt.js';
+import { miscImages } from './services/images.js';
+import { packageJson } from './utils/package.js';
 import * as rclone from './services/rclone.js';
 
 /**
@@ -21,6 +21,7 @@ export async function createClonedBookmarkWindow(bookmarkName, providerConfig, p
 			message: `The remote type: ${config.type} is not supported by Rclone.`,
 			parentWindow,
 		});
+
 		return;
 	}
 
@@ -32,7 +33,7 @@ export async function createClonedBookmarkWindow(bookmarkName, providerConfig, p
 			type: config.type,
 			values: config,
 		},
-		parentWindow,
+		parentWindow
 	);
 
 	parentWindow.close();
@@ -51,6 +52,7 @@ export async function createBookmarkWindowByName(bookmarkName, parentWindow) {
 			message: `The remote type: ${config.type} is not supported by Rclone.`,
 			parentWindow,
 		});
+
 		return;
 	}
 
@@ -62,7 +64,7 @@ export async function createBookmarkWindowByName(bookmarkName, parentWindow) {
 			type: config.type,
 			values: config,
 		},
-		parentWindow,
+		parentWindow
 	);
 }
 
@@ -77,7 +79,7 @@ export async function createBookmarkWindowByName(bookmarkName, parentWindow) {
  * @actions {{create, delete, cloneDialog }}
  * @param {gui.Window=} parentWindow
  */
-export function createBookmarkWindow(isNew, {name, type, providerConfig, values}, parentWindow) {
+export function createBookmarkWindow(isNew, { name, type, providerConfig, values }, parentWindow) {
 	const win = winRef(`edit-bookrmark-${name}-${isNew}`);
 
 	if (win.value) {
@@ -91,7 +93,7 @@ export function createBookmarkWindow(isNew, {name, type, providerConfig, values}
 		win.value.setIcon(miscImages.rcloneColor);
 	}
 
-	win.value.setContentSizeConstraints({width: 520, height: 560}, {width: 860, height: 1080});
+	win.value.setContentSizeConstraints({ width: 520, height: 560 }, { width: 860, height: 1080 });
 	if (parentWindow) {
 		win.value.setBounds({
 			width: 560,
@@ -100,7 +102,7 @@ export function createBookmarkWindow(isNew, {name, type, providerConfig, values}
 			y: parentWindow.getBounds().y,
 		});
 	} else {
-		win.value.setContentSize({width: 560, height: 640});
+		win.value.setContentSize({ width: 560, height: 640 });
 	}
 
 	if (isNew) {
@@ -110,7 +112,7 @@ export function createBookmarkWindow(isNew, {name, type, providerConfig, values}
 	}
 
 	const contentView = gui.Container.create();
-	contentView.setStyle({padding: 10});
+	contentView.setStyle({ padding: 10 });
 	win.value.setContentView(contentView);
 
 	const systemForm = createForm([
@@ -143,16 +145,16 @@ export function createBookmarkWindow(isNew, {name, type, providerConfig, values}
 			label: 'Basic',
 			enableScroll: true,
 			fields: assignFieldsValues(
-				providerConfig.Options.filter(a => !a.Advanced && !a.Hide),
-				values || {},
+				providerConfig.Options.filter((a) => !a.Advanced && !a.Hide),
+				values || {}
 			),
 		},
 		{
 			label: 'Advanced',
 			enableScroll: true,
 			fields: assignFieldsValues(
-				providerConfig.Options.filter(a => a.Advanced && !a.Hide),
-				values || {},
+				providerConfig.Options.filter((a) => a.Advanced && !a.Hide),
+				values || {}
 			),
 		},
 		{
@@ -191,7 +193,7 @@ export function createBookmarkWindow(isNew, {name, type, providerConfig, values}
 						Title: 'Pull on start',
 					},
 				],
-				values || {},
+				values || {}
 			),
 		},
 	]);
@@ -208,30 +210,30 @@ export function createBookmarkWindow(isNew, {name, type, providerConfig, values}
 	contentView.addChildView(actionButtonsWrapper);
 
 	const actionButtonDoc = gui.Button.create('Online Docs');
-	actionButtonDoc.setStyle({marginLeft: 10});
+	actionButtonDoc.setStyle({ marginLeft: 10 });
 	actionButtonsWrapper.addChildView(actionButtonDoc);
 	actionButtonDoc.onClick = providerDocsAction;
 
 	if (!isNew) {
 		const actionButtonDelete = gui.Button.create('Delete');
-		actionButtonDelete.setStyle({marginLeft: 10});
+		actionButtonDelete.setStyle({ marginLeft: 10 });
 		actionButtonsWrapper.addChildView(actionButtonDelete);
-		actionButtonDelete.onClick = self => deleteAction({name, self});
+		actionButtonDelete.onClick = (self) => deleteAction({ name, self });
 	}
 
 	if (!isNew) {
 		const actionButtonClone = gui.Button.create('Clone');
-		actionButtonClone.setStyle({marginLeft: 10});
+		actionButtonClone.setStyle({ marginLeft: 10 });
 		actionButtonClone.setEnabled(!isNew);
 		actionButtonsWrapper.addChildView(actionButtonClone);
-		actionButtonClone.onClick = self => cloneAction({name, providerConfig, self});
+		actionButtonClone.onClick = (self) => cloneAction({ name, providerConfig, self });
 	}
 
 	const actionButtonSave = gui.Button.create(isNew ? 'Create' : 'Save');
-	actionButtonSave.setStyle({marginLeft: 10});
+	actionButtonSave.setStyle({ marginLeft: 10 });
 	actionButtonSave.onClick = isNew
-		? self => createNewAction({self, systemForm, propertyForm})
-		: self => saveAction({self, providerConfig, name, systemForm, propertyForm});
+		? (self) => createNewAction({ self, systemForm, propertyForm })
+		: (self) => saveAction({ self, providerConfig, name, systemForm, propertyForm });
 
 	actionButtonsWrapper.addChildView(actionButtonSave);
 
@@ -251,10 +253,8 @@ export function createBookmarkWindow(isNew, {name, type, providerConfig, values}
 /**
  * @param {{ name: string, providerConfig: object, self: gui.Button }} _
  */
-async function cloneAction({name, providerConfig, self}) {
-	if (!name) {
-		return;
-	}
+async function cloneAction({ name, providerConfig, self }) {
+	if (!name) return;
 
 	promptYesNo(
 		{
@@ -262,13 +262,11 @@ async function cloneAction({name, providerConfig, self}) {
 			message: `Clone ${name} bookmark and proceed to settings?`,
 			parentWindow: self.getWindow(),
 		},
-		doClone,
+		doClone
 	);
 
 	function doClone(result) {
-		if (!result) {
-			return;
-		}
+		if (!result) return;
 
 		if (self.getWindow()) {
 			self.getWindow().deactivate();
@@ -281,10 +279,8 @@ async function cloneAction({name, providerConfig, self}) {
 /**
  * @param {{ name: string, self: gui.Button }} _
  */
-async function deleteAction({name, self}) {
-	if (!name) {
-		return;
-	}
+async function deleteAction({ name, self }) {
+	if (!name) return;
 
 	promptYesNo(
 		{
@@ -292,13 +288,11 @@ async function deleteAction({name, self}) {
 			message: `Are you sure you want to delete ${name} bookmark?`,
 			parentWindow: self.getWindow(),
 		},
-		doDelete,
+		doDelete
 	);
 
 	async function doDelete(result) {
-		if (!result) {
-			return;
-		}
+		if (!result) return;
 
 		try {
 			await rclone.deleteBookmark(name);
@@ -322,16 +316,17 @@ async function deleteAction({name, self}) {
  *  propertyForm: import('./utils/gui-form-builder.js').Form
  * }} _
  */
-async function createNewAction({self, systemForm, propertyForm}) {
+async function createNewAction({ self, systemForm, propertyForm }) {
 	let values;
 	try {
 		values = propertyForm.getValues();
 	} catch (error) {
 		promptError({
 			title: 'Invalid values',
-			message: error.toString(),
+			message: error,
 			parentWindow: self.getWindow(),
 		});
+
 		return;
 	}
 
@@ -358,10 +353,8 @@ async function createNewAction({self, systemForm, propertyForm}) {
  *  propertyForm: import('./utils/gui-form-builder.js').Form
  * }} _
  */
-async function saveAction({name, self, propertyForm}) {
-	if (!name) {
-		return;
-	}
+async function saveAction({ name, self, propertyForm }) {
+	if (!name) return;
 
 	let values;
 	try {
@@ -369,9 +362,10 @@ async function saveAction({name, self, propertyForm}) {
 	} catch (error) {
 		promptError({
 			title: 'Invalid values',
-			message: error.toString(),
+			message: error,
 			parentWindow: self.getWindow(),
 		});
+
 		return;
 	}
 

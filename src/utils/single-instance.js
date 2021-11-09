@@ -15,17 +15,19 @@ export function singleInstanceLock(id) {
 	const hash = crypto.createHash('sha1').update(id).update(os.userInfo().username.toString()).digest('hex');
 
 	// Socket filename.
-	const socketName = `${id}-${hash}`
-		.toString()
-		.toLowerCase()
-		.replace(/[^a-z\d-.]/g, '') + '.lock';
+	const socketName =
+		`${id}-${hash}`
+			.toString()
+			.toLowerCase()
+			.replace(/[^a-z\d-.]/g, '') + '.lock';
 
 	// Socket filepath.
-	const socketPath = process.platform === 'win32'
-		? `\\\\.\\pipe\\${socketName}`
-		: (process.platform === 'darwin'
+	const socketPath =
+		process.platform === 'win32'
+			? `\\\\.\\pipe\\${socketName}`
+			: process.platform === 'darwin'
 			? `${os.tmpdir()}/.${socketName}`
-			: `${os.homedir()}/.${socketName}`);
+			: `${os.homedir()}/.${socketName}`;
 
 	return new Promise((resolve, reject) => {
 		if (fs.existsSync(socketPath)) {

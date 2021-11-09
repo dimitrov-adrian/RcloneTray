@@ -11,9 +11,10 @@
 		"allowSyntheticDefaultImports": true,
 	},
 	"include": [
+		"scripts/**/*",
 		"src/**/*",
 	],
 	"exclude": [
-		"node_modules/**"
+		"node_modules"
 	]
 }

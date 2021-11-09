@@ -1,24 +1,24 @@
 import process from 'node:process';
 import EventEmitter from 'node:events';
 import gui from 'gui';
-import {runGC} from './utils/gc.js';
-import {packageJson} from './utils/package.js';
-import {sendNotification} from './utils/gui-notification.js';
+import { runGC } from './utils/gc.js';
+import { packageJson } from './utils/package.js';
+import { sendNotification } from './utils/gui-notification.js';
 import * as rclone from './services/rclone.js';
-import {singleInstanceLock} from './utils/single-instance.js';
-import {config} from './services/config.js';
-import {promptError, promptErrorReporting} from './utils/prompt.js';
-import {createTrayMenu, updateMenu} from './tray-menu.js';
-import {appMenu} from './app-menu.js';
+import { singleInstanceLock } from './utils/single-instance.js';
+import { config } from './services/config.js';
+import { promptError, promptErrorReporting } from './utils/prompt.js';
+import { createTrayMenu, updateMenu } from './tray-menu.js';
+import { appMenu } from './app-menu.js';
 import logger from './services/logger.js';
-import {insert as logInsert} from './logs.js';
+import { insert as logInsert } from './logs.js';
 
-export const pubsub = new EventEmitter({captureRejections: true});
+export const pubsub = new EventEmitter({ captureRejections: true });
 
 export async function app() {
-	process.setUncaughtExceptionCaptureCallback(error => {
+	process.setUncaughtExceptionCaptureCallback((error) => {
 		logger.error('[UNEXPECTED_ERROR]', error);
-		promptErrorReporting({title: 'Unexpected error', message: error});
+		promptErrorReporting({ title: 'Unexpected error', message: error });
 	});
 
 	if (process.platform === 'win32' || process.platform === 'linux') {
@@ -36,7 +36,7 @@ export async function app() {
 					title: packageJson.productName,
 					message: `There is already running instance of ${packageJson.productName}, cannot start twice.`,
 				},
-				() => process.exit(1),
+				() => process.exit(1)
 			);
 			return;
 		}
@@ -50,7 +50,7 @@ export async function app() {
 
 	config.onDidAnyChange(() => updateMenu());
 
-	rclone.emitter.on('error', error => {
+	rclone.emitter.on('error', (error) => {
 		const message = error.error.toString() + (error.reason ? '\n' + error.reason.toString() : '');
 		sendNotification(message);
 		logger.log('!!!RCLONE_ERROR!!!', message);
@@ -65,8 +65,8 @@ export async function app() {
 				Timeout: 10,
 				DirCacheTime: 3,
 				ReadOnly: true,
-				CachePollInterval: 10_000,
-				PollInterval: 10_000,
+				CachePollInterval: 10000,
+				PollInterval: 10000,
 			},
 			mount: {
 				NoAppleDouble: true,
@@ -96,8 +96,8 @@ export async function app() {
 				}
 
 				if (
-					bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.pullOnStart] === 'true'
-					&& bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]
+					bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.pullOnStart] === 'true' &&
+					bookmarkConfig[rclone.RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory]
 				) {
 					rclone.pull(bookmarkName, bookmarkConfig);
 				}
@@ -107,20 +107,21 @@ export async function app() {
 		}
 	});
 
-	rclone.emitter.on('error', error => {
+	rclone.emitter.on('error', (error) => {
 		logInsert(error);
 	});
 
-	rclone.emitter.on('log', error => {
+	rclone.emitter.on('log', (error) => {
 		logInsert(error);
 	});
 
-	rclone.emitter.on('config', info => {
+	rclone.emitter.on('config', (info) => {
 		if (!info) {
 			logInsert({
 				level: 'info',
 				msg: 'External config change',
 			});
+
 			return;
 		}
 
@@ -130,7 +131,7 @@ export async function app() {
 		});
 	});
 
-	rclone.emitter.on('action', info => {
+	rclone.emitter.on('action', (info) => {
 		if (info.completed) {
 			logInsert({
 				level: 'info',
@@ -144,7 +145,7 @@ export async function app() {
 		}
 	});
 
-	rclone.emitter.on('invalid-config-pass', message => {
+	rclone.emitter.on('invalid-config-pass', (message) => {
 		logInsert({
 			level: 'error',
 			msg: 'Invalid Rclone password',
@@ -155,7 +156,7 @@ export async function app() {
 				title: 'Invalid Rclone password',
 				message,
 			},
-			() => process.exit(1),
+			() => process.exit(1)
 		);
 	});
 

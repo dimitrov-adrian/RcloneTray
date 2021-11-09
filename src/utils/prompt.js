@@ -1,11 +1,11 @@
 import process from 'node:process';
-import {homedir} from 'node:os';
+import { homedir } from 'node:os';
 import gui from 'gui';
 import open from 'open';
-import {miscImages} from '../services/images.js';
-import {helpTextFont} from './gui-form-builder.js';
-import {packageJson} from './package.js';
-import {ref} from './ref.js';
+import { miscImages } from '../services/images.js';
+import { helpTextFont } from './gui-form-builder.js';
+import { packageJson } from './package.js';
+import { ref } from './ref.js';
 
 // @TODO    Promiseify the prompt functions
 //          it's not possible right now as libyue has some
@@ -14,14 +14,14 @@ import {ref} from './ref.js';
 
 /**
  * @param {{
- * 	title: string,
- * 	message?: string|Error,
- * 	parentWindow?: gui.Window,
+ *  title: string,
+ *  message?: string|Error,
+ *  parentWindow?: gui.Window,
  * }} options
  * @param {(result: boolean) => void=} resolve
  * @returns {void}
  */
-export function promptError({title, message, parentWindow}, resolve) {
+export function promptError({ title, message, parentWindow }, resolve) {
 	const win = ref();
 	win.value = gui.MessageBox.create();
 	win.value.setType('error');
@@ -60,7 +60,7 @@ export function promptError({title, message, parentWindow}, resolve) {
  * @param {(result: boolean) => void=} resolve
  * @returns {void}
  */
-export function promptInfo({title, message, parentWindow}, resolve) {
+export function promptInfo({ title, message, parentWindow }, resolve) {
 	const win = ref();
 	win.value = gui.MessageBox.create();
 	win.value.setType('none');
@@ -99,7 +99,7 @@ export function promptInfo({title, message, parentWindow}, resolve) {
  * @param {(result: boolean, parent?: gui.Window) => void=} resolve
  * @returns {void}
  */
-export function promptYesNo({title, message, parentWindow}, resolve) {
+export function promptYesNo({ title, message, parentWindow }, resolve) {
 	const win = ref();
 	win.value = gui.MessageBox.create();
 	win.value.setType('warning');
@@ -141,7 +141,7 @@ export function promptYesNo({title, message, parentWindow}, resolve) {
  * @param {(result: boolean) => void=} resolve
  * @returns {void}
  */
-export function promptErrorReporting({title, message, parentWindow}, resolve) {
+export function promptErrorReporting({ title, message, parentWindow }, resolve) {
 	const win = ref();
 	win.value = gui.MessageBox.create();
 	win.value.setType('error');
@@ -152,21 +152,22 @@ export function promptErrorReporting({title, message, parentWindow}, resolve) {
 		win.value.setInformativeText(message.toString());
 	}
 
-	const plainTextReport = typeof message === 'string'
-		? message
-		: (message instanceof Error
+	const plainTextReport =
+		typeof message === 'string'
+			? message
+			: message instanceof Error
 			? message.toString() + '\n' + message.stack.replace(new RegExp(homedir(), 'g'), '***')
-			: JSON.stringify(message));
+			: JSON.stringify(message);
 
 	win.value.onResponse = (self, result) => {
 		win.unref();
 		if (result === 1) {
-			const link
-                = packageJson.bugs.url
-                + '/new?title='
-                + encodeURIComponent(title)
-                + '&body='
-                + encodeURIComponent(plainTextReport);
+			const link =
+				packageJson.bugs.url +
+				'/new?title=' +
+				encodeURIComponent(title) +
+				'&body=' +
+				encodeURIComponent(plainTextReport);
 			open(link);
 			if (resolve) {
 				resolve(true);
@@ -222,8 +223,8 @@ export function promptInput(options, resolve, reject) {
 	}
 
 	win.value.setAlwaysOnTop(true);
-	win.value.setContentSize({width: 340, height: maxHeight});
-	win.value.setContentSizeConstraints({width: 340, height: maxHeight}, {width: 460, height: maxHeight});
+	win.value.setContentSize({ width: 340, height: maxHeight });
+	win.value.setContentSizeConstraints({ width: 340, height: maxHeight }, { width: 460, height: maxHeight });
 	win.value.setTitle(`${options.label || ''} - ${packageJson.build.productName || packageJson.name}`);
 	win.value.setResizable(true);
 	win.value.setMaximizable(false);
@@ -258,26 +259,26 @@ export function promptInput(options, resolve, reject) {
 
 	const fieldWrapper = gui.Container.create();
 	contentView.addChildView(fieldWrapper);
-	fieldWrapper.setStyle({flexDirection: 'row', flex: 0, marginTop: 10});
+	fieldWrapper.setStyle({ flexDirection: 'row', flex: 0, marginTop: 10 });
 
 	const inputField = gui.Entry.createType(options.type || 'normal');
-	inputField.setStyle({flex: 1});
+	inputField.setStyle({ flex: 1 });
 	fieldWrapper.addChildView(inputField);
 	inputField.focus();
 	inputField.onActivate = resolveAction;
 
 	const resolveButton = gui.Button.create(options.buttonText || 'OK');
-	resolveButton.setStyle({flex: 0, marginLeft: 10});
+	resolveButton.setStyle({ flex: 0, marginLeft: 10 });
 	resolveButton.onClick = resolveAction;
 	fieldWrapper.addChildView(resolveButton);
 
 	if (options.helpText) {
 		const providerDescription = gui.Label.createWithAttributedText(
-			gui.AttributedText.create(options.helpText, {font: helpTextFont}),
+			gui.AttributedText.create(options.helpText, { font: helpTextFont })
 		);
 		providerDescription.setAlign('start');
 		providerDescription.setVAlign('start');
-		providerDescription.setStyle({marginTop: 10});
+		providerDescription.setStyle({ marginTop: 10 });
 		contentView.addChildView(providerDescription);
 	}
 
@@ -300,9 +301,7 @@ export function promptInput(options, resolve, reject) {
 			}
 		}
 
-		if (options.required && !inputField.getText()) {
-			return;
-		}
+		if (options.required && !inputField.getText()) return;
 
 		isSuccess = true;
 

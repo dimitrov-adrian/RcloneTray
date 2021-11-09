@@ -1,0 +1,26 @@
+name: Publish Distribution
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v2
+        with:
+          node-version: 16
+      - run: npm install
+      - run: npm run dist
+      - run: npm pack
+      - name: Upload Artifacts
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            out/dist/darwin/RcloneTray.dmg
+            out/dist/darwin/RcloneTray.exe
+            out/dist/darwin/RcloneTray.appImage
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

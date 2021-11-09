@@ -1,5 +1,5 @@
 import process from 'node:process';
-import {promptInput} from './utils/prompt.js';
+import { promptInput } from './utils/prompt.js';
 
 /**
  * @returns {import('gui').Window}
@@ -10,13 +10,13 @@ export function askPass() {
 			label: 'Enter Password',
 			helpText: 'Password is required to authenticate in remote.',
 			buttonText: 'Authenticate',
-			required: true,
+			required: false,
 			type: 'password',
 		},
-		password => {
+		(password) => {
 			process.stdout.write(password.toString());
 			process.exit();
-		},
+		}
 	);
 }
 
@@ -32,9 +32,9 @@ export function askConfigPass() {
 			required: true,
 			type: 'password',
 		},
-		password => {
+		(password) => {
 			process.stdout.write(password.toString());
 			process.exit();
-		},
+		}
 	);
 }

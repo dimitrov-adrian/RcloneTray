@@ -1,11 +1,11 @@
 # <img src="https://github.com/dimitrov-adrian/RcloneTray/blob/v2/icons/rclone-icon-connected-color@4x.png?raw=true" width="48px" align="center" alt="Rclone Icon" /> RcloneTray
 
-RcloneTray is simple cross-platform GUI for [Rclone](https://rclone.org/) that is aimed to provide open source alternative to [Mountain Duck](https://mountainduck.io/)
+RcloneTray is simple cross-platform GUI for [Rclone](https://rclone.org/) that is aimed to provide open source
+alternative to [Mountain Duck](https://mountainduck.io/)
 
 ## Overview
 
 ![Screenshot](https://raw.githubusercontent.com/dimitrov-adrian/RcloneTray/v2/screenshot.png)
-
 
 ## Downloads
 
@@ -13,20 +13,19 @@ RcloneTray is simple cross-platform GUI for [Rclone](https://rclone.org/) that i
 
 _Only 64 bit binaries are provided as pre-build packages._
 
-
 ## Requirements
 
 Supported operation systems:
 
--   Windows 7/8/10
--   macOS 10.10 and later
--   GNU/Linux, GTK, and DE with tray icons support
+- Windows 7/8/10
+- macOS 10.10 and later
+- GNU/Linux, GTK, and DE with tray icons support
 
 To get mount function working, you need to install fuse 3rd party library as dependency:
 
--   Windows - [winfsp](http://www.secfs.net/winfsp/rel/)
--   macOS - [osxfuse](https://github.com/osxfuse/osxfuse/releases)
--   Linux - [fuse](https://command-not-found.com/mount.fuse) (most probably it is already installed on your system)
+- Windows - [winfsp](http://www.secfs.net/winfsp/rel/)
+- macOS - [osxfuse](https://github.com/osxfuse/osxfuse/releases)
+- Linux - [fuse](https://command-not-found.com/mount.fuse) (most probably it is already installed on your system)
 
 ## FAQ
 

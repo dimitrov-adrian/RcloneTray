@@ -19,12 +19,9 @@ export function winRef(staticId) {
 	return new WinRef(staticId);
 }
 
-/**
- * @param {(item: gui.Window) => void} callbackfn
- */
-export function forEach(callbackfn) {
+export function closeAll() {
 	for (const win of store.values()) {
-		callbackfn(win);
+		win.close();
 	}
 }
 
@@ -77,12 +74,17 @@ export class WinRef {
 	set value(value) {
 		store.set(this.id, value);
 		value.onClose = this.unref.bind(this);
-		if (typeof this.id !== 'symbol' && 'setBounds' in value) {
+	}
+
+	restorePosition() {
+		if (typeof this.id !== 'symbol' && 'setBounds' in this.value) {
 			const pos = appPositionsRegistry.get(this.id);
 			if (pos) {
-				value.setBounds({
+				this.value.setBounds({
 					...pos,
 				});
+			} else {
+				this.value.center();
 			}
 		}
 	}

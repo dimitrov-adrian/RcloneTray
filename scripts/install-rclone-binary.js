@@ -1,6 +1,7 @@
 import process from 'node:process';
-import {join, dirname} from 'node:path';
-import {writeFileSync, readFileSync, existsSync} from 'node:fs';
+import console from 'node:console';
+import { join, dirname } from 'node:path';
+import { writeFileSync, readFileSync, existsSync, chmodSync } from 'node:fs';
 import AdmZip from 'adm-zip';
 import fetch from 'node-fetch';
 
@@ -24,8 +25,8 @@ const destDirectory = join(dirname(process.env.npm_package_json), 'vendor', 'rcl
 	console.log('Downloading', rcloneUrl);
 
 	/**
-     * @type {import('node-fetch').Response}
-     */
+	 * @type {import('node-fetch').Response}
+	 */
 	const response = await fetch(rcloneUrl, {
 		headers: {
 			'User-Agent': 'RcloneTray/Fetcher',
@@ -33,24 +34,26 @@ const destDirectory = join(dirname(process.env.npm_package_json), 'vendor', 'rcl
 	});
 
 	if (verifyETag(response.headers.get('etag'))) {
-		console.log('Already have latest version', destDirectory);
+		console.log(' - Skip. Already have latest version in', destDirectory);
 		return;
 	}
 
-	console.log('Fetch', response.statusText);
-	const installedFile = await installVendorFromRequest(response);
+	console.log(' -', response.statusText);
+	console.log(' - Fetching');
+	const responseBody = await response.buffer();
+	console.log('Installing');
+	const installedFile = await installVendorFromRequest(responseBody);
 	writeETag(response.headers.get('etag'));
-	console.log('Installed', installedFile);
+	console.log(' - Done', installedFile);
 	process.exit(0);
 })();
 
 /**
- * @param {import('node-fetch').Response} response
+ * @param {Buffer} responseBody
  */
-async function installVendorFromRequest(response) {
-	const body = await response.buffer();
-	const zip = new AdmZip(body);
-	const entry = zip.getEntries().find(entry => {
+async function installVendorFromRequest(responseBody) {
+	const zip = new AdmZip(responseBody);
+	const entry = zip.getEntries().find((entry) => {
 		if (targetPlatform === 'darwin' || targetPlatform === 'linux') {
 			return /\/rclone$/.test(entry.entryName);
 		}
@@ -63,9 +66,14 @@ async function installVendorFromRequest(response) {
 	});
 
 	if (entry) {
-		console.log('Extract', entry.entryName);
+		console.log(' - Extracting', entry.entryName);
 		if (zip.extractEntryTo(entry, destDirectory, false, true)) {
-			return join(destDirectory, '/', 'rclone');
+			const binPath = join(destDirectory, entry.name);
+			if (targetPlatform !== 'win32') {
+				chmodSync(binPath, 750);
+			}
+
+			return binPath;
 		}
 
 		throw new Error('Cannot extract');

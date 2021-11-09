@@ -1,11 +1,11 @@
 {
 	"folders": [
 		{
-			"path": "./"
+			"path": "."
 		}
 	],
 	"settings": {
-		"prettier.useEditorConfig": true,
+		"typescript.validate.enable": false,
 		"prettier.enable": true,
 		"javascript.validate.enable": true,
 		"javascript.suggest.completeJSDocs": true,
@@ -18,23 +18,12 @@
 		"editor.formatOnType": true,
 		"files.exclude": {
 			"**/node_modules/**": true
-		},
-		"xo.enable": true,
-		"xo.format.enable": true,
-		"[javascript]": {
-			"editor.defaultFormatter": "samverschueren.linter-xo"
-		},
-		"[json]": {
-			"editor.defaultFormatter": "vscode.json-language-features"
-		},
-		"[jsonc]": {
-			"editor.defaultFormatter": "vscode.json-language-features"
 		}
 	},
 	"extensions": {
 		"recommendations": [
-			"IronGeek.vscode-env",
-			"samverschueren.linter-xo",
+			"esbenp.prettier-vscode",
+			"dbaeumer.vscode-eslint",
 			"codezombiech.gitignore",
 			"EditorConfig.EditorConfig"
 		]

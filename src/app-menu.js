@@ -1,11 +1,11 @@
 import gui from 'gui';
-import {packageJson} from './utils/package.js';
-import {createAboutWindow, openHomepage, openLicense, openRcloneHomepage, reportIssue} from './about.js';
-import {appQuit} from './app-quit.js';
-import {createBookmarkWizardWindow} from './bookmark-wizard.js';
-import {createPreferencesWindow} from './preferences.js';
-import {closeActive} from './utils/gui-winref.js';
-import {createLogWindow} from './logs.js';
+import { packageJson } from './utils/package.js';
+import { createAboutWindow, openHomepage, openLicense, openRcloneHomepage, reportIssue } from './about.js';
+import { appQuit } from './app-quit.js';
+import { createBookmarkWizardWindow } from './bookmark-wizard.js';
+import { createPreferencesWindow } from './preferences.js';
+import { closeActive } from './utils/gui-winref.js';
+import { createLogWindow } from './logs.js';
 
 export const appMenu = gui.MenuBar.create([
 	{
@@ -15,13 +15,13 @@ export const appMenu = gui.MenuBar.create([
 				accelerator: 'CmdOrCtrl+A',
 				onClick: createAboutWindow,
 			},
-			{type: 'separator'},
+			{ type: 'separator' },
 			{
 				label: 'New Bookmark',
 				onClick: createBookmarkWizardWindow,
 				accelerator: 'CmdOrCtrl+N',
 			},
-			{type: 'separator'},
+			{ type: 'separator' },
 			{
 				label: 'Preferences',
 				onClick: createPreferencesWindow,
@@ -32,15 +32,15 @@ export const appMenu = gui.MenuBar.create([
 				onClick: createLogWindow,
 				accelerator: 'CmdOrCtrl+O',
 			},
-			{type: 'separator'},
-			{role: 'hide'},
-			{role: 'hide-others'},
+			{ type: 'separator' },
+			{ role: 'hide' },
+			{ role: 'hide-others' },
 			{
 				label: 'Close Window',
 				accelerator: 'CmdOrCtrl+W',
 				onClick: closeActive,
 			},
-			{type: 'separator'},
+			{ type: 'separator' },
 			{
 				label: `Quit ${packageJson.build.productName}`,
 				accelerator: 'CmdOrCtrl+Q',
@@ -51,19 +51,19 @@ export const appMenu = gui.MenuBar.create([
 	{
 		label: 'Edit',
 		submenu: [
-			{role: 'copy'},
-			{role: 'cut'},
-			{role: 'paste'},
-			{role: 'select-all'},
-			{type: 'separator'},
-			{role: 'undo'},
-			{role: 'redo'},
+			{ role: 'copy' },
+			{ role: 'cut' },
+			{ role: 'paste' },
+			{ role: 'select-all' },
+			{ type: 'separator' },
+			{ role: 'undo' },
+			{ role: 'redo' },
 		],
 	},
 	{
 		label: 'Window',
 		role: 'window',
-		submenu: [{type: 'separator'}],
+		submenu: [{ type: 'separator' }],
 	},
 	{
 		label: 'Help',
@@ -81,7 +81,7 @@ export const appMenu = gui.MenuBar.create([
 				label: 'View License',
 				onClick: openLicense,
 			},
-			{type: 'separator'},
+			{ type: 'separator' },
 			{
 				label: 'Rclone Homepage',
 				onClick: openRcloneHomepage,
