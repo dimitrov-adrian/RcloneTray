@@ -18,26 +18,36 @@
  */
 
 import { Buffer } from 'node:buffer';
+import { join } from 'node:path';
 import { spawn, spawnSync } from 'node:child_process';
 import { devNull } from 'node:os';
 import { platform } from 'node:process';
+import { existsSync, lstatSync } from 'node:fs';
 import semver from 'semver';
 import fetch from 'node-fetch';
 
+export const platformBinaryName = platform === 'win32' ? 'rclone.exe' : 'rclone';
+
+export function getRcloneBinary(path) {
+	if (!existsSync(path)) {
+		throw Error('Path: ' + path + ' does not exist');
+	}
+
+	if (lstatSync(path).isDirectory()) {
+		return join(path, platform === 'win32' ? 'rclone.exe' : 'rclone');
+	}
+
+	return path;
+}
+
 /**
  * @param {{
- *  binary?: string,
+ *  binaryPath?: string,
  *  configFile?: string,
  * }} _
  */
-export function rcloneDriver({ binary, configFile }) {
-	const binaryName = platform === 'win32' ? 'rclone.exe' : 'rclone';
-
-	if (!binary) {
-		binary = binaryName;
-	} else if (binary.slice(-1, 1) === '/') {
-		binary += binaryName;
-	}
+export function rcloneDriver({ binaryPath, configFile }) {
+	const binary = !binaryPath ? platformBinaryName : getRcloneBinary(binaryPath);
 
 	return {
 		getBinary,

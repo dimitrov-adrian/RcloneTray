@@ -21,7 +21,7 @@ import { packageJson } from '../utils/package.js';
  * @returns {Promise<UpdateCheckResult>}
  */
 export async function getLatestRelaseInfo() {
-	const content = await fetch(packageJson.config.RcloneTray.releaseInfo);
+	const content = await fetch(packageJson.releaseInfo);
 
 	/** @type {object} */
 	const info = await content.json();

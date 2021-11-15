@@ -1,0 +1,26 @@
+{
+  "private": "true",
+  "name": "rclonetray",
+  "displayName": "RcloneTray",
+  "version": "2.0.0-beta.8",
+  "author": "Adrian Dimitrov <dimitrov.adrian+gh@gmail.com>",
+  "homepage": "https://github.com/dimitrov-adrian/RcloneTray",
+  "license": "MIT",
+  "licenseFile": "https://raw.githubusercontent.com/dimitrov-adrian/RcloneTray/v2/LICENSE.txt",
+  "bugs": {
+    "url": "https://github.com/dimitrov-adrian/RcloneTray/issues"
+  },
+  "releaseInfo": "https://api.github.com/repos/dimitrov-adrian/RcloneTray/releases/latest",
+  "build": {
+    "appId": "com.github.dimitrov-adrian.rclonetray",
+    "productName": "RcloneTray",
+    "unpack": "**/{lib/rclone/**,*.node,*.html,*.png,*.gif,*.jpg,*.exe}",
+    "copyright": "Copyright (c) 2020 Adrian Dimitrov",
+    "minify": false,
+    "extraInfoPlist": "<key>LSUIElement</key><true/>"
+  },
+  "main": "lib/bundle.cjs",
+  "dependencies": {
+    "fetch-yode": "^1.0.2"
+  }
+}

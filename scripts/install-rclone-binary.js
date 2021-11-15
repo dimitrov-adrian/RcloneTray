@@ -1,16 +1,16 @@
 import process from 'node:process';
 import console from 'node:console';
-import { join, dirname } from 'node:path';
+import { join, dirname, resolve } from 'node:path';
 import { writeFileSync, readFileSync, existsSync, chmodSync } from 'node:fs';
 import AdmZip from 'adm-zip';
 import fetch from 'node-fetch';
 
+const rcloneVersion = process.env.npm_package_engines_rclone;
 const targetPlatform = process.env.npm_config_platform || process.platform;
 const targetArch = process.env.npm_config_arch || process.arch;
-const rcloneUrl = process.env[`npm_package_config_rcloneDownloadURL_${targetPlatform}_${targetArch}`];
 
-if (!rcloneUrl) {
-	console.log('No rclone for target platform:', targetPlatform);
+if (!rcloneVersion) {
+	console.log('Required Rclone version not defined in package.json:engines.rclone');
 	process.exit(1);
 }
 
@@ -19,7 +19,22 @@ if (!process.env.npm_package_json) {
 	process.exit(1);
 }
 
-const destDirectory = join(dirname(process.env.npm_package_json), 'vendor', 'rclone');
+const rcloneUrl = (
+	{
+		darwin_x64: 'https://downloads.rclone.org/{version}/rclone-{version}-osx-amd64.zip',
+		darwin_arm64: 'https://downloads.rclone.org/{version}/rclone-{version}-osx-arm64.zip',
+		linux_x64: 'https://downloads.rclone.org/{version}/rclone-{version}-linux-amd64.zip',
+		win32_x64: 'https://downloads.rclone.org/{version}/rclone-{version}-windows-amd64.zip',
+	}[`${targetPlatform}_${targetArch}`] || ''
+).replaceAll('{version}', `v${rcloneVersion}`);
+
+if (!rcloneUrl) {
+	console.log('No rclone for target platform: %s_%s', targetPlatform, targetArch);
+	process.exit(1);
+}
+const destDirectory = process.argv[2]
+	? resolve(join(process.argv[2], 'rclone'))
+	: join(dirname(process.env.npm_package_json), 'package', 'vendor', 'rclone');
 
 (async function () {
 	console.log('Downloading', rcloneUrl);
@@ -70,7 +85,7 @@ async function installVendorFromRequest(responseBody) {
 		if (zip.extractEntryTo(entry, destDirectory, false, true)) {
 			const binPath = join(destDirectory, entry.name);
 			if (targetPlatform !== 'win32') {
-				chmodSync(binPath, 750);
+				chmodSync(binPath, 0o755);
 			}
 
 			return binPath;

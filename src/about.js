@@ -107,7 +107,7 @@ export function openRcloneHomepage() {
  */
 export function openLicense(initiatorButton) {
 	createWebViewWindow(
-		packageJson.config.RcloneTray.licenseFile,
+		packageJson.config.licenseFile,
 		packageJson.build.productName + ' LICENSE',
 		// Cause on windows, the inner window goes within by size in parent window.
 		initiatorButton && process.platform !== 'win32' ? initiatorButton.getWindow() : null

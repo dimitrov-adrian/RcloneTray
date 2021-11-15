@@ -63,13 +63,13 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import EventEmitter from 'node:events';
-import nsfw from 'vscode-nsfw';
 import open from 'open';
 import getPort from 'get-port';
 import { ensureEmptyDirectory, isEmptyDirectory } from '../utils/empty-dir.js';
 import { execInOSTerminal } from '../utils/terminal-command.js';
 import { getResourcePath, getSubcommand } from '../utils/package.js';
 import { rcloneDriver, remoteCommand } from '../utils/rclone.js';
+import { watchDirectory } from '../utils/directory-watcher.js';
 import { config } from './config.js';
 import logger from './logger.js';
 
@@ -87,11 +87,8 @@ export const RCLONETRAY_CONFIG = {
 };
 
 const rclone = rcloneDriver({
-	binary:
-		process.env.RCLONETRAY_RCLONE_PATH ||
-		(config.get('use_system_rclone')
-			? null
-			: getResourcePath('vendor', 'rclone', process.platform === 'win32' ? 'rclone.exe' : 'rclone')),
+	binaryPath:
+		process.env.RCLONETRAY_RCLONE_PATH || (config.get('use_system_rclone') ? null : getResourcePath('lib', 'rclone')),
 	configFile: config.get('rclone_config_file'),
 });
 
@@ -451,25 +448,19 @@ export async function autopush(bookmarkName, bookmarkConfig) {
 		}
 
 		try {
-			const watcher = await nsfw(
-				bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
-				() => {
-					push(bookmarkName, bookmarkConfig, 'autopush');
-				},
-				{
-					debounceMS: 3000,
-				}
-			);
+			const stopWatch = await watchDirectory(bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory], () => {
+				push(bookmarkName, bookmarkConfig, 'autopush');
+			});
 
 			jobs.set(`${bookmarkName}:autopush`, {
 				data: {
 					path: bookmarkConfig[RCLONETRAY_CONFIG.CUSTOM_KEYS.localDirectory],
 				},
 				stop: async () => {
-					if (!watcher) return;
+					if (!stopWatch) return;
 
 					try {
-						watcher.stop();
+						stopWatch();
 						jobs.delete(`${bookmarkName}:autopush`);
 					} catch (error) {
 						logger.error(error.toString());

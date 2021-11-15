@@ -4,13 +4,13 @@ Thumbs.db
 
 node_modules
 
-/out
 /vendor
+/out
 /*.tgz
-/*.zip
+/package/*.tgz
 
-# Just for fun
-/test.js
+# package
+/package/lib
 
 # Breaks when testing between platforms and environments
-/package-lock.json
+/package/package-lock.json

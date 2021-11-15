@@ -12,7 +12,7 @@ export function sanitizeSizeSuffix(text) {
 
 	const suff = text.slice(-1).toUpperCase();
 
-	if (['b', 'k', 'M', 'G', 'T', 'P'].includes(suff)) {
+	if (['B', 'K', 'M', 'G', 'T', 'P'].includes(suff)) {
 		return n + suff;
 	}
 
@@ -41,6 +41,7 @@ export function formatTitle(title) {
 		.replace(/\bFtp\b/, 'FTP')
 		.replace(/\bNcdu\b/, 'NCDU')
 		.replace(/\bDlna\b/, 'DLNA')
+		.replace(/\bTTL\b/, 'TTL')
 		.replace(/\bTls\b/, 'TLS')
 		.replace(/\bEps\b/, 'EPSV')
 		.replace(/\bPcloud\b/, 'pCloud')

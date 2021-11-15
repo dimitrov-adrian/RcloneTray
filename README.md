@@ -49,7 +49,8 @@ You'll need [Node.js](https://nodejs.org) and NPM installed on your computer in 
 $ git clone https://github.com/dimitrov-adrian/RcloneTray
 $ cd RcloneTray
 $ npm install
-$ npm start
+$ npm install:rclone-binary
+$ npm run dev
 ```
 
 ## License
