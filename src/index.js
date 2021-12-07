@@ -20,16 +20,20 @@ if (!process.versions.yode && !process.versions.qode) {
 }
 
 // Main router.
-(async (command) => {
-	if (command === 'ask-pass-config') {
+switch (process.argv.slice(-1)[0]) {
+	case 'ask-pass-config':
 		askConfigPass();
-	} else if (command === 'ask-pass-remote' || command === 'ask-pass') {
+		break;
+	case 'ask-pass-remote':
+	case 'ask-pass':
 		askPass();
-	} else if (command === 'about') {
+		break;
+	case 'about':
 		createAboutWindow().onClose = () => process.exit();
-	} else if (command === 'preferences') {
+		break;
+	case 'preferences':
 		createPreferencesWindow().onClose = () => process.exit();
-	} else {
-		await app();
-	}
-})(process.argv.slice(-1)[0]);
+		break;
+	default:
+		app();
+}

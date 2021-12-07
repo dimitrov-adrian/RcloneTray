@@ -21,20 +21,12 @@ export default defineConfig({
 			destDir: './',
 			sourcemap: false,
 		}),
-		nodeResolve({
-			dedupe: ['semver'],
-		}),
+		nodeResolve(),
 		commonjs(),
 		json(),
 		replace({
-			preventAssignment: true,
-			values: {
-				'process.env.NODE_ENV': JSON.stringify('production'),
-			},
+			'process.env.NODE_ENV': JSON.stringify('production'),
 		}),
-		terser({
-			compress: true,
-			ecma: 2020,
-		}),
+		terser(),
 	],
 });

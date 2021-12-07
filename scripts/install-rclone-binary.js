@@ -8,9 +8,10 @@ import fetch from 'node-fetch';
 const rcloneVersion = process.env.npm_package_engines_rclone;
 const targetPlatform = process.env.npm_config_platform || process.platform;
 const targetArch = process.env.npm_config_arch || process.arch;
-
+console.log(process.env);
+console.log({ rcloneVersion, targetPlatform, targetArch });
 if (!rcloneVersion) {
-	console.log('Required Rclone version not defined in package.json:engines.rclone');
+	console.log('Required Rclone version not defined in package.json engines.rclone');
 	process.exit(1);
 }
 

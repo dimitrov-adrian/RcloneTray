@@ -63,7 +63,7 @@ export function createLogWindow() {
 	actionButtonsWrapper.addChildView(actionButtonClear);
 	actionButtonClear.onClick = () => clearAll();
 
-	win.value.center();
+	win.restorePosition();
 	win.value.setVisible(true);
 	win.value.activate();
 

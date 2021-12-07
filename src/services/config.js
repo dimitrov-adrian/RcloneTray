@@ -1,7 +1,6 @@
 import Conf from 'conf';
 import { packageJson } from '../utils/package.js';
 
-/* eslint-disable camelcase */
 const defaults = {
 	rclone_config_file: '',
 	rclone_options: {
@@ -32,7 +31,6 @@ const defaults = {
 	use_system_rclone: false,
 	logs_history_limit: 100,
 };
-/* eslint-enable camelcase */
 
 /**
  * Configuration handler instance

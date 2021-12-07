@@ -1,3 +1,8 @@
+import process from 'node:process';
+import fetch from 'node-fetch';
+import semver from 'semver';
+import { packageJson } from '../utils/package.js';
+
 /**
  * @typedef {{
  *  hasUpdate: boolean,
@@ -11,19 +16,13 @@
  * }} UpdateCheckResult
  */
 
-import process from 'node:process';
-import fetch from 'node-fetch';
-import semver from 'semver';
-import { packageJson } from '../utils/package.js';
-
 /**
- * @throws {Error}
  * @returns {Promise<UpdateCheckResult>}
  */
 export async function getLatestRelaseInfo() {
-	const content = await fetch(packageJson.releaseInfo);
+	const content = await fetch('https://api.github.com/repos/dimitrov-adrian/RcloneTray/releases/latest');
 
-	/** @type {object} */
+	/** @type {import('@octokit/types').Endpoints["GET /repos/{owner}/{repo}/releases/latest"]["response"]["data"]} */
 	const info = await content.json();
 
 	if (!info || !info.assets || !info.tag_name) {
@@ -52,7 +51,7 @@ export async function getLatestRelaseInfo() {
 }
 
 /**
- * @param {{name: string}} bundleUrl
+ * @param {{name: string}&any} bundleUrl
  * @param {string} platform
  */
 function findBundleForPlatformFunction(bundleUrl, platform) {

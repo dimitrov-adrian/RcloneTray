@@ -237,6 +237,10 @@ export function createBookmarkWindow(isNew, { name, type, providerConfig, values
 
 	actionButtonsWrapper.addChildView(actionButtonSave);
 
+	if (!parentWindow) {
+		win.restorePosition();
+	}
+
 	win.value.activate();
 
 	return win.value;

@@ -36,13 +36,6 @@ export function findActive() {
 	}
 }
 
-export function closeActive() {
-	const active = findActive();
-	if (active) {
-		active.close();
-	}
-}
-
 export class WinRef {
 	/**
 	 * @param {string|Symbol} staticId

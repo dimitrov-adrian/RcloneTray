@@ -4,7 +4,6 @@ import { createAboutWindow, openHomepage, openLicense, openRcloneHomepage, repor
 import { appQuit } from './app-quit.js';
 import { createBookmarkWizardWindow } from './bookmark-wizard.js';
 import { createPreferencesWindow } from './preferences.js';
-import { closeActive } from './utils/gui-winref.js';
 import { createLogWindow } from './logs.js';
 
 export const appMenu = gui.MenuBar.create([
@@ -33,13 +32,8 @@ export const appMenu = gui.MenuBar.create([
 				accelerator: 'CmdOrCtrl+O',
 			},
 			{ type: 'separator' },
-			{ role: 'hide' },
-			{ role: 'hide-others' },
-			{
-				label: 'Close Window',
-				accelerator: 'CmdOrCtrl+W',
-				onClick: closeActive,
-			},
+			{ role: 'hide', accelerator: 'CmdOrCtrl+H' },
+			{ role: 'hide-others', accelerator: 'CmdOrCtrl+Alt+H' },
 			{ type: 'separator' },
 			{
 				label: `Quit ${packageJson.build.productName}`,
@@ -63,7 +57,12 @@ export const appMenu = gui.MenuBar.create([
 	{
 		label: 'Window',
 		role: 'window',
-		submenu: [{ type: 'separator' }],
+		submenu: [
+			{ type: 'separator' },
+			{ role: 'minimize', accelerator: 'CmdOrCtrl+M' },
+			{ role: 'close-window', accelerator: 'CmdOrCtrl+W' },
+			{ type: 'separator' },
+		],
 	},
 	{
 		label: 'Help',

@@ -12,9 +12,7 @@ import { createBookmarkWindow } from './bookmark-edit.js';
 export async function createBookmarkWizardWindow() {
 	const win = winRef('createwizard');
 
-	if (win.value) {
-		return win.value;
-	}
+	if (win.value) return win.value;
 
 	win.value = gui.Window.create({});
 	win.value.setResizable(false);
@@ -60,10 +58,11 @@ export async function createBookmarkWizardWindow() {
 	contentView.addChildView(actionButtonsWrapper);
 
 	const actionButtonNext = gui.Button.create('Next');
-	actionButtonNext.onClick = (self) => actionNext({ providers, picker, self });
+	actionButtonNext.onClick = (/** @type {gui.Button} */ self) => actionNext({ providers, picker, self });
 	actionButtonsWrapper.addChildView(actionButtonNext);
 
 	win.value.setVisible(true);
+	win.restorePosition();
 	win.value.activate();
 
 	// Init data
@@ -109,6 +108,7 @@ async function actionNext({ providers, picker, self }) {
 		promptError({
 			title: 'Create new bookmark',
 			message: `The remote type: ${selected.Name} is not supported by Rclone.`,
+			parentWindow: self.getWindow(),
 		});
 
 		return;

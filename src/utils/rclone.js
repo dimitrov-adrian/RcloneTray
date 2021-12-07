@@ -28,6 +28,9 @@ import fetch from 'node-fetch';
 
 export const platformBinaryName = platform === 'win32' ? 'rclone.exe' : 'rclone';
 
+/**
+ * @param {string} path
+ */
 export function getRcloneBinary(path) {
 	if (!existsSync(path)) {
 		throw Error('Path: ' + path + ' does not exist');
@@ -70,7 +73,6 @@ export function rcloneDriver({ binaryPath, configFile }) {
 
 	/**
 	 * @returns {string}
-	 * @throws {Error}
 	 */
 	function getVersion() {
 		try {
@@ -80,13 +82,11 @@ export function rcloneDriver({ binaryPath, configFile }) {
 				},
 			});
 
-			if (result.output) {
-				const ver = result.output.toString().trim().split(/\r?\n/).shift().split(/\s+/).pop();
-				return semver.clean(ver);
-			}
-		} catch {}
-
-		throw new Error('Cannot detect Rclone version.');
+			const ver = result.output.toString().trim().split(/\r?\n/).shift().split(/\s+/).pop();
+			return semver.clean(ver);
+		} catch {
+			throw new Error('Cannot detect Rclone version.');
+		}
 	}
 
 	/**
@@ -114,12 +114,10 @@ export function rcloneDriver({ binaryPath, configFile }) {
 	function getDefaultConfigFile() {
 		try {
 			const result = spawnSync(binary, ['config', 'file']);
-			if (result.output) {
-				return (result.output.toString().trim().split('\n')[1] || '').trim();
-			}
-		} catch {}
-
-		throw new Error('Cannot detect default Rclone file.');
+			return (result.output.toString().trim().split('\n')[1] || '').trim();
+		} catch {
+			throw new Error('Cannot detect default Rclone file.');
+		}
 	}
 
 	/**
@@ -202,7 +200,6 @@ export function rcloneDriver({ binaryPath, configFile }) {
  * @returns {RemoteCommandResult}
  */
 export function remoteCommand(server, endpoint, payload) {
-	// eslint-disable-next-line no-undef
 	const abortController = new AbortController();
 	const uri = server.uri + endpoint;
 	const authHeader = server.auth ? 'Basic ' + Buffer.from(server.auth).toString('base64') : null;

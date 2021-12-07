@@ -1,0 +1,16 @@
+{
+	"prettier.enable": true,
+	"typescript.validate.enable": false,
+	"javascript.validate.enable": true,
+	"javascript.suggest.completeJSDocs": true,
+	"javascript.suggest.jsdoc.generateReturns": true,
+	"javascript.suggest.completeFunctionCalls": true,
+	"javascript.preferences.importModuleSpecifier": "relative",
+	"javascript.preferences.importModuleSpecifierEnding": "js",
+	"javascript.updateImportsOnFileMove.enabled": "always",
+	"editor.formatOnSave": true,
+	"editor.formatOnType": true,
+	"files.exclude": {
+		"**/node_modules/**": true
+	}
+}

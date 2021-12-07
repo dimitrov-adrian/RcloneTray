@@ -316,9 +316,9 @@ export async function getBookmarks() {
 		return Object.fromEntries(
 			Object.entries(result).filter(([, info]) => !RCLONETRAY_CONFIG.UNSUPPORTED_PROVIDERS.includes(info.type))
 		);
-	} catch {}
-
-	return {};
+	} catch {
+		return {};
+	}
 }
 
 /**

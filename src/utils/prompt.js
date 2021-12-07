@@ -25,7 +25,7 @@ export function promptError({ title, message, parentWindow }, resolve) {
 	const win = ref();
 	win.value = gui.MessageBox.create();
 	win.value.setType('error');
-	win.value.setText(title);
+	win.value.setText(title || 'Error');
 	if (message) {
 		win.value.setInformativeText(message.toString());
 	}
